@@ -1,5 +1,5 @@
 #/**
-# Copyright (c) 2012 Sukanto Ghosh.
+# Copyright (c) 2017 Jean-Christophe Dubois.
 # All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 # @file objects.mk
-# @author Sukanto Ghosh (sukantoghosh@gmail.com)
-# @brief list of common objects.
+# @author Jean-Christophe Dubois (jcd@tribudubois.net)
+# @brief list of objects for printf support.
 # */
 
 # Need -Uarm for gcc < 3.x
@@ -27,4 +27,3 @@ cpu-cflags += -DTINYPRINTF_DEFINE_TFP_SPRINTF=0
 cpu-cflags += -DTINYPRINTF_OVERRIDE_LIBC=1
 
 common-libs-objs-$(CONFIG_PRINTF)+= libstdio/tinyprintf.o
-

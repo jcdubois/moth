@@ -1,5 +1,5 @@
 #/**
-# Copyright (c) 2012 Sukanto Ghosh.
+# Copyright (c) 2012 Jean-Christophe Dubois.
 # All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,8 +17,8 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 # @file objects.mk
-# @author Sukanto Ghosh (sukantoghosh@gmail.com)
-# @brief list of common objects.
+# @author Jean-Christophe Dubois (jcd@tribudubois.net)
+# @brief list of common objects for SPARC.
 # */
 
 cpu-common-objs-y += os_arch_sparc_entry.o

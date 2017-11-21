@@ -1,5 +1,5 @@
 #/**
-# Copyright (c) 2013 Sukanto Ghosh.
+# Copyright (c) 2017 Jean-Christophe Dubois.
 # All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,7 +17,7 @@
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
 # @file objects.mk
-# @author Sukanto Ghosh (sukantoghosh@gmail.com)
+# @author Jean-Christophe Dubois (jcd@tribudubois.net)
 # @brief list of Generic board objects.
 # */
 
