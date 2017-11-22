@@ -20,21 +20,27 @@
   <xsl:text>&#xa;</xsl:text>
   <xsl:text>MEMORY&#xa;</xsl:text>
   <xsl:text>{&#xa;</xsl:text>
-  <xsl:text>  ram : ORIGIN = </xsl:text>
-  <xsl:apply-templates select="." mode="vaddress"/>
-  <xsl:text>, LENGTH = </xsl:text>
-  <xsl:apply-templates select="." mode="vsize"/>
-  <xsl:text>&#xa;</xsl:text>
+  <xsl:apply-templates select="virtual" mode="memory"/>
   <xsl:text>}&#xa;</xsl:text>
   <xsl:text>&#xa;</xsl:text>
-  <xsl:text>SECTIONS /* </xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text> */&#xa;</xsl:text>
+  <xsl:text>SECTIONS /* Moth */&#xa;</xsl:text>
   <xsl:text>{&#xa;</xsl:text>
+  <xsl:apply-templates select="virtual[@name = 'kernel']/virtual_map" mode="entry"/>
+  <xsl:apply-templates select="virtual[@name != 'kernel']/virtual_map" mode="application"/>
   <!--
   <xsl:apply-templates select="virtual_map" mode="entry"/>
   -->
   <xsl:text>}&#xa;</xsl:text>
+</xsl:template>
+
+<xsl:template match="virtual" mode="memory">
+  <xsl:text>  </xsl:text>
+  <xsl:value-of select="@name"/>
+  <xsl:text> : ORIGIN = </xsl:text>
+  <xsl:apply-templates select="." mode="vaddress"/>
+  <xsl:text>, LENGTH = </xsl:text>
+  <xsl:apply-templates select="." mode="vsize"/>
+  <xsl:text>&#xa;</xsl:text>
 </xsl:template>
 
 <xsl:template match="virtual" mode="entry">
@@ -52,11 +58,7 @@
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>MEMORY&#xa;</xsl:text>
     <xsl:text>{&#xa;</xsl:text>
-    <xsl:text>  ram : ORIGIN = </xsl:text>
-    <xsl:apply-templates select="." mode="vaddress"/>
-    <xsl:text>, LENGTH = </xsl:text>
-    <xsl:apply-templates select="." mode="vsize"/>
-    <xsl:text>&#xa;</xsl:text>
+    <xsl:apply-templates select="." mode="memory"/>
     <xsl:text>}&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>SECTIONS /* </xsl:text>
@@ -90,58 +92,79 @@
     </xsl:call-template>
   </xsl:variable>
   <xsl:if test="$decpaddress > 0">
-  <xsl:text>  .</xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text> </xsl:text>
-  <xsl:apply-templates select="." mode="vaddress"/>
-  <xsl:text> : AT (</xsl:text>
-  <xsl:apply-templates select="." mode="paddress"/>
-  <xsl:text>)&#xa;</xsl:text>
-  <xsl:text>  {&#xa;</xsl:text>
-  <xsl:text>    __</xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text>_begin = .;&#xa;</xsl:text>
-  <xsl:text>    *(.</xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text>.entry)&#xa;</xsl:text>
-  <xsl:text>    *(.</xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text>*)&#xa;</xsl:text>
-  <xsl:text>    __</xsl:text>
-  <xsl:value-of select="@name"/>
-  <xsl:text>_end = </xsl:text>
-  <xsl:apply-templates select="." mode="size"/>
-  <xsl:text>;&#xa;</xsl:text>
-  <xsl:text>  } >ram =00&#xa;</xsl:text>
+    <xsl:text>  .</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text> </xsl:text>
+    <xsl:apply-templates select="." mode="vaddress"/>
+    <xsl:text> : AT (</xsl:text>
+    <xsl:apply-templates select="." mode="paddress"/>
+    <xsl:text>)&#xa;</xsl:text>
+    <xsl:text>  {&#xa;</xsl:text>
+    <xsl:text>    __</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>_begin = .;&#xa;</xsl:text>
+    <xsl:text>    *(.</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>.entry)&#xa;</xsl:text>
+    <xsl:text>    *(.</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>*)&#xa;</xsl:text>
+    <xsl:text>    __</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>_end = </xsl:text>
+    <xsl:apply-templates select="." mode="size"/>
+    <xsl:text>;&#xa;</xsl:text>
+    <xsl:text>  } ></xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text> =00&#xa;</xsl:text>
   </xsl:if>
 </xsl:template>
 
-<xsl:template name="virtualPage">
-  <xsl:param name="vaddress"/>
-  <xsl:param name="paddress"/>
-  <xsl:param name="size"/>
-  <xsl:param name="protection"/>
-  <xsl:param name="name"/>
-  <xsl:param name="cache"/>
-  <xsl:param name="partition"/>
-  <xsl:if test="$size > 0">
-    <xsl:element name="virtual_page">
-      <xsl:element name="virt"><xsl:value-of select="$vaddress"/></xsl:element>
-      <xsl:element name="phys"><xsl:value-of select="$paddress"/></xsl:element>
-      <xsl:element name="name"><xsl:value-of select="$name"/></xsl:element>
-      <xsl:element name="partition"><xsl:value-of select="$partition"/></xsl:element>
-      <xsl:element name="protection"><xsl:value-of select="$protection"/></xsl:element>
-      <xsl:element name="cache"><xsl:value-of select="$cache"/></xsl:element>
-    </xsl:element>
-    <xsl:call-template name="virtualPage">
-      <xsl:with-param name="vaddress" select="$vaddress + 4096"/>
-      <xsl:with-param name="paddress" select="$paddress + 4096"/>
-      <xsl:with-param name="size" select="$size - 4096"/>
-      <xsl:with-param name="protection" select="$protection"/>
-      <xsl:with-param name="name" select="$name"/>
-      <xsl:with-param name="partition" select="$partition"/>
-      <xsl:with-param name="cache" select="$cache"/>
+<xsl:template match="virtual_map" mode="application">
+  <xsl:variable name="paddress">
+    <xsl:apply-templates select="." mode="paddress"/>
+  </xsl:variable>
+  <xsl:variable name="decpaddress">
+    <xsl:call-template name="toDecimal">
+      <xsl:with-param name="num" select="$paddress"/>
     </xsl:call-template>
+  </xsl:variable>
+  <xsl:if test="$decpaddress > 0">
+    <xsl:text>  .</xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text>.</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text> </xsl:text>
+    <xsl:apply-templates select="." mode="vaddress"/>
+    <xsl:text> : AT (</xsl:text>
+    <xsl:apply-templates select="." mode="paddress"/>
+    <xsl:text>)&#xa;</xsl:text>
+    <xsl:text>  {&#xa;</xsl:text>
+    <xsl:text>    __</xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>_begin = .;&#xa;</xsl:text>
+    <xsl:text>    *(.</xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text>.</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>.entry)&#xa;</xsl:text>
+    <xsl:text>    *(.</xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text>.</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>*)&#xa;</xsl:text>
+    <xsl:text>    __</xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text>_</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>_end = </xsl:text>
+    <xsl:apply-templates select="." mode="size"/>
+    <xsl:text>;&#xa;</xsl:text>
+    <xsl:text>  } ></xsl:text>
+    <xsl:value-of select="./../@name"/>
+    <xsl:text> =00&#xa;</xsl:text>
   </xsl:if>
 </xsl:template>
 

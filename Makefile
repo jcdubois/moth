@@ -366,7 +366,7 @@ $(build_dir)/%.c: $(src_dir)/%.xml $(xsl_dir)/mmugen.xsl
 	$(call compile_xml,$@,$(filter-out $<,$^),$<)
 
 $(build_dir)/%.ld: $(cpu_dir)/mmugen.xml $(xsl_dir)/linker.xsl
-	$(call compile_xml,$(build_dir)/linker.ld,$(filter-out $<,$^),$<)
+	$(call compile_xml,$(build_dir)/moth.ld,$(filter-out $<,$^),$<)
 
 $(build_dir)/%.elf: $(build_dir)/%.ld $(build_dir)/apps/%/main.o $(apps-all-y)
 	$(call compile_ld,$@,$<,$(filter-out $<,$^))
