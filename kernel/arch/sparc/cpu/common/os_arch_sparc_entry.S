@@ -444,12 +444,9 @@ __os_arch_clean_win_loop:
 	mov   %l1, %fp	/* Set Frame pointer */
 	mov   %g0, %l1  /* clear %l1 */
 
-__tutu:
-
 	call  os_init
 	nop   /* delay slot */
 
-__titi:
 	sethi %hi(os_arch_stack_pointer),%g6
 	or    %g6, %lo(os_arch_stack_pointer), %g6
 	ld    [%g6], %g2
@@ -471,7 +468,6 @@ __titi:
 	nop   /* delay slot */
 	nop
 
-__toto:
 	/* Return from Trap */
 	jmpl  %l3, %g0  /* pc */
 	rett  %l4       /* npc */
