@@ -103,7 +103,6 @@ export xsl_dir=$(tools_dir)/xsl/$(CONFIG_ARCH)
 include $(tools_dir)/tools.mk
 
 # Setup list of targets for compilation
-#targets-y+=$(build_dir)/kernel.elf
 targets-y+=$(build_dir)/system.map
 targets-y+=$(build_dir)/moth.elf
 targets-y+=$(build_dir)/moth.bin
@@ -288,8 +287,6 @@ ifneq ($(words $(common-libs-y)), 0)
 kernel-all-y+=$(build_dir)/libs/libs.a
 apps-all-y+=$(build_dir)/libs/libs.a
 endif
-kernel-tmp-all-y=$(build_dir)/apps.o
-kernel-tmp-all-y+=$(kernel-all-y)
 moth-all-y=$(build_dir)/apps.o
 moth-all-y+=$(kernel-all-y)
 
@@ -314,9 +311,6 @@ $(build_dir)/moth.elf: $(build_dir)/moth.ld $(moth-all-y)
 
 $(build_dir)/apps.o: $(build_dir)/os_task_ro.o $(apps-exec-all-y)
 	$(call compose_bin,$@,$<,$(filter-out $<,$^))
-
-$(build_dir)/kernel.elf: $(build_dir)/kernel.ld $(kernel-tmp-all-y)
-	$(call compile_ld,$@,$<,$(filter-out $<,$^))
 
 $(build_dir)/system.map: $(build_dir)/moth.elf
 	$(call compile_nm,$@,$<)
