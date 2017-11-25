@@ -21,6 +21,6 @@
 # @brief list of objects for app4.
 # */
 
-apps-objs-$(CONFIG_APP_APP4) += app4/main.o
+apps-objs-$(CONFIG_APP_INTERRUPT) += interrupt/main.o
 
-apps-exec-$(CONFIG_APP_APP4) += app4.elf
+apps-exec-$(CONFIG_APP_INTERRUPT) += interrupt.elf

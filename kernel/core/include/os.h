@@ -78,7 +78,6 @@ typedef struct {
 } os_task_rw_t;
 
 #define OS_NO_TASK_ID -1
-#define OS_INT_TASK_ID 0
 
 #define OS_SUCCESS 0
 #define OS_ERROR_FIFO_FULL -1

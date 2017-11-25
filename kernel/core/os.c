@@ -27,6 +27,9 @@
 /* for os_assert() */
 #include <os_assert.h>
 
+/* for OS_INTERRUPT_TASK_ID */
+#include <os_task_id.h>
+
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
 
 __attribute__((section(".bss")))
@@ -155,7 +158,7 @@ static inline os_task_id_t os_sched_schedule(void) {
    * if int is set.
    */
   if (os_arch_interrupt_is_pending()) {
-    os_sched_add_task_to_ready_list(OS_INT_TASK_ID);
+    os_sched_add_task_to_ready_list(OS_INTERRUPT_TASK_ID);
   }
 
   while ((task_id = os_sched_get_current_task_id()) == OS_NO_TASK_ID) {
@@ -169,7 +172,7 @@ static inline os_task_id_t os_sched_schedule(void) {
      * if int is set.
      */
     if (os_arch_interrupt_is_pending()) {
-      os_sched_add_task_to_ready_list(OS_INT_TASK_ID);
+      os_sched_add_task_to_ready_list(OS_INTERRUPT_TASK_ID);
     }
   }
 

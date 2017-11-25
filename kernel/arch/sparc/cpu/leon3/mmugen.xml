@@ -37,10 +37,10 @@
       <physical_map name="app3.rodata">
         <size>0x00001000</size>
       </physical_map>
-      <physical_map name="app4.text">
+      <physical_map name="interrupt.text">
         <size>0x00001000</size>
       </physical_map>
-      <physical_map name="app4.rodata">
+      <physical_map name="interrupt.rodata">
         <size>0x00001000</size>
       </physical_map>
       <physical_map name="app1.data">
@@ -52,7 +52,7 @@
       <physical_map name="app3.data">
         <size>0x00001000</size>
       </physical_map>
-      <physical_map name="app4.data">
+      <physical_map name="interrupt.data">
         <size>0x00001000</size>
       </physical_map>
       <physical_map name="app1.stack">
@@ -64,7 +64,7 @@
       <physical_map name="app3.stack">
         <size>0x00001000</size>
       </physical_map>
-      <physical_map name="app4.stack">
+      <physical_map name="interrupt.stack">
         <size>0x00001000</size>
       </physical_map>
       <physical_map name="app1.shm_app3">
@@ -366,10 +366,10 @@
         </protection>
       </virtual_map>
     </virtual>
-    <virtual name="app4">
+    <virtual name="interrupt">
       <virtual_map name="text" cache="true">
         <address>0x40800000</address>
-        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app4.text"]</physical_ref>
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="interrupt.text"]</physical_ref>
         <protection>
           <user access="execute"/>
         </protection>
@@ -378,7 +378,7 @@
         <size>0x00001000</size>
       </virtual_map>
       <virtual_map name="rodata" cache="true">
-        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app4.rodata"]</physical_ref>
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="interrupt.rodata"]</physical_ref>
         <protection>
           <user access="read"/>
         </protection>
@@ -387,7 +387,7 @@
         <size>0x00001000</size>
       </virtual_map>
       <virtual_map name="data" cache="true">
-        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app4.data"]</physical_ref>
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="interrupt.data"]</physical_ref>
         <protection>
           <user access="read"/>
           <user access="write"/>
@@ -397,7 +397,7 @@
         <size>0x00001000</size>
       </virtual_map>
       <virtual_map name="stack" cache="true">
-        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app4.stack"]</physical_ref>
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="interrupt.stack"]</physical_ref>
         <protection>
           <user access="read"/>
           <user access="write"/>
@@ -426,6 +426,15 @@
     </virtual>
   </virtuals>
   <contexts>
+    <context name="interrupt">
+      <priority>0</priority>
+      <mbx>
+        <permission>app1</permission>
+        <permission>app2</permission>
+      </mbx>
+      <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
+      <virtual_ref>/platform/virtuals/virtual[@name="interrupt"]</virtual_ref>
+    </context>
     <context name="app1">
       <priority>0</priority>
       <mbx>
@@ -450,15 +459,6 @@
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
       <virtual_ref>/platform/virtuals/virtual[@name="app3"]</virtual_ref>
-    </context>
-    <context name="app4">
-      <priority>0</priority>
-      <mbx>
-        <permission>app1</permission>
-        <permission>app2</permission>
-      </mbx>
-      <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
-      <virtual_ref>/platform/virtuals/virtual[@name="app4"]</virtual_ref>
     </context>
   </contexts>
 </platform>
