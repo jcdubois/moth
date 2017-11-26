@@ -44,17 +44,18 @@
 void os_arch_context_create(os_task_id_t task_id, uint32_t arg1,
                             uint32_t arg2) {
   char *ctx = (char *)os_task_ro[task_id].stack.virtual_address +
-	        os_task_ro[task_id].stack.size - 0x40;
+              os_task_ro[task_id].stack.size - 0x40;
 
-  syslog("%s: initializing context for task %d\n", __func__, task_id);
+  syslog("%s( task_id = %d )\n", __func__, (int)task_id);
 
-  if (!os_task_ro[task_id].stack.size || !os_task_ro[task_id].bss.size || !os_task_ro[task_id].text.size) {
-    syslog("%s: task %d has incorrect size for .text, .bss or .stack segment\n",__func__, (int)task_id);
+  if (!os_task_ro[task_id].stack.size || !os_task_ro[task_id].bss.size ||
+      !os_task_ro[task_id].text.size) {
+    syslog("%s: task %d has incorrect size for .text, .bss or .stack segment\n",
+           __func__, (int)task_id);
     while (1) {
       os_arch_idle();
     }
   }
-
 
   os_arch_space_switch(0, task_id);
 
@@ -63,11 +64,11 @@ void os_arch_context_create(os_task_id_t task_id, uint32_t arg1,
   memset((void *)os_task_ro[task_id].bss.virtual_address, 0,
          os_task_ro[task_id].bss.size);
 
-
   /* Only 1 register window needed */
   *(uint32_t *)(ctx - RESTORE_CNT_OFFSET) = 1;
   *(uint32_t *)(ctx - PC_OFFSET) = os_task_ro[task_id].text.virtual_address;
-  *(uint32_t *)(ctx - NPC_OFFSET) = os_task_ro[task_id].text.virtual_address + 4;
+  *(uint32_t *)(ctx - NPC_OFFSET) =
+      os_task_ro[task_id].text.virtual_address + 4;
   *(uint32_t *)(ctx - I0_OFFSET) = arg1;
   *(uint32_t *)(ctx - I1_OFFSET) = arg2;
 
@@ -90,12 +91,12 @@ uint32_t os_arch_stack_pointer;
  * @see os_arch_stack_pointer
  */
 void os_arch_context_switch(os_task_id_t prev_id, os_task_id_t next_id) {
-  syslog("%s:\n", __func__);
+  syslog("%s( task_id = %d )\n", __func__, (int)next_id);
   os_task_rw[prev_id].stack_pointer = os_arch_stack_pointer;
   os_arch_stack_pointer = os_task_rw[next_id].stack_pointer;
 }
 
 void os_arch_context_set(os_task_id_t task_id) {
-  syslog("%s:\n", __func__);
+  syslog("%s( task_id = %d )\n", __func__, (int)task_id);
   os_arch_stack_pointer = os_task_rw[task_id].stack_pointer;
 }
