@@ -368,7 +368,7 @@ _os_arch_reset_prehandler:
 	nop
 	nop
 
-	/* clear bss segment */
+	/* clear the kernel bss segment */
 	set   __bss_begin, %l0
 	set   __bss_end, %l1
 	clrb  [ %l0 ]
@@ -380,7 +380,7 @@ __os_arch_clean_bss_loop:
         bne,a __os_arch_clean_bss_loop
 	clrb  [ %l0 ]
 
-	/* clear stack segment */
+	/* clear the kernel stack segment */
 	set   __stack_begin, %l0
 	set   __stack_end, %l1
 	clrb  [ %l0 ]
@@ -461,8 +461,9 @@ __os_arch_clean_win_loop:
 	 */
 
 	/* Disable Traps and enable interrupts before ret */
+	/* Make sure we will return to user space */
 	mov   %psr, %l0
-	andn  %l0, (PSR_ET | PSR_PIL_MASK), %l0
+	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
 	mov   %g0, %l0 /* clear %l0 */
 	nop   /* delay slot */
@@ -528,8 +529,9 @@ _os_arch_trap_prehandler:
 	 */
 
 	/* Disable Traps and enable interrupts before ret */
+	/* Make sure we will return to user space */
 	mov   %psr, %l0
-	andn  %l0, (PSR_ET | PSR_PIL_MASK), %l0
+	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
 	nop   /* delay slot */
 	nop
