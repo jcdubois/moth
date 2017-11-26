@@ -49,7 +49,7 @@ void os_arch_context_create(os_task_id_t task_id, uint32_t arg1,
   syslog("%s: initializing context for task %d\n", __func__, task_id);
 
   if (!os_task_ro[task_id].stack.size || !os_task_ro[task_id].bss.size || !os_task_ro[task_id].text.size) {
-    printf("%s: task %d has incorrect size for .text, .bss or .stack segment\n",__func__, (int)task_id);
+    syslog("%s: task %d has incorrect size for .text, .bss or .stack segment\n",__func__, (int)task_id);
     while (1) {
       os_arch_idle();
     }
