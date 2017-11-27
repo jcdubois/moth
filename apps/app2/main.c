@@ -39,11 +39,16 @@
 
 #include <os_task_id.h>
 
+#include <ioports.h>
+
 #define UART1_DEVICE_OFFSET 0x100
-#define UART_STAT_REG_OFFSET 0x4
+
 #define UART_DATA_REG_OFFSET 0x0
+#define UART_STAT_REG_OFFSET 0x4
+#define UART_CTRL_REG_OFFSET 0x8
 
 #define UART_STATUS_THE 0x00000004
+#define UART_CTRL_TE 0x00000002
 
 extern uint8_t __uart_begin;
 
@@ -52,18 +57,21 @@ __attribute__((section(".text.entry"))) void entry(uint32_t task_id,
 
 static void putc(void *opaque, char car) {
 
-  uint8_t *uart_reg = (uint8_t *)opaque;
+  uint32_t uart_addr = (uint32_t)opaque;
 
-  while ((*(uint32_t *)(uart_reg + UART_STAT_REG_OFFSET) & UART_STATUS_THE) ==
-         0) {
+  while ((io_read32(uart_addr + UART_STAT_REG_OFFSET) & UART_STATUS_THE) == 0) {
     continue;
   }
 
-  *(uart_reg + UART_DATA_REG_OFFSET) = (uint8_t)car;
+  io_write8(uart_addr + UART_DATA_REG_OFFSET, car);
 }
 
 void entry(uint32_t task_id, uint32_t arg2) {
-  init_printf(&__uart_begin + UART1_DEVICE_OFFSET, putc);
+  uint32_t uart_addr = (uint32_t)(&__uart_begin + UART1_DEVICE_OFFSET);
+
+  init_printf((void *)uart_addr, putc);
+
+  io_write32(uart_addr + UART_CTRL_REG_OFFSET, UART_CTRL_TE);
 
   printf("task %d: init done\n", (int)task_id);
 

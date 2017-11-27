@@ -123,6 +123,7 @@ cppflags+=-I$(apps_dir)/include
 cppflags+=-I$(kernel_libs_dir)/include
 cppflags+=-I$(common_libs_dir)/include
 cppflags+=-I$(apps_libs_dir)/include
+cppflags+=-I$(apps_libs_dir)/include/arch/$(CONFIG_ARCH)
 cppflags+=-I$(arch_dir)/include
 cppflags+=-I$(build_dir)
 cppflags+=$(cpu-cppflags)
