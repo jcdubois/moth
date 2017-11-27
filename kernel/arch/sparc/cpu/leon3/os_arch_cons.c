@@ -51,7 +51,6 @@ void os_arch_cons_init(void) {
   /* Initialize port */
   os_arch_io_write32(UART1 + UART_CTRL_OFFSET,
                      UART_CTRL_TE); /* transmit enable */
-  os_arch_io_write32(UART1 + UART_STAT_OFFSET, 0);
 
   /* Initialize log framework */
   openlog(os_arch_cons_write_char);

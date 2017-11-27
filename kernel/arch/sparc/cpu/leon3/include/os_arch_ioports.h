@@ -28,7 +28,7 @@
 #include "sparc_conf.h"
 
 static inline void os_arch_io_write8(uint32_t addr, uint8_t data) {
-  asm volatile("sta %0, [%1] %2;\n"
+  asm volatile("stba %0, [%1] %2;\n"
                : /* no output */
                : "r"(data), "r"(addr), "i"(ASI_MMU_BYPASS)
                : "memory");
