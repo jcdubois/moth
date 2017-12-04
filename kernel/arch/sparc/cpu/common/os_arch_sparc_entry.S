@@ -487,7 +487,7 @@ _os_arch_trap_prehandler:
 
 	mov   %psr, %l5
 	/* disable interrupts enable traps */
-	or    %l5, (PSR_S | PSR_PS | PSR_ET | PSR_PIL_MASK), %l5
+	or    %l5, (PSR_ET | PSR_PIL_MASK), %l5
 	mov   %l5, %psr
 	nop   /* delay slot */
 	nop
@@ -662,10 +662,6 @@ __os_arch_end_of_save_loop:
 	mov   %g5, %wim
 
 	/* save the others registers "under" the stack */
-	st    %l0, [%fp - WIM_OFFSET]
-	st    %l3, [%fp - PSR_OFFSET]
-	mov   %y, %o3
-	st    %o3, [%fp - Y_OFFSET]
 	st    %l1, [%fp - PC_OFFSET]
 	st    %l2, [%fp - NPC_OFFSET]
 	st    %g6, [%fp - RESTORE_CNT_OFFSET]
@@ -702,10 +698,7 @@ _os_arch_context_restore:
 
 	/* Disable Traps and set CWP */
 	mov   %psr, %l0
-
-	/* andn  %l0, 0x3F, %l0 */
-	andn  %l0, 0xF, %l0
-
+	andn  %l0, 0x3F, %l0
 	or    %l0, WINDOWS_NBR - 1, %l0 /* CWP = 7 */
 	mov   %l0, %psr
 	nop
