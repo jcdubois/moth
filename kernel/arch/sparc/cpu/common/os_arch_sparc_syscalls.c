@@ -38,7 +38,6 @@
 /* function prototype for this file */
 #include <os_arch_syscalls.h>
 
-
 /**
  * Syscalls handlers.
  */
@@ -50,7 +49,7 @@ static void os_arch_sched_wait(void) {
   uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
   os_task_id_t current_task_id;
   os_task_id_t new_task_id;
-  os_mbx_mask_t mbx_mask = (os_mbx_mask_t)(*(uint32_t *)(ctx - I1_OFFSET));
+  os_mbx_mask_t mbx_mask = (os_mbx_mask_t)(*(uint32_t *)(ctx - I0_OFFSET));
 
   syslog("%s: \n", __func__);
 
@@ -98,30 +97,13 @@ static void os_arch_sched_yield(void) {
 static void os_arch_mbx_receive(void) {
   uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
   os_status_t status;
-  os_mbx_msg_t mbx_msg = 0;
-  os_task_id_t sender_id = OS_NO_TASK_ID;
-  os_task_id_t current_task_id;
+  os_mbx_entry_t *entry =
+      (os_mbx_entry_t *)os_task_ro[os_sched_get_current_task_id()]
+          .bss.virtual_address;
 
   syslog("%s: \n", __func__);
 
-  status = os_mbx_receive();
-
-  if (status == OS_SUCCESS) {
-    current_task_id = os_sched_get_current_task_id();
-    sender_id = os_task_rw[current_task_id].received_mbx.sender_id;
-
-    if (sender_id != OS_NO_TASK_ID) {
-      mbx_msg = os_task_rw[current_task_id].received_mbx.msg;
-      os_task_rw[current_task_id].received_mbx.sender_id = OS_NO_TASK_ID;
-    }
-  }
-
-  /*
-   * TODO: we should copy the mbx_msg and the sender_id to a user
-   * provided location
-   */
-  (void)mbx_msg;
-  (void)sender_id;
+  status = os_mbx_receive(entry);
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
@@ -135,8 +117,8 @@ static void os_arch_mbx_receive(void) {
 static void os_arch_mbx_send(void) {
   uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
   os_status_t status;
-  os_task_id_t task_id = (os_task_id_t)(*(uint32_t *)(ctx - I1_OFFSET));
-  os_mbx_msg_t mbx_msg = (os_mbx_msg_t)(*(uint32_t *)(ctx - I2_OFFSET));
+  os_task_id_t task_id = (os_task_id_t)(*(uint32_t *)(ctx - I0_OFFSET));
+  os_mbx_msg_t mbx_msg = (os_mbx_msg_t)(*(uint32_t *)(ctx - I1_OFFSET));
 
   syslog("%s: \n", __func__);
 
@@ -186,11 +168,10 @@ void os_arch_trap_handler(unsigned int pc, unsigned int npc, unsigned int psr,
            (psr >> 22) & 0x1c, (psr >> 21) & 0x1, (psr >> 20) & 0x1,
            (psr >> 23) & 0x1, (psr >> 12) & 0x1, (psr >> 8) & 0xF,
            (psr >> 7) & 0x1, (psr >> 6) & 0x1, (psr >> 5) & 0x1, psr & 0xF);
-    while(1) {
+    // infinite loop
+    while (1) {
       os_arch_idle();
     }
-    // MOTH_FATAL("Unhandled trap");
-    //
     break;
   }
 }
