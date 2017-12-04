@@ -427,32 +427,32 @@
   </virtuals>
   <contexts>
     <context name="interrupt">
-      <priority>0</priority>
+      <priority>5</priority>
       <mbx>
-        <permission>app1</permission>
-        <permission>app2</permission>
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
       <virtual_ref>/platform/virtuals/virtual[@name="interrupt"]</virtual_ref>
     </context>
     <context name="app1">
-      <priority>0</priority>
+      <priority>10</priority>
       <mbx>
+        <permission>interrupt</permission>
         <permission>app3</permission>
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
       <virtual_ref>/platform/virtuals/virtual[@name="app1"]</virtual_ref>
     </context>
     <context name="app2">
-      <priority>0</priority>
+      <priority>10</priority>
       <mbx>
+        <permission>interrupt</permission>
         <permission>app3</permission>
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
       <virtual_ref>/platform/virtuals/virtual[@name="app2"]</virtual_ref>
     </context>
     <context name="app3">
-      <priority>0</priority>
+      <priority>10</priority>
       <mbx>
         <permission>app1</permission>
         <permission>app2</permission>
