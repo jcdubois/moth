@@ -68,6 +68,9 @@ static void putc(void *opaque, char car) {
 
 void entry(uint32_t task_id, uint32_t arg2) {
   uint32_t uart_addr = (uint32_t)(&__uart_begin + UART1_DEVICE_OFFSET);
+  os_status_t cr;
+  os_task_id_t tmp_id;
+  os_mbx_msg_t msg;
 
   init_printf((void *)uart_addr, putc);
 
@@ -76,8 +79,34 @@ void entry(uint32_t task_id, uint32_t arg2) {
   printf("task %d: init done\n", (int)task_id);
 
   while (1) {
-    printf("task %d: Before yield\n", (int)task_id);
-    yield();
-    printf("task %d: After yield\n", (int)task_id);
+    printf("task %d: waiting for mbx\n", (int)task_id);
+
+    cr = wait((1 << OS_APP3_TASK_ID) | (1 << OS_INTERRUPT_TASK_ID));
+
+    if (cr == OS_SUCCESS) {
+      cr = mbx_recv(&tmp_id, &msg);
+
+      if (cr == OS_SUCCESS) {
+        printf("task %d: mbx received from task %d\n", (int)task_id,
+               (int)tmp_id);
+
+        if (tmp_id != OS_APP3_TASK_ID) {
+	  tmp_id = OS_APP3_TASK_ID;
+
+          cr = mbx_send(tmp_id, msg);
+
+          if (cr == OS_SUCCESS) {
+            printf("task %d: mbx sent to task %d\n", (int)task_id,
+                   (int)tmp_id);
+          } else {
+            printf("task %d: mbx_send failed, cr = %d\n", (int)task_id, (int)cr);
+          }
+        }
+      } else {
+        printf("task %d: mbx_recv failed, cr = %d\n", (int)task_id, (int)cr);
+      }
+    } else {
+      printf("task %d: wait failed, cr = %d\n", (int)task_id, (int)cr);
+    }
   }
 }

@@ -68,6 +68,8 @@ static void putc(void *opaque, char car) {
 
 void entry(uint32_t task_id, uint32_t arg2) {
   uint32_t uart_addr = (uint32_t)(&__uart_begin + UART1_DEVICE_OFFSET);
+  os_status_t cr;
+  os_mbx_msg_t msg = 0;
 
   init_printf((void *)uart_addr, putc);
 
@@ -76,8 +78,16 @@ void entry(uint32_t task_id, uint32_t arg2) {
   printf("task %d: init done\n", (int)task_id);
 
   while (1) {
-    printf("task %d: Before yield\n", (int)task_id);
-    yield();
-    printf("task %d: After yield\n", (int)task_id);
+    cr = mbx_send(OS_APP1_TASK_ID, msg);
+
+    printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP1_TASK_ID);
+
+    cr = yield();
+
+    cr = mbx_send(OS_APP2_TASK_ID, msg);
+
+    printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP2_TASK_ID);
+
+    cr = yield();
   }
 }
