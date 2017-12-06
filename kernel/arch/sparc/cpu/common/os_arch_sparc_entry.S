@@ -339,32 +339,32 @@ _os_arch_reset_prehandler:
 	/* We are in supervisor state and trap are anabled */
 	set   (PSR_S | PSR_ET), %l0
 	mov   %l0, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* set TBR : Trap base register */
 	set   _os_arch_trap_vector_table, %l0
 	mov   %l0, %tbr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* clear Y: */
 	mov   %g0, %y
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* clear ASR: */
 	mov   %g0, %asr16
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* clear WIM: */
 	mov   %g0, %wim
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
@@ -393,9 +393,9 @@ __os_arch_clean_stack_loop:
 	clrb  [ %l0 ]
 
 	/* Clean all register windows */
-	save /* get into the last window */
+	save                          /* get into the last window */
 	mov   %psr, %g1
-	restore /* return to window #0 */
+	restore                       /* return to window #0 */
 	and   %g1, PSR_CWP_MASK, %g1
 
 __os_arch_clean_win_loop:
@@ -423,7 +423,7 @@ __os_arch_clean_win_loop:
 	/* Set WIM: */
 	mov   WIM_INIT, %g1
 	mov   %g1, %wim
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
@@ -437,22 +437,21 @@ __os_arch_clean_win_loop:
 	mov   %g0, %g7
 
 	/* set SP : Stack pointer and FP : Frame pointer */
-	set   __stack_end, %l1
-	sub   %l1, 0x40, %l1
-	andn  %l1, 0x0f, %l1  /* align stack on 16-byte boundary */
-	mov   %l1, %sp	/* Set Stack pointer */
-	mov   %l1, %fp	/* Set Frame pointer */
-	mov   %g0, %l1  /* clear %l1 */
+	set   __stack_end, %fp
+	andn  %fp, 0x0f, %fp          /* align stack on 16-byte boundary */
+	sub   %fp, 0x40, %sp
 
 	call  os_init
-	nop   /* delay slot */
+	nop                           /* delay slot */
 
+	/* retreive the stack pointer of the current task */
 	sethi %hi(os_arch_stack_pointer),%g6
 	or    %g6, %lo(os_arch_stack_pointer), %g6
 	ld    [%g6], %g2
 
 	call  _os_arch_context_restore
-	nop   /* delay slot */
+	nop                           /* delay slot */
+
 	/*
 	 *   After context_restore
 	 *   %l2 = sp
@@ -465,13 +464,13 @@ __os_arch_clean_win_loop:
 	mov   %psr, %l0
 	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
-	mov   %g0, %l0 /* clear %l0 */
-	nop   /* delay slot */
+	mov   %g0, %l0                /* clear %l0 */
+	nop                           /* delay slot */
 	nop
 
 	/* Return from Trap */
-	jmpl  %l3, %g0  /* pc */
-	rett  %l4       /* npc */
+	jmpl  %l3, %g0                /* pc */
+	rett  %l4                     /* npc */
 
 _os_arch_trap_prehandler:
 
@@ -483,44 +482,52 @@ _os_arch_trap_prehandler:
 	 *   %l3 = %psr
 	 *   %l4 = trap_nbr
 	 */
+
+	/*
+	 * As we just get into the trap, the window register moved one slot up
+	 * and the stack pointer of the "calling" application is now in the
+	 * frame pointer register.
+	 * So we update the current stack pointer (from the frame pointer)
+	 * by making ourself some space to save our registers.
+	 */
 	sub   %fp, 0x40, %sp
 
-	mov   %psr, %l5
 	/* disable interrupts enable traps */
+	mov   %psr, %l5
 	or    %l5, (PSR_ET | PSR_PIL_MASK), %l5
 	mov   %l5, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	call  _os_arch_context_save
-	nop /* delay slot */
+	nop                           /* delay slot */
 	/* %g6 = restore counter from context_save */
 
 	mov   %fp, %l5
 
 	/* return on kernel stack */
-	set   __stack_end, %l7
-	sub   %l7, 0x40, %l7
-	andn  %l7, 0x0f, %l7    /* align stack on 16-byte boundary */
+	set   __stack_end, %fp        /* This should already be aligned */
+	andn  %fp, 0x0f, %fp          /* align stack on 16-byte boundary */
+	sub   %fp, 0x40, %sp          /* move %sp 64 bytes from %fp */
 
-	mov   %l7, %sp  /* Set Stack pointer */
-	mov   %l7, %fp  /* Set Frame pointer */
-
-	mov   %l1, %o0  /* %pc - 1st arg */
-	mov   %l2, %o1  /* %npc - 2nd arg */
-	mov   %l3, %o2  /* %psr - 3rd arg */
-	mov   %l4, %o3  /* trap_nbr - 4th arg */
-	mov   %g6, %o4  /* restore counter - 5th arg */
+	mov   %l1, %o0                /* %pc - 1st arg */
+	mov   %l2, %o1                /* %npc - 2nd arg */
+	mov   %l3, %o2                /* %psr - 3rd arg */
+	mov   %l4, %o3                /* trap_nbr - 4th arg */
+	mov   %g6, %o4                /* restore counter - 5th arg */
 	call  os_arch_trap_handler
-	mov   %l5, %o5  /* stack pointer - 6th arg */
+	mov   %l5, %o5                /* stack pointer - 6th arg */
 
+	/* retreive the stack pointer of the current task */
 	sethi %hi(os_arch_stack_pointer),%g6
 	or    %g6, %lo(os_arch_stack_pointer), %g6
 	ld    [%g6], %g2
 
+	/* restore the selected task register set */
 	call  _os_arch_context_restore
-	nop   /* delay slot */
+	nop                           /* delay slot */
+
 	/*
 	 *   After context_restore
 	 *   %l2 = sp
@@ -533,13 +540,13 @@ _os_arch_trap_prehandler:
 	mov   %psr, %l0
 	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* Return from Trap */
-	jmpl  %l3, %g0  /* pc */
-	rett  %l4       /* npc */
+	jmpl  %l3, %g0                /* pc */
+	rett  %l4                     /* npc */
 
 _os_arch_context_save:
 
@@ -577,7 +584,7 @@ _os_arch_context_save:
 	mov   %psr, %o0
 	andn  %o0, PSR_ET, %o0
 	mov   %o0, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
@@ -598,12 +605,12 @@ _os_arch_context_save:
 	st    %i6, [%fp - I6_OFFSET]
 	st    %i7, [%fp - I7_OFFSET]
 
-	and   %o0, PSR_CWP_MASK, %g3 /* %g3 = CWP */
+	and   %o0, PSR_CWP_MASK, %g3  /* %g3 = CWP */
 	mov   1, %g2
-	sll   %g2, %g3, %g2 /* %g2 = Windows current mask */
+	sll   %g2, %g3, %g2           /* %g2 = Windows current mask */
 	mov   %wim, %g1
-	mov   %o7, %g7 /* move return address to g7 */
-	clr   %g6 /* restore counter */
+	mov   %o7, %g7                /* move return address to g7 */
+	clr   %g6                     /* restore counter */
 
 __os_arch_save_loop:
 
@@ -617,11 +624,11 @@ __os_arch_save_loop:
 	 */
 	sll   %g2, 1, %g4
 	srl   %g2, WINDOWS_NBR - 1, %g2
-	or    %g2, %g4, %g2 /* nice shift left with modulo :) */
+	or    %g2, %g4, %g2           /* nice shift left with modulo :) */
 
 	andcc %g2, %g1, %g0
 	bnz   __os_arch_end_of_save_loop
-	nop
+	nop                           /* delay slot */
 
 	/* We still have some register set to save */
 	restore
@@ -645,10 +652,10 @@ __os_arch_end_of_save_loop:
 	/* return in the trap window */
 	mov   %psr, %g5
 	andn  %g5, PSR_CWP_MASK, %g5  /* clear the CWP */
-	or    %g5, %g3, %g5	   /* set the CWP saved in %g3 before loop */
-	or    %g5, PSR_ET, %g5	/* enable traps */
+	or    %g5, %g3, %g5	      /* set the CWP saved in %g3 before loop */
+	or    %g5, PSR_ET, %g5        /* enable traps */
 	mov   %g5, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
@@ -666,8 +673,8 @@ __os_arch_end_of_save_loop:
 	st    %l2, [%fp - NPC_OFFSET]
 	st    %g6, [%fp - RESTORE_CNT_OFFSET]
 
-	jmpl  %g7 + 8, %g0 /* return to caller */
-	nop   /* delay slot */
+	jmpl  %g7 + 8, %g0            /* return to caller */
+	nop                           /* delay slot */
 
 _os_arch_context_restore:
 
@@ -694,14 +701,14 @@ _os_arch_context_restore:
 	 *
 	 */
 
-	mov   %o7, %g7 /* save return addr */
+	mov   %o7, %g7                /* save return addr */
 
 	/* Disable Traps and set CWP */
 	mov   %psr, %l0
-	andn  %l0, 0x3F, %l0
+	andn  %l0, (PSR_ET | PSR_CWP_MASK), %l0
 	or    %l0, WINDOWS_NBR - 1, %l0 /* CWP = 7 */
 	mov   %l0, %psr
-	nop
+	nop                           /* delay slot */
 	nop
 	nop
 
@@ -710,13 +717,17 @@ _os_arch_context_restore:
 	ld    [%g2 - PC_OFFSET], %g3
 	ld    [%g2 - NPC_OFFSET], %g4
 
+	/* Restore %wim */
 	mov   1, %l0
 	sll   %l0, %g1 ,%l0
 	mov   %l0, %wim
+	nop                           /* delay slot */
+	nop
+	nop
 
 	tst   %g1
 	bz    __os_arch_end_of_restore_loop
-	nop   /* delay slot */
+	nop                           /* delay slot */
 
 __os_arch_restore_loop:
 
@@ -735,7 +746,7 @@ __os_arch_restore_loop:
 
 	subcc %g1, 1, %g1
 	bnz   __os_arch_restore_loop
-	nop   /* delay slot */
+	nop                           /* delay slot */
 
 __os_arch_end_of_restore_loop:
 
@@ -743,15 +754,15 @@ __os_arch_end_of_restore_loop:
 	andn  %g6, PSR_CWP_MASK, %g6
 	or    %g6, WINDOWS_NBR - 1, %g6 /* CWP = 7 */
 	mov   %g6, %psr
-	nop   /* delay slot */
+	nop                           /* delay slot */
 	nop
 	nop
 
 	/* save my global registers */
-	mov   %g2, %l2  /* sp */
-	mov   %g3, %l3  /* pc */
-	mov   %g4, %l4  /* npc */
-	mov   %g7, %l7  /* return addr */
+	mov   %g2, %l2                /* sp */
+	mov   %g3, %l3                /* pc */
+	mov   %g4, %l4                /* npc */
+	mov   %g7, %l7                /* return addr */
 
 	/* restore the context's global and input registers */
 	ld    [%l2 - G1_OFFSET], %g1
@@ -771,5 +782,5 @@ __os_arch_end_of_restore_loop:
 	ld    [%l2 - I7_OFFSET], %i7
 
 	mov   %l2, %fp
-	jmpl  %l7 + 8, %g0 /* return to caller */
-	nop   /* delay slot */
+	jmpl  %l7 + 8, %g0            /* return to caller */
+	nop                           /* delay slot */
