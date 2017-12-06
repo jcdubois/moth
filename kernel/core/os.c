@@ -30,8 +30,6 @@
 /* for OS_INTERRUPT_TASK_ID */
 #include <os_task_id.h>
 
-#include <syslog.h>
-
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
 
 __attribute__((section(".bss")))
@@ -63,7 +61,6 @@ static inline os_task_id_t os_sched_get_current_list_head(void) {
  * Set the ID of the next running task
  */
 static inline void os_sched_set_current_list_head(os_task_id_t id) {
-  syslog("%s: task %d is first task in the ready list\n", __func__, (int)id);
   os_task_ready_list_head = id;
   if (id != OS_NO_TASK_ID) {
     os_task_rw[id].prev = OS_NO_TASK_ID;
@@ -85,7 +82,6 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
     /*
      * list is empty. Add the task at list head
      */
-    syslog("%s: task %d is first task in the ready list\n", __func__, (int)id);
     os_task_rw[id].next = OS_NO_TASK_ID;
     os_task_rw[id].prev = OS_NO_TASK_ID;
     os_sched_set_current_list_head(id);
@@ -98,7 +94,6 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
       /*
        * Already in the ready list
        */
-      syslog("%s: task %d is already in the ready list\n", __func__, (int)id);
       break;
     } else if (os_task_ro[id].priority > os_task_ro[index_id].priority) {
 
@@ -106,8 +101,6 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
 
       os_task_rw[id].next = index_id;
       os_task_rw[index_id].prev = id;
-
-      syslog("%s: task %d is inserted before task %d\n", __func__, (int)id, (int)index_id);
 
       if (index_id == os_sched_get_current_list_head()) {
         os_sched_set_current_list_head(id);
@@ -126,21 +119,11 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
       os_task_rw[id].prev = index_id;
       os_task_rw[id].next = OS_NO_TASK_ID;
 
-      syslog("%s: task %d is inserted at the end of the ready list\n", __func__, (int)id);
-
       break;
     } else {
       index_id = os_task_rw[index_id].next;
     }
   }
-
-  index_id = os_sched_get_current_list_head();
-  syslog("%s: ", __func__);
-  while (index_id != OS_NO_TASK_ID) {
-    syslog(" %d =>", (int)index_id);
-    index_id = os_task_rw[index_id].next;
-  }
-  syslog("\n");
 
   return;
 }
@@ -152,8 +135,6 @@ static inline void os_sched_remove_task_from_ready_list(os_task_id_t id) {
   os_task_id_t next = os_task_rw[id].next;
 
   os_assert(os_sched_get_current_list_head() != OS_NO_TASK_ID);
-
-  syslog("%s: removing task %d from the ready list\n", __func__, (int)id);
 
   if (id == os_sched_get_current_list_head()) {
     /*
@@ -302,17 +283,13 @@ os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
       if (os_task_rw[dest_id].mbx_waiting_mask & (1 << current)) {
 
         os_sched_add_task_to_ready_list(dest_id);
-      } else {
-        syslog("%s: task %d is not waiting for MBX\n", __func__, dest_id);
       }
 
       return OS_SUCCESS;
     } else {
-      syslog("%s: FIFO for task %d is full\n", __func__, dest_id);
       return OS_ERROR_FIFO_FULL;
     }
   } else {
-    syslog("%s: Permission denied to send mbx from task %d to task %d\n", __func__, current, dest_id);
     return OS_ERROR_DENIED;
   }
 }
