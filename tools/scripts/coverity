@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+# In order to run this script you need to:
+# * have coverity installed on your system (see
+#   http://scan.coverity.com/download).
+# * have your PATH setup to use coverity.
+# * have your the ARM and x86 cross compilers in your
+#   PATH
+#
+# This script will build all targets for all processor families.
+# The resulting tar file (for example xvisor-coverity.all.20130606000000.tgz)
+# can be submited to the Coverity scan web site.
+#
+
+# Test is coverity is installed
+cov-build --ident > /dev/null
+if test $? -ne 0
+then
+	echo "$0: cov-build (from coverity package) is not in the PATH" >&2
+	exit 1
+fi
+
+# Stop on any error
+set -e
+
+# Do some cleanup
+rm -rf cov-int
+mkdir cov-int
+
+# Build for all architecture
+cov-build --dir cov-int tools/scripts/makeall
+
+tar cfz moth-coverity.all.`date --date now +%Y%m%d%H%M%S`.tgz cov-int
+
+echo "Coverity build file is ready"
