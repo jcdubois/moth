@@ -72,11 +72,7 @@ void os_arch_context_create(os_task_id_t task_id, uint32_t arg1,
   *(uint32_t *)(ctx - I0_OFFSET) = arg1;
   *(uint32_t *)(ctx - I1_OFFSET) = arg2;
 
-  os_task_rw[task_id].stack_pointer =
-      os_task_ro[task_id].stack.virtual_address +
-      os_task_ro[task_id].stack.size - 0x40;
-
-  syslog("%s: done\n", __func__);
+  os_task_rw[task_id].stack_pointer = (uint32_t)ctx;
 }
 
 /**
