@@ -56,14 +56,14 @@ static void os_arch_sched_wait(void) {
   current_task_id = os_sched_get_current_task_id();
   new_task_id = os_sched_wait(mbx_mask);
 
+  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
+  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
+  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+
   if (current_task_id != new_task_id) {
     os_arch_space_switch(current_task_id, new_task_id);
     os_arch_context_switch(current_task_id, new_task_id);
   }
-
-  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
 }
 
 /**
@@ -80,14 +80,14 @@ static void os_arch_sched_yield(void) {
   current_task_id = os_sched_get_current_task_id();
   new_task_id = os_sched_yield();
 
+  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
+  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
+  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+
   if (current_task_id != new_task_id) {
     os_arch_space_switch(current_task_id, new_task_id);
     os_arch_context_switch(current_task_id, new_task_id);
   }
-
-  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
 }
 
 /**
@@ -136,12 +136,10 @@ static void os_arch_mbx_send(void) {
  * @param stack_pointer Adress of the interrupted stack.
  * @see os_arch_stack_pointer
  */
-void os_arch_trap_handler(unsigned int pc, unsigned int npc, unsigned int psr,
-                          unsigned int trap_nb, unsigned int restore_counter,
-                          unsigned int stack_pointer) {
+void os_arch_trap_handler(uint32_t pc, uint32_t npc, uint32_t psr,
+                          uint32_t trap_nb, uint32_t restore_counter,
+                          uint32_t stack_pointer) {
   (void)restore_counter;
-
-  syslog("%s: trap(0x%x)\n", __func__, trap_nb);
 
   os_arch_stack_pointer = stack_pointer;
 
