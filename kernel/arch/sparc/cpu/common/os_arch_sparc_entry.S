@@ -445,8 +445,7 @@ __os_arch_clean_win_loop:
 	nop                           /* delay slot */
 
 	/* retreive the stack pointer of the current task */
-	sethi %hi(os_arch_stack_pointer),%g6
-	or    %g6, %lo(os_arch_stack_pointer), %g6
+	set   os_arch_stack_pointer, %g6
 	ld    [%g6], %g2
 
 	call  _os_arch_context_restore
@@ -520,8 +519,7 @@ _os_arch_trap_prehandler:
 	mov   %l5, %o5                /* stack pointer - 6th arg */
 
 	/* retreive the stack pointer of the current task */
-	sethi %hi(os_arch_stack_pointer),%g6
-	or    %g6, %lo(os_arch_stack_pointer), %g6
+	set   os_arch_stack_pointer, %g6
 	ld    [%g6], %g2
 
 	/* restore the selected task register set */
@@ -610,7 +608,7 @@ _os_arch_context_save:
 	sll   %g2, %g3, %g2           /* %g2 = Windows current mask */
 	mov   %wim, %g1
 	mov   %o7, %g7                /* move return address to g7 */
-	clr   %g6                     /* restore counter */
+	clr   %g6                     /* set restore counter to 0 */
 
 __os_arch_save_loop:
 
@@ -633,7 +631,7 @@ __os_arch_save_loop:
 	/* We still have some register set to save */
 	restore
 
-	inc   %g6
+	inc   %g6                     /* increment restore counter */
 	/* little optimisation with store double */
 	std   %l0, [%sp + L0_OFFSET]
 	std   %l2, [%sp + L2_OFFSET]
