@@ -430,7 +430,7 @@ void init_printf(void *putp, putcf putf)
     stdout_putp = putp;
 }
 
-void tfp_printf(char *fmt, ...)
+void tfp_printf(const char *fmt, ...)
 {
     va_list va;
     va_start(va, fmt);
@@ -455,7 +455,7 @@ static void _vsnprintf_putcf(void *p, char c)
   data->num_chars ++;
 }
 
-int tfp_vsnprintf(char *str, size_t size, const char *format, va_list ap)
+int tfp_vsnprintf(const char *str, size_t size, const char *format, va_list ap)
 {
   struct _vsnprintf_putcf_data data;
 
@@ -475,7 +475,7 @@ int tfp_vsnprintf(char *str, size_t size, const char *format, va_list ap)
   return data.num_chars;
 }
 
-int tfp_snprintf(char *str, size_t size, const char *format, ...)
+int tfp_snprintf(const char *str, size_t size, const char *format, ...)
 {
   va_list ap;
   int retval;
@@ -498,7 +498,7 @@ static void _vsprintf_putcf(void *p, char c)
   data->dest[data->num_chars++] = c;
 }
 
-int tfp_vsprintf(char *str, const char *format, va_list ap)
+int tfp_vsprintf(const char *str, const char *format, va_list ap)
 {
   struct _vsprintf_putcf_data data;
   data.dest = str;
@@ -508,7 +508,7 @@ int tfp_vsprintf(char *str, const char *format, va_list ap)
   return data.num_chars;
 }
 
-int tfp_sprintf(char *str, const char *format, ...)
+int tfp_sprintf(const char *str, const char *format, ...)
 {
   va_list ap;
   int retval;
