@@ -259,6 +259,7 @@ void tfp_format(void *putp, putcf putf, const char *fmt, va_list va)
 #endif
     char ch;
     p.bf = bf;
+    p.uc = 0;     /* default is lowercase */
 
     while ((ch = *(fmt++))) {
         if (ch != '%') {
