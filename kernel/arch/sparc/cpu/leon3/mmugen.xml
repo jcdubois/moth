@@ -198,7 +198,7 @@
       <virtual_map name="barrier6">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="app1.eth">
+      <virtual_map name="app1_eth">
         <physical_ref>/platform/physical/physical_map[@name="hw.app1.eth"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -274,7 +274,7 @@
       <virtual_map name="barrier6">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="app2.eth">
+      <virtual_map name="app2_eth">
         <physical_ref>/platform/physical/physical_map[@name="hw.app2.eth"]</physical_ref>
         <protection>
           <user access="read"/>
