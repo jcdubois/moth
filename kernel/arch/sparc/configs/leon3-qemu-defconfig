@@ -1,0 +1,72 @@
+#
+# Automatically generated make config: don't edit
+# Project: MOTH
+# Version: 0.0.1
+# Wed Dec  6 22:46:06 2017
+#
+# CONFIG_ARCH_ARM is not set
+# CONFIG_ARCH_x86 is not set
+CONFIG_ARCH_SPARC=y
+CONFIG_ARCH="sparc"
+CONFIG_CPU_SPARC_LEON3=y
+# CONFIG_CPU_SPARC_LEON4 is not set
+CONFIG_SPARC=y
+CONFIG_LEON3=y
+# CONFIG_LEON4 is not set
+
+#
+# SPARC CPU Options
+#
+
+#
+# Common Sparc Options
+#
+CONFIG_CPU="leon3"
+
+#
+# LEON3 Options
+#
+CONFIG_BOARD_QEMU=y
+
+#
+# Sparc Board Options
+#
+CONFIG_BOARD="qemu"
+
+#
+# Kernel Options
+#
+# CONFIG_VERBOSE_MODE is not set
+CONFIG_IRQ_STACK_SIZE=4096
+CONFIG_KERNEL_STACK_SIZE=4096
+CONFIG_TASK_STACK_SIZE=8192
+CONFIG_MAX_TASK_COUNT=4
+CONFIG_MBX_MSG_SIZE=4
+CONFIG_TASK_MBX_COUNT=3
+
+#
+# Libs Options
+#
+
+#
+# Printf lib Options
+#
+CONFIG_PRINTF=y
+
+#
+# Memory lib Options
+#
+CONFIG_MEM=y
+
+#
+# Apps Options
+#
+
+#
+# Limoth syscall library Options
+#
+CONFIG_LIBMOTH=y
+CONFIG_APP_INTERRUPT=y
+CONFIG_APP_APP1=y
+CONFIG_APP_APP2=y
+CONFIG_APP_APP3=y
