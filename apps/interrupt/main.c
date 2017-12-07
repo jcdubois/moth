@@ -80,13 +80,23 @@ void entry(uint32_t task_id, uint32_t arg2) {
   while (1) {
     cr = mbx_send(OS_APP1_TASK_ID, msg);
 
-    printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP1_TASK_ID);
+    if (cr == OS_SUCCESS) {
+      printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP1_TASK_ID);
+    } else {
+      printf("task %d: failed (cr = %d) to send mbx to task %d\n", (int)task_id,
+             (int)cr, OS_APP1_TASK_ID);
+    }
 
     cr = yield();
 
     cr = mbx_send(OS_APP2_TASK_ID, msg);
 
-    printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP2_TASK_ID);
+    if (cr == OS_SUCCESS) {
+      printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP2_TASK_ID);
+    } else {
+      printf("task %d: failed (cr = %d) to send mbx to task %d\n", (int)task_id,
+             (int)cr, OS_APP2_TASK_ID);
+    }
 
     cr = yield();
   }

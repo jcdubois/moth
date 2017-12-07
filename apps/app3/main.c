@@ -90,22 +90,21 @@ void entry(uint32_t task_id, uint32_t arg2) {
         printf("task %d: mbx received from task %d\n", (int)task_id,
                (int)tmp_id);
 
-	switch(tmp_id) {
-	case OS_APP1_TASK_ID:
-	  tmp_id = OS_APP2_TASK_ID;
-	  break;
-	case OS_APP2_TASK_ID:
-	  tmp_id = OS_APP1_TASK_ID;
-	  break;
-	default:
-	  break;
-	}
+        switch (tmp_id) {
+        case OS_APP1_TASK_ID:
+          tmp_id = OS_APP2_TASK_ID;
+          break;
+        case OS_APP2_TASK_ID:
+          tmp_id = OS_APP1_TASK_ID;
+          break;
+        default:
+          break;
+        }
 
         cr = mbx_send(tmp_id, msg);
 
         if (cr == OS_SUCCESS) {
-          printf("task %d: mbx sent to task %d\n", (int)task_id,
-                 (int)tmp_id);
+          printf("task %d: mbx sent to task %d\n", (int)task_id, (int)tmp_id);
         } else {
           printf("task %d: mbx_send failed, cr = %d\n", (int)task_id, (int)cr);
         }

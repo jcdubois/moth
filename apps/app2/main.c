@@ -91,15 +91,15 @@ void entry(uint32_t task_id, uint32_t arg2) {
                (int)tmp_id);
 
         if (tmp_id != OS_APP3_TASK_ID) {
-	  tmp_id = OS_APP3_TASK_ID;
+          tmp_id = OS_APP3_TASK_ID;
 
           cr = mbx_send(tmp_id, msg);
 
           if (cr == OS_SUCCESS) {
-            printf("task %d: mbx sent to task %d\n", (int)task_id,
-                   (int)tmp_id);
+            printf("task %d: mbx sent to task %d\n", (int)task_id, (int)tmp_id);
           } else {
-            printf("task %d: mbx_send failed, cr = %d\n", (int)task_id, (int)cr);
+            printf("task %d: mbx_send failed, cr = %d\n", (int)task_id,
+                   (int)cr);
           }
         }
       } else {
