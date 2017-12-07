@@ -12,6 +12,7 @@ gdbinit0
 gdbinit1
 typescript
 build/
+cov-int/
 test_*objs/
 cscope.*
 *~
