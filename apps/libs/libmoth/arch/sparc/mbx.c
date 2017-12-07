@@ -23,22 +23,5 @@
 
 #include <moth.h>
 
-extern os_mbx_entry_t __mbx_entry;
+__attribute__((section(".data.entry"))) os_mbx_entry_t __mbx_entry;
 
-os_status_t mbx_recv(os_task_id_t *sender_id, os_mbx_msg_t *msg) {
-  os_status_t status;
-
-  *sender_id = OS_NO_TASK_ID;;
-  *msg = 0;
-
-  asm volatile("ta 0x03\n"
-               "nop\n"
-               : "=r"(status)
-               :
-               : "memory");
-
-  *sender_id = __mbx_entry.sender_id;
-  *msg = __mbx_entry.msg;
-
-  return status;
-}

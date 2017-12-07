@@ -34,7 +34,15 @@ typedef uint32_t os_context_t;
 
 typedef int32_t os_status_t;
 
+#if defined(CONFIG_MBX_MSG_SIZE_1)
+typedef uint8_t os_mbx_msg_t;
+#elif defined(CONFIG_MBX_MSG_SIZE_2)
+typedef uint16_t os_mbx_msg_t;
+#elif defined(CONFIG_MBX_MSG_SIZE_4)
 typedef uint32_t os_mbx_msg_t;
+#else
+typedef uint64_t os_mbx_msg_t;
+#endif
 
 typedef uint32_t os_address_t;
 

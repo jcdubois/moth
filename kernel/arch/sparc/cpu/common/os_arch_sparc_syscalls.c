@@ -117,12 +117,13 @@ static void os_arch_mbx_receive(void) {
 static void os_arch_mbx_send(void) {
   uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
   os_status_t status;
-  os_task_id_t task_id = (os_task_id_t)(*(uint32_t *)(ctx - I0_OFFSET));
-  os_mbx_msg_t mbx_msg = (os_mbx_msg_t)(*(uint32_t *)(ctx - I1_OFFSET));
+  os_mbx_entry_t *entry =
+      (os_mbx_entry_t *)os_task_ro[os_sched_get_current_task_id()]
+          .bss.virtual_address;
 
   syslog("%s: \n", __func__);
 
-  status = os_mbx_send(task_id, mbx_msg);
+  status = os_mbx_send(entry->sender_id, entry->msg);
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction

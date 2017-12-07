@@ -23,6 +23,7 @@
 
 apps-libs-objs-$(CONFIG_LIBMOTH)+= libmoth/arch/$(CONFIG_ARCH)/wait.o
 apps-libs-objs-$(CONFIG_LIBMOTH)+= libmoth/arch/$(CONFIG_ARCH)/yield.o
+apps-libs-objs-$(CONFIG_LIBMOTH)+= libmoth/arch/$(CONFIG_ARCH)/mbx.o
 apps-libs-objs-$(CONFIG_LIBMOTH)+= libmoth/arch/$(CONFIG_ARCH)/mbx_send.o
 apps-libs-objs-$(CONFIG_LIBMOTH)+= libmoth/arch/$(CONFIG_ARCH)/mbx_recv.o
 
