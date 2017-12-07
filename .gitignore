@@ -1,0 +1,30 @@
+#
+# Files to be excluded
+#
+.*
+*.o
+*.elf
+*.bin
+*.lnk
+*.dis
+*.bak
+gdbinit0
+gdbinit1
+typescript
+build/
+test_*objs/
+cscope.*
+*~
+tools/openconf/lex.zconf.c
+tools/openconf/conf
+tools/openconf/mconf
+tools/openconf/zconf.hash.c
+#
+# Exceptions
+#
+!.gitignore
+!.gitmodules
+!.travis.yml
+
+tags
+.*.swp
