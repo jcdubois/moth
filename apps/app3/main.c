@@ -50,7 +50,7 @@
 #define UART_STATUS_THE 0x00000004
 #define UART_CTRL_TE 0x00000002
 
-extern uint8_t __uart_begin;
+extern uint8_t __uart_begin[UART1_DEVICE_OFFSET + UART_CTRL_REG_OFFSET];
 
 __attribute__((section(".text.entry"))) void entry(uint32_t task_id,
                                                    uint32_t arg2);
@@ -67,7 +67,7 @@ static void putc(void *opaque, char car) {
 }
 
 void entry(uint32_t task_id, uint32_t arg2) {
-  uint32_t uart_addr = (uint32_t)(&__uart_begin + UART1_DEVICE_OFFSET);
+  uint32_t uart_addr = (uint32_t)(&__uart_begin[UART1_DEVICE_OFFSET]);
   os_status_t cr;
   os_task_id_t tmp_id;
   os_mbx_msg_t msg;
