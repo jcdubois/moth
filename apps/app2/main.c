@@ -50,7 +50,7 @@
 #define UART_STATUS_THE 0x00000004
 #define UART_CTRL_TE 0x00000002
 
-extern uint8_t __uart_begin[UART1_DEVICE_OFFSET + UART_CTRL_REG_OFFSET];
+extern uint8_t __uart_begin[UART1_DEVICE_OFFSET * 2];
 
 __attribute__((section(".text.entry"))) void entry(uint32_t task_id,
                                                    uint32_t arg2);
