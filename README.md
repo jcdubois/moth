@@ -19,8 +19,8 @@ These are the services provided by the Moth kernel. All other features
 from user space.
 
 Moth is writen in C but the goal is to move to a formal langage that
-would allow to prove that it does not contain any runtime error. Frama-C and
-Spark are candidate languages for this future phase.
+would allow to prove that it does not contain any runtime error. [Frama-C](https://frama-c.com/)  and
+[Spark](http://www.spark-2014.org/)  are candidate languages for this future phase.
 
 A Separation Kernel (SK) is a specialized microkernel that provides an
 execution environment for components that exclusively communicate according to
