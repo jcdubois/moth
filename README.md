@@ -6,12 +6,13 @@ microkernel. The goal is for the kernel binary to fit in one or two
 memory pages (4KB to 8KB). So the code need to be very minimal with only
 required features.
 
-Moth has only 4 system calls:
+Moth has only 5 system calls:
 
 + yield: to release the processor if another task is ready to run
 + wait: to wait for a mailbox from another task
 + mbx_send: to send a mailbox message to another task
 + mbx_receive: to retreive a mailbox sent by another task
++ exit: to end a task
 
 These are the services provided by the Moth kernel. All other features 
 (drivers, interrupt handling, timer services) need to be provided by tasks
