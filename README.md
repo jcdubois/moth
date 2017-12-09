@@ -83,16 +83,16 @@ Build
 The Moth SK has been developed and successfully tested using the development
 environment listed in the following table.
 
-|===================================================================
-| Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64
-| GCC version            | 7.2.0
-|===================================================================
+| Software               | Version                                 |
+| ---------------------- |:---------------------------------------:|
+| Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64  |
+| GCC                    | 7.2.0                                   |
 
 The following hardware is used for the development of Moth.
 
-|===================================================================
-| Qemu                           | Sparc      | LEON3
-|===================================================================
+| Platform                       | Architecture | Processor        |
+| ------------------------------ |:------------:| ----------------:|
+| Qemu                           | Sparc        | LEON3            |
 
 The first step to build Moth is to install the required packages:
 
@@ -110,6 +110,7 @@ $ make
 
 Deploy
 ------
+For now we only support Qemu. Real platforms should come later.
 
 ```bash
 $ qemu-system-sparc -M leon3_generic -display none -no-reboot -serial stdio -kernel build/moth.elf
