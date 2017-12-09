@@ -52,9 +52,6 @@
 
 extern uint8_t __uart_begin[UART1_DEVICE_OFFSET * 2];
 
-__attribute__((section(".text.entry"))) void entry(uint32_t task_id,
-                                                   uint32_t arg2);
-
 static void putc(void *opaque, char car) {
 
   uint32_t uart_addr = (uint32_t)opaque;
@@ -63,14 +60,19 @@ static void putc(void *opaque, char car) {
     continue;
   }
 
-  io_write8(uart_addr + UART_DATA_REG_OFFSET, car);
+  io_write8(uart_addr + UART_DATA_REG_OFFSET, (uint8_t)car);
 }
 
-void entry(uint32_t task_id, uint32_t arg2) {
+int main(int argc, char **argv, char **argp) {
   uint32_t uart_addr = (uint32_t)(&__uart_begin[UART1_DEVICE_OFFSET]);
   os_status_t cr;
   os_task_id_t tmp_id;
   os_mbx_msg_t msg;
+  os_task_id_t task_id = getpid();
+
+  (void)argc;
+  (void)argv;
+  (void)argp;
 
   init_printf((void *)uart_addr, putc);
 
@@ -90,7 +92,7 @@ void entry(uint32_t task_id, uint32_t arg2) {
         printf("task %d: mbx received from task %d\n", (int)task_id,
                (int)tmp_id);
 
-        if (tmp_id != OS_APP3_TASK_ID) {
+        if (tmp_id == OS_INTERRUPT_TASK_ID) {
           tmp_id = OS_APP3_TASK_ID;
 
           cr = mbx_send(tmp_id, msg);

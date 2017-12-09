@@ -16,22 +16,34 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * @file wait.c
+ * @file yield.c
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief wait system call
+ * @brief yield system call
  */
 
 #include <moth.h>
 
-os_status_t wait(os_mbx_mask_t mask) {
-  os_status_t status;
-  (void)mask;
+__attribute__((section(".text.entry"))) void entry(uint32_t task_id);
 
-  asm volatile("ta 0x00\n"
+static os_task_id_t __os_task_id; 
+
+void exit(int reason) {
+  (void)reason;
+
+  asm volatile("ta 0x04\n"
                "nop\n"
-               : "=r"(status)
+               :
                :
                : "memory");
+}
 
-  return status;
+void entry(uint32_t task_id) {
+
+  __os_task_id = (os_task_id_t)task_id;
+
+  exit(main(0, NULL, NULL));
+}
+
+os_task_id_t getpid(void) {
+  return __os_task_id;
 }

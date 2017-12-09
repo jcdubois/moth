@@ -11,4 +11,10 @@ os_status_t mbx_send(os_task_id_t dest_id, os_mbx_msg_t msg);
 
 os_status_t mbx_recv(os_task_id_t *src_id, os_mbx_msg_t *msg);
 
+void exit(int reason);
+
+os_task_id_t getpid(void);
+
+int main(int argc, char **argv, char **argp);
+
 #endif
