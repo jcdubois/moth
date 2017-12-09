@@ -1,11 +1,12 @@
-The Moth Separation Kernel
-==========================
+##The Moth Separation Kernel
+
 The Moth Separation kernet is a pet project trying to define a very minimal
 microkernel. The goal is for the kernel binary to fit in one or two
 memory pages (4KB to 8KB). So the code need to be very minimal with only
 required features.
 
 Moth has only 4 system calls:
+
 * yield: to release the processor if another task is ready to run
 * wait: to wait for a mailbox from another task
 * mbx_send: to send a mailbox message to another task
@@ -28,11 +29,9 @@ dynamic microkernels, which minimizes the possibility of kernel failure,
 enables the application of formal verification techniques and the mitigation of
 covert channels.
 
-Features
---------
+##Features
 
-Kernel
-~~~~~~
+###Kernel
 The following list outlines the most-prominent features of the Moth kernel:
 
 * Minimal SK for the Sparc architecture written in C
@@ -43,28 +42,23 @@ The following list outlines the most-prominent features of the Moth kernel:
 * Shared memory for inter-partition communication
 * cooperative non interruptible scheduling
 
-Toolchain
-~~~~~~~~~
+###Toolchain
 * XSL script to generate static MMU table from an XML description
 * XSL script to generate linker files fron an XML description
 * XSL script to generate static/read-only task description from XML description
 
-Resources
----------
+##Resources
 
-Documentation
-~~~~~~~~~~~~~
+###Documentation
 The following detailed project documentation is available:
 
-Mailing list
-~~~~~~~~~~~~
+###Mailing list
 TBD
 
-Download
---------
+##Download
 The Moth sources are available through the following git repository:
 
-  $ git clone https://github.com/jcdubois/moth.git
+	$ git clone https://github.com/jcdubois/moth.git
 
 A browsable version of the repository is available here:
 
@@ -74,8 +68,7 @@ A ZIP archive of the current Moth sources can be downloaded here:
 
 https://github.com/jcdubois/moth/archive/master.zip
 
-Build
------
+##Build
 The Moth SK has been developed and successfully tested using the development
 environment listed in the following table.
 
@@ -92,32 +85,31 @@ The following hardware is used for the development of Moth.
 
 The first step to build Moth is to install the required packages:
 
-  $ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 \
-	make binutils gcc git qemu-system-sparc
+	$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git qemu-system-sparc
 
 Once done, you can build Moth:
 
-  $ cd /moth/install/directory/
-  $ make ARCH=sparc leon3-qemu-defconfig
-  $ make
+	$ cd /moth/install/directory/
+	$ make ARCH=sparc leon3-qemu-defconfig
+	$ make
 
-Deploy
-------
+##Deploy
 
-  $ qemu-system-sparc -M leon3_generic -display none -no-reboot \
-	-serial stdio -kernel build/moth.elf
+	$ qemu-system-sparc -M leon3_generic -display none -no-reboot -serial stdio -kernel build/moth.elf
 
-References
-----------
+##References
+
 TBD
 
-License
--------
---------------------------------------------------------------------------------
+##License
+
+***
+
 Copyright (C) 2017 Jean-Christophe Dubois <jcd@tribudubois.net>
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 2 of the License, or (at your option) any later
 version.
---------------------------------------------------------------------------------
+
+***
