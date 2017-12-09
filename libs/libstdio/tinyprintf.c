@@ -120,11 +120,11 @@ static void uli2a(unsigned long int num, struct param *p)
     while (num / d >= p->base)
         d *= p->base;
     while (d != 0) {
-        int dgt = num / d;
+        unsigned long int dgt = num / d;
         num %= d;
         d /= p->base;
         if (n || dgt > 0 || d == 0) {
-            *bf++ = dgt + (dgt < 10 ? '0' : (p->uc ? 'A' : 'a') - 10);
+            *bf++ = (char)(dgt + (dgt < 10 ? '0' : (p->uc ? 'A' : 'a') - 10));
             ++n;
         }
     }
@@ -137,7 +137,7 @@ static void li2a(long num, struct param *p)
         num = -num;
         p->sign = '-';
     }
-    uli2a(num, p);
+    uli2a((unsigned long int)num, p);
 }
 #endif
 
@@ -149,7 +149,7 @@ static void ui2a(unsigned int num, struct param *p)
     while (num / d >= p->base)
         d *= p->base;
     while (d != 0) {
-        int dgt = num / d;
+        unsigned int dgt = num / d;
         num %= d;
         d /= p->base;
         if (n || dgt > 0 || d == 0) {
@@ -166,7 +166,7 @@ static void i2a(int num, struct param *p)
         num = -num;
         p->sign = '-';
     }
-    ui2a(num, p);
+    ui2a((unsigned int)num, p);
 }
 
 static int a2d(char ch)
@@ -181,15 +181,15 @@ static int a2d(char ch)
         return -1;
 }
 
-static char a2u(char ch, const char **src, int base, unsigned int *nump)
+static char a2u(char ch, const char **src, unsigned int base, unsigned int *nump)
 {
     const char *p = *src;
     unsigned int num = 0;
     int digit;
     while ((digit = a2d(ch)) >= 0) {
-        if (digit > base)
+        if ((unsigned int)digit > base)
             break;
-        num = num * base + digit;
+        num = num * base + (unsigned int)digit;
         ch = *p++;
     }
     *src = p;
@@ -380,6 +380,7 @@ void tfp_format(void *putp, putcf putf, const char *fmt, va_list va)
                 lng = 2;
 # endif
 #endif
+		__attribute__ ((fallthrough));
             case 'x':
             case 'X':
                 p.base = 16;
