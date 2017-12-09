@@ -131,6 +131,25 @@ static void os_arch_mbx_send(void) {
 }
 
 /**
+ * Exit function handler.
+ * Handle the case when a task ends.
+ */
+static void os_arch_sched_exit(void) {
+  os_task_id_t current_task_id;
+  os_task_id_t new_task_id;
+
+  syslog("%s: \n", __func__);
+
+  current_task_id = os_sched_get_current_task_id();
+  new_task_id = os_sched_exit();
+
+  if (current_task_id != new_task_id) {
+    os_arch_space_switch(current_task_id, new_task_id);
+    os_arch_context_switch(current_task_id, new_task_id);
+  }
+}
+
+/**
  * Function called by interrupt pre-handler.
  * Call the correct handler for the given trap number.
  * @param trap_nb The number of the current trap. (cf SPARC V8 Manual, page 76)
@@ -159,6 +178,9 @@ void os_arch_trap_handler(uint32_t pc, uint32_t npc, uint32_t psr,
     break;
   case (SPARC_TRAP_SYSCALL_BASE + 3):
     os_arch_mbx_receive();
+    break;
+  case (SPARC_TRAP_SYSCALL_BASE + 4):
+    os_arch_sched_exit();
     break;
   default:
     syslog("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%x %%nPC=%x "

@@ -95,6 +95,7 @@ typedef struct {
 os_task_id_t os_sched_get_current_task_id(void);
 os_task_id_t os_sched_wait(os_mbx_mask_t);
 os_task_id_t os_sched_yield(void);
+os_task_id_t os_sched_exit(void);
 os_task_id_t os_init(void);
 os_status_t os_mbx_receive(os_mbx_entry_t *entry);
 os_status_t os_mbx_send(os_task_id_t, os_mbx_msg_t);

@@ -367,6 +367,22 @@ os_task_id_t os_sched_yield(void) {
 }
 
 /**
+ * End a tasks.
+ */
+os_task_id_t os_sched_exit(void) {
+  const os_task_id_t current = os_sched_get_current_task_id();
+
+  os_assert((current >= 0) && (current < CONFIG_MAX_TASK_COUNT));
+
+  /*
+   * We remove the current task from the head of the ready list
+   */
+  os_sched_remove_task_from_ready_list(current);
+
+  return os_sched_schedule();
+}
+
+/**
  * Wait for a MBX from a selected set of tasks.
  */
 os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask) {
