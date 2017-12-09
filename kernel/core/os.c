@@ -441,7 +441,7 @@ os_task_id_t os_init(void) {
     /*
      * Create the task context
      */
-    os_arch_context_create(task_id, task_id, 0);
+    os_arch_context_create(task_id);
 
     /*
      * Reset all MBX entries

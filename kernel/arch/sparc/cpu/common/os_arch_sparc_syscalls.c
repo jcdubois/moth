@@ -141,6 +141,9 @@ void os_arch_trap_handler(uint32_t pc, uint32_t npc, uint32_t psr,
                           uint32_t trap_nb, uint32_t restore_counter,
                           uint32_t stack_pointer) {
   (void)restore_counter;
+  (void)pc;
+  (void)npc;
+  (void)psr;
 
   os_arch_stack_pointer = stack_pointer;
 
