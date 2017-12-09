@@ -34,7 +34,7 @@ Features
 --------
 
 **Kernel**
-~~
+
 The following list outlines the most-prominent features of the Moth kernel:
 
 + Minimal SK for the Sparc architecture written in C
@@ -46,7 +46,7 @@ The following list outlines the most-prominent features of the Moth kernel:
 + cooperative non interruptible scheduling
 
 **Toolchain**
-~~
+
 + XSL script to generate static MMU table from an XML description
 + XSL script to generate linker files fron an XML description
 + XSL script to generate static/read-only task description from XML description
@@ -55,11 +55,11 @@ Resources
 ---------
 
 **Documentation**
-~~
+
 The following detailed project documentation is available:
 
 **Mailing list**
-~~
+
 TBD
 
 Download
@@ -84,14 +84,14 @@ The Moth SK has been developed and successfully tested using the development
 environment listed in the following table.
 
 | Software               | Version                                 |
-| ---------------------- |:---------------------------------------:|
+|:---------------------- |:--------------------------------------- |
 | Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64  |
 | GCC                    | 7.2.0                                   |
 
 The following hardware is used for the development of Moth.
 
 | Platform                       | Architecture | Processor        |
-| ------------------------------ |:------------:| ----------------:|
+|:------------------------------ |:------------ |:---------------- |
 | Qemu                           | Sparc        | LEON3            |
 
 The first step to build Moth is to install the required packages:
