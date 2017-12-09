@@ -1,5 +1,3 @@
-# Moth
-
 The Moth Separation Kernel
 ==========================
 
@@ -32,9 +30,14 @@ The following list outlines the most-prominent features of the Moth kernel:
 * Static Communication policy built at compile time
 * Mbx mechanism for inter-partition synchronization
 * Shared memory for inter-partition communication
+* cooperative non interruptible scheduling
 
 Toolchain
 ~~~~~~~~~
+
+* XSL script to generate static MMU table from an XML description
+* XSL script to generate linker files fron an XML description
+* XSL script to generate static/read-only task description from XML description
 
 Resources
 ---------
@@ -78,10 +81,20 @@ The following hardware is used for the development of Moth.
 
 The first step to build Moth is to install the required packages:
 
-  $ sudo apt-get install
+  $ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 \
+	make binutils gcc git qemu-system-sparc
+
+Once done you can build Moth:
+
+  $ cd /moth/install/directory/
+  $ make ARCH=sparc leon3-qemu-defconfig
+  $ make
 
 Deploy
 ------
+
+  $ qemu-system-sparc -M leon3_generic -display none -no-reboot \
+	-serial stdio -kernel build/moth.elf
 
 References
 ----------
@@ -96,11 +109,3 @@ the terms of the GNU General Public License as published by the Free Software
 Foundation, either version 2 of the License, or (at your option) any later
 version.
 --------------------------------------------------------------------------------
-
-Moth is a minimalist cooperative operating system where processes are separated through MMU.
-
-The MMU table is static and build at compile time.
-
-For now Moth is supported on Leon3.
-
-Support for ARM processors is planned.
