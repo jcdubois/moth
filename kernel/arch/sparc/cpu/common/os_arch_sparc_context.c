@@ -56,8 +56,6 @@ void os_arch_context_create(os_task_id_t task_id) {
     }
   }
 
-  os_arch_space_switch(0, task_id);
-
   memset((void *)os_task_ro[task_id].stack.virtual_address, 0,
          os_task_ro[task_id].stack.size);
   memset((void *)os_task_ro[task_id].bss.virtual_address, 0,
@@ -68,7 +66,8 @@ void os_arch_context_create(os_task_id_t task_id) {
   *(uint32_t *)(ctx - PC_OFFSET) = os_task_ro[task_id].text.virtual_address;
   *(uint32_t *)(ctx - NPC_OFFSET) =
       os_task_ro[task_id].text.virtual_address + 4;
-  *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)task_id;;
+  *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)task_id;
+  ;
 
   os_task_rw[task_id].stack_pointer = (uint32_t)ctx;
 }

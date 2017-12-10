@@ -16,9 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file 
+ * @file
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief 
+ * @brief
  */
 
 #ifndef __MOTH_OS_H__
@@ -44,11 +44,7 @@ typedef uint32_t os_mbx_msg_t;
 typedef uint64_t os_mbx_msg_t;
 #endif
 
-typedef uint32_t os_address_t;
-
-typedef os_address_t os_virtual_address_t;
-
-typedef os_address_t os_physical_address_t;
+typedef uint32_t os_virtual_address_t;
 
 typedef struct {
   os_task_id_t sender_id;
@@ -62,7 +58,6 @@ typedef struct {
 } os_mbx_t;
 
 typedef struct {
-  //os_physical_address_t physical_address;
   os_virtual_address_t virtual_address;
   uint32_t size;
 } os_task_section_t;

@@ -143,6 +143,8 @@ static void os_arch_sched_exit(void) {
   current_task_id = os_sched_get_current_task_id();
   new_task_id = os_sched_exit();
 
+  os_arch_context_create(current_task_id);
+
   if (current_task_id != new_task_id) {
     os_arch_space_switch(current_task_id, new_task_id);
     os_arch_context_switch(current_task_id, new_task_id);

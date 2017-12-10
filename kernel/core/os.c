@@ -32,17 +32,14 @@
 
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
 
-__attribute__((section(".bss")))
-os_task_rw_t os_task_rw[CONFIG_MAX_TASK_COUNT];
+__attribute__((section(".bss"))) os_task_rw_t os_task_rw[CONFIG_MAX_TASK_COUNT];
 
 static os_task_id_t os_task_current;
 
 /**
  * Get the ID of the running task
  */
-os_task_id_t os_sched_get_current_task_id(void) {
-  return os_task_current;
-}
+os_task_id_t os_sched_get_current_task_id(void) { return os_task_current; }
 
 static inline void os_sched_set_current_task_id(os_task_id_t id) {
   os_task_current = id;
@@ -104,7 +101,7 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
 
       if (index_id == os_sched_get_current_list_head()) {
         os_sched_set_current_list_head(id);
-	os_task_rw[id].prev = OS_NO_TASK_ID;
+        os_task_rw[id].prev = OS_NO_TASK_ID;
       } else {
         os_task_rw[id].prev = prev;
         if (prev != OS_NO_TASK_ID) {
@@ -433,7 +430,7 @@ os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask) {
  * Initialize the MOTH structures.
  */
 os_task_id_t os_init(void) {
-  os_task_id_t task_id;
+  os_task_id_t task_id, prev_id;
 
   /*
    * Initialize the debug port if any
@@ -451,8 +448,11 @@ os_task_id_t os_init(void) {
   os_sched_set_current_list_head(OS_NO_TASK_ID);
 
   /* Add all existing tasks to the ready list */
-  for (task_id = 0; task_id < CONFIG_MAX_TASK_COUNT; task_id++) {
+  for (task_id = 0, prev_id = 0; task_id < CONFIG_MAX_TASK_COUNT;
+       prev_id = task_id, task_id++) {
     uint8_t iterator;
+
+    os_arch_space_switch(prev_id, task_id);
 
     /*
      * Create the task context
