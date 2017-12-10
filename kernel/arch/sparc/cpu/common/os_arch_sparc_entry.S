@@ -202,8 +202,8 @@ _os_arch_trap_vector_table:
 	trap_handle(0x81) /* sched_yield() */
 	trap_handle(0x82) /* mbx_send()    */
 	trap_handle(0x83) /* mbx_receive() */
+	trap_handle(0x84) /* exit() */
 
-	unhandled_trap(0x84)
 	unhandled_trap(0x85)
 	unhandled_trap(0x86)
 	unhandled_trap(0x87)
