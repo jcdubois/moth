@@ -24,4 +24,3 @@
 #include <moth.h>
 
 __attribute__((section(".data.entry"))) os_mbx_entry_t __mbx_entry;
-

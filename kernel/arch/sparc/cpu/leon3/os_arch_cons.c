@@ -16,9 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file 
+ * @file
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief 
+ * @brief
  */
 
 /* for basic types */
@@ -57,5 +57,5 @@ void os_arch_cons_init(void) {
 }
 
 #else  // CONFIG_VERBOSE_MODE
-void os_arch_cons_init(void) { }
+void os_arch_cons_init(void) {}
 #endif // CONFIG_VERBOSE_MODE

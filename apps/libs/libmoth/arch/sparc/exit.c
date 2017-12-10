@@ -25,7 +25,7 @@
 
 __attribute__((section(".text.entry"))) void entry(uint32_t task_id);
 
-static os_task_id_t __os_task_id; 
+static os_task_id_t __os_task_id;
 
 void exit(int reason) {
   (void)reason;
@@ -44,6 +44,4 @@ void entry(uint32_t task_id) {
   exit(main(0, NULL, NULL));
 }
 
-os_task_id_t getpid(void) {
-  return __os_task_id;
-}
+os_task_id_t getpid(void) { return __os_task_id; }
