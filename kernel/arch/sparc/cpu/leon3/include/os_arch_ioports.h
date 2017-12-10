@@ -25,7 +25,8 @@
 #define __MOTH_SPARC_LEON3_IOPORTS_H__
 
 #include <types.h>
-#include "sparc_conf.h"
+
+#define ASI_MMU_BYPASS 0x1c /* not sparc v8 compliant */
 
 static inline void os_arch_io_write8(uint32_t addr, uint8_t data) {
   asm volatile("stba %0, [%1] %2;\n"

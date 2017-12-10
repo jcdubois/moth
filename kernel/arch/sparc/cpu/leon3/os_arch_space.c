@@ -27,9 +27,6 @@
 /* for syslog() */
 #include <syslog.h>
 
-/* for ASI_M_MMUREGS */
-#include <sparc_conf.h>
-
 /* for MMU_xxx macros */
 #include <sparc_mmu.h>
 

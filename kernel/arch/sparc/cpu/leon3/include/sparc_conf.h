@@ -24,15 +24,6 @@
 #ifndef __MOTH_SPARC_LEON3_CONF_H_
 #define __MOTH_SPARC_LEON3_CONF_H_
 
-#define SPARC_RAM_ADDR 0x40000000 /**< RAM base adress */
-
-#define SPARC_PROC_FREQ 50000000U /**< Processor frequency (in Hz) */
-
 #define WINDOWS_NBR 8 /**< Number of register windows */
-
-#define ASI_MMU_BYPASS 0x1c /* not sparc v8 compliant */
-
-#define SPARC_PARTITION_BASE_VADDR                                             \
-  0x0 /**< Partition virtual base adress. Should always be 0x0 */
 
 #endif /* ! __MOTH_SPARC_LEON3_CONF_H_ */
