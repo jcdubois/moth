@@ -32,11 +32,7 @@
 /* for os_arch_context_switch() */
 #include <os_arch_context.h>
 
-/* For SPARC_TRAP_SYSCALL_BASE */
-#include <os_arch_sparc_traps.h>
-
-/* function prototype for this file */
-#include <os_arch_syscalls.h>
+# define SPARC_TRAP_SYSCALL_BASE	0x80
 
 /**
  * Syscalls handlers.

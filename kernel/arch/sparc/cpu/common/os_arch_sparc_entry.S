@@ -23,8 +23,17 @@
 
 #include "sparc_conf.h"
 #include "sparc_context_offset.h"
-#include "sparc_psr_reg.h"
-#include "sparc_wim_reg.h"
+
+# define WIM_INIT	(0x1 << 1)
+
+# define PSR_EC		0x00002000  /* Enable Coprocessor */
+# define PSR_EF		0x00001000  /* Enable Floating Point */
+# define PSR_S		0x00000080  /* Supervisor */
+# define PSR_PS		0x00000040  /* Previous Supervisor */
+# define PSR_ET		0x00000020  /* Enable Traps */
+# define PSR_CWP_MASK	0x0000001f  /* Current Window Pointer */
+# define PSR_PIL(pil)	(((pil)&0xf) << 8) /**< Proc Interrupt Level */
+# define PSR_PIL_MASK	PSR_PIL(0xf)
 
 /* keep the trap number, PSR, WIM and call the trap handler */
 # define trap_handle(trap_nbr)  \
