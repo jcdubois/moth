@@ -80,24 +80,12 @@ int main(int argc, char **argv, char **argp) {
   printf("task %d: init done\n", (int)task_id);
 
   while (1) {
-    cr = mbx_send(OS_APP1_TASK_ID, msg);
+    cr = mbx_send(OS_TASK_ID_ALL, msg);
 
     if (cr == OS_SUCCESS) {
-      printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP1_TASK_ID);
+      printf("task %d: mbx sent to all tasks\n", (int)task_id);
     } else {
-      printf("task %d: failed (cr = %d) to send mbx to task %d\n", (int)task_id,
-             (int)cr, OS_APP1_TASK_ID);
-    }
-
-    cr = yield();
-
-    cr = mbx_send(OS_APP2_TASK_ID, msg);
-
-    if (cr == OS_SUCCESS) {
-      printf("task %d: mbx sent to task %d\n", (int)task_id, OS_APP2_TASK_ID);
-    } else {
-      printf("task %d: failed (cr = %d) to send mbx to task %d\n", (int)task_id,
-             (int)cr, OS_APP2_TASK_ID);
+      printf("task %d: failed (cr = %d) to send mbx to all tasks\n", (int)task_id, cr);
     }
 
     cr = yield();

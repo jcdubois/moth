@@ -59,8 +59,8 @@ static inline os_task_id_t os_sched_get_current_list_head(void) {
  */
 static inline void os_sched_set_current_list_head(os_task_id_t id) {
   os_task_ready_list_head = id;
-  if (id != OS_NO_TASK_ID) {
-    os_task_rw[id].prev = OS_NO_TASK_ID;
+  if (id != OS_TASK_ID_NONE) {
+    os_task_rw[id].prev = OS_TASK_ID_NONE;
   }
 }
 
@@ -73,19 +73,19 @@ static inline void os_sched_set_current_list_head(os_task_id_t id) {
 static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
   os_task_id_t index_id = os_sched_get_current_list_head();
 
-  os_assert((id >= OS_NO_TASK_ID) && (id < CONFIG_MAX_TASK_COUNT));
+  os_assert((id >= OS_TASK_ID_NONE) && (id < CONFIG_MAX_TASK_COUNT));
 
-  if (index_id == OS_NO_TASK_ID) {
+  if (index_id == OS_TASK_ID_NONE) {
     /*
      * list is empty. Add the task at list head
      */
-    os_task_rw[id].next = OS_NO_TASK_ID;
-    os_task_rw[id].prev = OS_NO_TASK_ID;
+    os_task_rw[id].next = OS_TASK_ID_NONE;
+    os_task_rw[id].prev = OS_TASK_ID_NONE;
     os_sched_set_current_list_head(id);
     return;
   }
 
-  while (index_id != OS_NO_TASK_ID) {
+  while (index_id != OS_TASK_ID_NONE) {
     if (index_id == id) {
 
       /*
@@ -101,20 +101,20 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
 
       if (index_id == os_sched_get_current_list_head()) {
         os_sched_set_current_list_head(id);
-        os_task_rw[id].prev = OS_NO_TASK_ID;
+        os_task_rw[id].prev = OS_TASK_ID_NONE;
       } else {
         os_task_rw[id].prev = prev;
-        if (prev != OS_NO_TASK_ID) {
+        if (prev != OS_TASK_ID_NONE) {
           os_task_rw[prev].next = id;
         }
       }
 
       break;
-    } else if (os_task_rw[index_id].next == OS_NO_TASK_ID) {
+    } else if (os_task_rw[index_id].next == OS_TASK_ID_NONE) {
 
       os_task_rw[index_id].next = id;
       os_task_rw[id].prev = index_id;
-      os_task_rw[id].next = OS_NO_TASK_ID;
+      os_task_rw[id].next = OS_TASK_ID_NONE;
 
       break;
     } else {
@@ -131,13 +131,13 @@ static inline void os_sched_add_task_to_ready_list(os_task_id_t id) {
 static inline void os_sched_remove_task_from_ready_list(os_task_id_t id) {
   os_task_id_t next = os_task_rw[id].next;
 
-  os_assert(os_sched_get_current_list_head() != OS_NO_TASK_ID);
+  os_assert(os_sched_get_current_list_head() != OS_TASK_ID_NONE);
 
   if (id == os_sched_get_current_list_head()) {
     /*
      * We are removing the current running task.
      * So put the next task at list head.
-     * Note: there could be no next task (OS_NO_TASK_ID)
+     * Note: there could be no next task (OS_TASK_ID_NONE)
      */
     os_sched_set_current_list_head(next);
   } else {
@@ -149,7 +149,7 @@ static inline void os_sched_remove_task_from_ready_list(os_task_id_t id) {
      */
     os_task_rw[prev].next = next;
 
-    if (next != OS_NO_TASK_ID) {
+    if (next != OS_TASK_ID_NONE) {
       /*
        * if we have a next, link next previous to our
        * previous.
@@ -161,8 +161,8 @@ static inline void os_sched_remove_task_from_ready_list(os_task_id_t id) {
   /*
    * reset our next and previous
    */
-  os_task_rw[id].next = OS_NO_TASK_ID;
-  os_task_rw[id].prev = OS_NO_TASK_ID;
+  os_task_rw[id].next = OS_TASK_ID_NONE;
+  os_task_rw[id].prev = OS_TASK_ID_NONE;
 }
 
 /**
@@ -180,7 +180,7 @@ static inline os_task_id_t os_sched_schedule(void) {
     os_sched_add_task_to_ready_list(OS_INTERRUPT_TASK_ID);
   }
 
-  while ((task_id = os_sched_get_current_list_head()) == OS_NO_TASK_ID) {
+  while ((task_id = os_sched_get_current_list_head()) == OS_TASK_ID_NONE) {
     /*
      * Put processor in idle mode and wait for interrupt.
      */
@@ -269,26 +269,38 @@ static inline void os_mbx_add_message(os_task_id_t dest_id, os_task_id_t src_id,
  */
 os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
   const os_task_id_t current = os_sched_get_current_task_id();
+  os_task_id_t first_task, last_task, iterator;
+  os_status_t status = OS_SUCCESS;
 
-  os_assert((dest_id >= 0) && (dest_id < CONFIG_MAX_TASK_COUNT));
-
-  if (os_task_ro[dest_id].mbx_permission & (1 << current)) {
-    if (!os_mbx_is_full(dest_id)) {
-
-      os_mbx_add_message(dest_id, current, mbx_msg);
-
-      if (os_task_rw[dest_id].mbx_waiting_mask & (1 << current)) {
-
-        os_sched_add_task_to_ready_list(dest_id);
-      }
-
-      return OS_SUCCESS;
-    } else {
-      return OS_ERROR_FIFO_FULL;
-    }
+  if (dest_id == OS_TASK_ID_ALL) {
+    first_task = 0;
+    last_task = CONFIG_MAX_TASK_COUNT;
   } else {
-    return OS_ERROR_DENIED;
+    os_assert((dest_id >= 0) && (dest_id < CONFIG_MAX_TASK_COUNT));
+
+    first_task = dest_id;
+    last_task = dest_id + 1;
   }
+
+  for (iterator = first_task; iterator < last_task; iterator++) {
+    if (os_task_ro[iterator].mbx_permission & (1 << current)) {
+      if (!os_mbx_is_full(iterator)) {
+
+        os_mbx_add_message(iterator, current, mbx_msg);
+
+        if (os_task_rw[iterator].mbx_waiting_mask & (1 << current)) {
+
+          os_sched_add_task_to_ready_list(iterator);
+        }
+      } else if (dest_id != OS_TASK_ID_ALL) {
+        status = OS_ERROR_FIFO_FULL;
+      }
+    } else if (dest_id != OS_TASK_ID_ALL) {
+      status = OS_ERROR_DENIED;
+    }
+  }
+
+  return status;
 }
 
 /**
@@ -327,7 +339,7 @@ os_status_t os_mbx_receive(os_mbx_entry_t *entry) {
           }
         }
 
-        os_task_rw[current].mbx.entry[mbx_entry].sender_id = OS_NO_TASK_ID;
+        os_task_rw[current].mbx.entry[mbx_entry].sender_id = OS_TASK_ID_NONE;
         os_task_rw[current].mbx.entry[mbx_entry].msg = 0;
 
         return OS_SUCCESS;
@@ -445,7 +457,7 @@ os_task_id_t os_init(void) {
   /*
    * Reset the current task to no task
    */
-  os_sched_set_current_list_head(OS_NO_TASK_ID);
+  os_sched_set_current_list_head(OS_TASK_ID_NONE);
 
   /* Add all existing tasks to the ready list */
   for (task_id = 0, prev_id = 0; task_id < CONFIG_MAX_TASK_COUNT;
@@ -463,14 +475,14 @@ os_task_id_t os_init(void) {
      * Reset all MBX entries
      */
     for (iterator = 0; iterator < CONFIG_TASK_MBX_COUNT; iterator++) {
-      os_task_rw[task_id].mbx.entry[iterator].sender_id = OS_NO_TASK_ID;
+      os_task_rw[task_id].mbx.entry[iterator].sender_id = OS_TASK_ID_NONE;
     }
 
     /*
      * Reset task chaining
      */
-    os_task_rw[task_id].next = OS_NO_TASK_ID;
-    os_task_rw[task_id].prev = OS_NO_TASK_ID;
+    os_task_rw[task_id].next = OS_TASK_ID_NONE;
+    os_task_rw[task_id].prev = OS_TASK_ID_NONE;
 
     /*
      * Add task to ready list

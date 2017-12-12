@@ -79,7 +79,10 @@ typedef struct {
   os_mbx_t mbx;
 } os_task_rw_t;
 
-#define OS_NO_TASK_ID -1
+#define OS_TASK_ID_NONE -1
+#define OS_TASK_ID_ALL -2
+
+#define OS_MBX_MASK_ALL 0xffffffff
 
 #define OS_SUCCESS 0
 #define OS_ERROR_FIFO_FULL -1

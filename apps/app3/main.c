@@ -83,7 +83,7 @@ int main(int argc, char **argv, char **argp) {
   while (1) {
     printf("task %d: waiting for mbx\n", (int)task_id);
 
-    cr = wait((1 << OS_APP1_TASK_ID) | (1 << OS_APP2_TASK_ID));
+    cr = wait(OS_MBX_MASK_ALL);
 
     if (cr == OS_SUCCESS) {
       cr = mbx_recv(&tmp_id, &msg);
