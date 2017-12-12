@@ -1,0 +1,18 @@
+dist: trusty
+
+language: c
+
+compiler:
+  - gcc
+
+script: tools/scripts/makeall
+
+before_install:
+  - sudo apt-get -q update
+  - sudo apt-get install -y gcc-sparc64-linux-gnu
+  - sudo apt-get install -y xsltproc
+
+notifications:
+  email:
+    on_success: always
+    on_failure: always
