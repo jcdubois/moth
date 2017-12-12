@@ -88,6 +88,6 @@ int main(int argc, char **argv, char **argp) {
       printf("task %d: failed (cr = %d) to send mbx to all tasks\n", (int)task_id, cr);
     }
 
-    cr = yield();
+    yield();
   }
 }
