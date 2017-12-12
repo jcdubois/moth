@@ -90,6 +90,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
 			printf("%s\n", def);
 			return 0;
 		}
+		__attribute__ ((fallthrough));
 	case ask_all:
 		fflush(stdout);
 		ret = fgets(line, 128, stdin);
