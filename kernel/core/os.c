@@ -267,40 +267,63 @@ static inline void os_mbx_add_message(os_task_id_t dest_id, os_task_id_t src_id,
 /**
  * Post a MBX to a target task FIFO
  */
-os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
+static inline os_status_t os_mbx_send_one_task(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
   const os_task_id_t current = os_sched_get_current_task_id();
-  os_task_id_t first_task, last_task, iterator;
   os_status_t status = OS_SUCCESS;
 
-  if (dest_id == OS_TASK_ID_ALL) {
-    first_task = 0;
-    last_task = CONFIG_MAX_TASK_COUNT;
-  } else {
-    os_assert((dest_id >= 0) && (dest_id < CONFIG_MAX_TASK_COUNT));
+  os_assert((dest_id >= 0) && (dest_id < CONFIG_MAX_TASK_COUNT));
 
-    first_task = dest_id;
-    last_task = dest_id + 1;
+  if (os_task_ro[dest_id].mbx_permission & (1 << current)) {
+    if (!os_mbx_is_full(dest_id)) {
+
+      os_mbx_add_message(dest_id, current, mbx_msg);
+
+      if (os_task_rw[dest_id].mbx_waiting_mask & (1 << current)) {
+
+        os_sched_add_task_to_ready_list(dest_id);
+      }
+    } else {
+      status = OS_ERROR_FIFO_FULL;
+    }
+  } else {
+    status = OS_ERROR_DENIED;
   }
 
-  for (iterator = first_task; iterator < last_task; iterator++) {
-    if (os_task_ro[iterator].mbx_permission & (1 << current)) {
-      if (!os_mbx_is_full(iterator)) {
+  return status;
+}
 
-        os_mbx_add_message(iterator, current, mbx_msg);
+/**
+ *
+ */
+static inline os_status_t os_mbx_send_all_task(os_mbx_msg_t mbx_msg) {
+  os_task_id_t iterator;
+  os_status_t status = OS_ERROR_DENIED;
 
-        if (os_task_rw[iterator].mbx_waiting_mask & (1 << current)) {
-
-          os_sched_add_task_to_ready_list(iterator);
-        }
-      } else if (dest_id != OS_TASK_ID_ALL) {
-        status = OS_ERROR_FIFO_FULL;
+  for (iterator = 0; iterator < CONFIG_MAX_TASK_COUNT; iterator++) {
+    os_status_t ret = os_mbx_send_one_task(iterator, mbx_msg);
+    if (ret == OS_ERROR_FIFO_FULL) {
+      /* At least one MBX was not delivered because it was full */
+      status = OS_ERROR_FIFO_FULL;
+    } else if (status != OS_ERROR_FIFO_FULL) {
+      if (ret == OS_SUCCESS) {
+	/* if we deliver at least one MBX then it is a success */
+        status = OS_SUCCESS;
       }
-    } else if (dest_id != OS_TASK_ID_ALL) {
-      status = OS_ERROR_DENIED;
     }
   }
 
   return status;
+}
+
+/**
+ *
+ */
+os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
+  if (dest_id == OS_TASK_ID_ALL) {
+    return os_mbx_send_all_task(mbx_msg);
+  } else {
+    return os_mbx_send_one_task(dest_id, mbx_msg);
+  }
 }
 
 /**
