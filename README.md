@@ -105,6 +105,7 @@ Once done, you can build Moth:
 
 ```bash
 $ cd /moth/install/directory/
+$ export CROSS_COMPILE=sparc64-linux-gnu-
 $ make ARCH=sparc leon3-qemu-defconfig
 $ make
 ```
