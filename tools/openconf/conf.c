@@ -90,7 +90,7 @@ static int conf_askvalue(struct symbol *sym, const char *def)
 			printf("%s\n", def);
 			return 0;
 		}
-		__attribute__ ((fallthrough));
+		/* Falls through. */
 	case ask_all:
 		fflush(stdout);
 		ret = fgets(line, 128, stdin);
@@ -572,7 +572,7 @@ int main(int ac, char **av)
 		rootEntry = &rootmenu;
 		conf(&rootmenu);
 		input_mode = ask_silent;
-		/* fall through */
+		/* Falls through. */
 	case ask_silent:
 		/* Update until a loop caused no more changes */
 		do {
