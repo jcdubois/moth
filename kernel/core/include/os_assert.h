@@ -21,5 +21,18 @@
  * @brief 
  */
 
+#ifndef __OS_ASSERT_H__
+#define __OS_ASSERT_H__
+
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define os_assert(x)
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif // __OS_ASSERT_H__

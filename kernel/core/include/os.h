@@ -26,6 +26,11 @@
 
 #include <types.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef uint32_t os_mbx_mask_t;
 
 typedef int8_t os_task_id_t;
@@ -101,4 +106,8 @@ os_status_t os_mbx_send(os_task_id_t, os_mbx_msg_t);
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
 extern os_task_rw_t os_task_rw[CONFIG_MAX_TASK_COUNT];
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif // __MOTH_OS_H__

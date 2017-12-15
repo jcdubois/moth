@@ -24,6 +24,11 @@
 #ifndef __MOTH_SPARC_TYPES_H__
 #define __MOTH_SPARC_TYPES_H__
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef unsigned char         uint8_t;
 typedef unsigned short        uint16_t;
 typedef unsigned int          uint32_t;
@@ -38,5 +43,9 @@ typedef unsigned int          size_t;
 typedef unsigned long int     intptr_t;
 
 #define NULL (0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MOTH_SPARC_TYPES_H__ */

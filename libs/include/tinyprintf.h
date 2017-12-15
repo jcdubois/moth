@@ -104,7 +104,7 @@ regs Kusti, 23.10.2004
 #ifndef CONFIG_PRINTF
 #define init_printf(...)
 #define printf(...)
-#else
+#else // CONFIG_PRINTF
 #include <stdarg.h>
 
 /* Global configuration */
@@ -112,35 +112,35 @@ regs Kusti, 23.10.2004
 /* Set this to 0 if you do not want to provide tfp_printf */
 #ifndef TINYPRINTF_DEFINE_TFP_PRINTF
 #define TINYPRINTF_DEFINE_TFP_PRINTF 1
-#endif
+#endif // TINYPRINTF_DEFINE_TFP_PRINTF
 
 /* Set this to 0 if you do not want to provide
    tfp_sprintf/snprintf/vsprintf/vsnprintf */
 #ifndef TINYPRINTF_DEFINE_TFP_SPRINTF
 #define TINYPRINTF_DEFINE_TFP_SPRINTF 1
-#endif
+#endif // TINYPRINTF_DEFINE_TFP_SPRINTF
 
 /* Set this to 0 if you do not want tfp_printf and
    tfp_{vsn,sn,vs,s}printf to be also available as
    printf/{vsn,sn,vs,s}printf */
 #ifndef TINYPRINTF_OVERRIDE_LIBC
 #define TINYPRINTF_OVERRIDE_LIBC 1
-#endif
+#endif // TINYPRINTF_OVERRIDE_LIBC
 
 /* Optional external types dependencies */
 
 #if TINYPRINTF_DEFINE_TFP_SPRINTF
 #include <sys/types.h> /* size_t */
-#endif
+#endif // TINYPRINTF_DEFINE_TFP_SPRINTF
 
 /* Declarations */
 
 #ifdef __GNUC__
 #define _TFP_SPECIFY_PRINTF_FMT(fmt_idx, arg1_idx)                             \
   __attribute__((format(printf, fmt_idx, arg1_idx)))
-#else
+#else // __GNUC__
 #define _TFP_SPECIFY_PRINTF_FMT(fmt_idx, arg1_idx)
-#endif
+#endif // __GNUC__
 
 #ifdef __cplusplus
 extern "C" {
@@ -171,21 +171,21 @@ int tfp_sprintf(const char *str, const char *fmt, ...) _TFP_SPECIFY_PRINTF_FMT(2
 #define snprintf tfp_snprintf
 #define vsprintf tfp_vsprintf
 #define sprintf tfp_sprintf
-#endif
-#endif
+#endif // TINYPRINTF_OVERRIDE_LIBC
+#endif // TINYPRINTF_DEFINE_TFP_SPRINTF
 
 #if TINYPRINTF_DEFINE_TFP_PRINTF
 void init_printf(void *putp, putcf putf);
 void tfp_printf(const char *fmt, ...) _TFP_SPECIFY_PRINTF_FMT(1, 2);
 #if TINYPRINTF_OVERRIDE_LIBC
 #define printf tfp_printf
-#endif
-#endif
+#endif // TINYPRINTF_OVERRIDE_LIBC
+#endif // TINYPRINTF_DEFINE_TFP_PRINTF
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif // CONFIG_PRINTF
 
-#endif
+#endif // __TFP_PRINTF__

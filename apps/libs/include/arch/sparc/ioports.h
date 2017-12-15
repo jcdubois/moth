@@ -26,6 +26,11 @@
 
 #include <types.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 static inline void io_write8(uint32_t addr, uint8_t data) {
   asm volatile("stb %0, [%1];\n"
                : /* no output */
@@ -59,5 +64,9 @@ static inline uint32_t io_read32(uint32_t addr) {
                : "memory");
   return value;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MOTH_SPARC_APPS_IOPORTS_H__ */

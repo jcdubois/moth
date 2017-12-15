@@ -26,6 +26,11 @@
 
 #include <types.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #define ASI_MMU_BYPASS 0x1c /* not sparc v8 compliant */
 
 static inline void os_arch_io_write8(uint32_t addr, uint8_t data) {
@@ -61,5 +66,9 @@ static inline uint32_t os_arch_io_read32(uint32_t addr) {
                : "memory");
   return value;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* __MOTH_SPARC_LEON3_IOPORTS_H__ */

@@ -26,6 +26,11 @@
 
 #include <os.h>
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 uint8_t os_arch_interrupt_is_pending(void);
 
 void os_arch_idle(void);
@@ -42,5 +47,9 @@ void os_arch_space_switch(os_task_id_t old_context_id,
                           os_task_id_t new_context_id);
 
 void os_arch_cons_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __OS_ARCH_H_
