@@ -23,4 +23,4 @@
 
 #include <moth.h>
 
-__attribute__((section(".data.entry"))) os_mbx_entry_t __mbx_entry;
+__attribute__((section(".bss.entry"))) os_mbx_entry_t __mbx_entry;

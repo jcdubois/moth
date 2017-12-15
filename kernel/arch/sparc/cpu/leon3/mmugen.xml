@@ -150,7 +150,7 @@
       <virtual_map name="barrier2">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="data" cache="true">
+      <virtual_map name="bss" cache="true">
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app1.data"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -226,7 +226,7 @@
       <virtual_map name="barrier2">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="data" cache="true">
+      <virtual_map name="bss" cache="true">
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app2.data"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -302,7 +302,7 @@
       <virtual_map name="barrier2">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="data" cache="true">
+      <virtual_map name="bss" cache="true">
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app3.data"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -386,7 +386,7 @@
       <virtual_map name="barrier2">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="data" cache="true">
+      <virtual_map name="bss" cache="true">
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="interrupt.data"]</physical_ref>
         <protection>
           <user access="read"/>

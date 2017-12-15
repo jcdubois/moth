@@ -60,7 +60,7 @@
     <xsl:text>    </xsl:text>
     <xsl:apply-templates select="virtual_map[@name = 'text']" mode="os_task_ro"/>
     <xsl:text>    </xsl:text>
-    <xsl:apply-templates select="virtual_map[@name = 'data']" mode="os_task_ro"/>
+    <xsl:apply-templates select="virtual_map[@name = 'bss']" mode="os_task_ro"/>
     <xsl:text>    </xsl:text>
     <xsl:apply-templates select="virtual_map[@name = 'stack']" mode="os_task_ro"/>
   </xsl:if>
