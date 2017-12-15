@@ -17,7 +17,8 @@ X86_64_CROSS_COMPILE_LIST="x86_64-linux-x86_64-linux-"
 X86_64_CROSS_COMPILE_LIST+=" x86_64-linux-gnu-"
 X86_64_CROSS_COMPILE_LIST+=" "
 
-SPARC32_CROSS_COMPILE_LIST="sparc64-linux-gnu-"
+SPARC32_CROSS_COMPILE_LIST="sparc-"
+SPARC32_CROSS_COMPILE_LIST+=" sparc64-linux-gnu-"
 
 get_cross_compiler() {
 	FOUND=0
@@ -122,7 +123,7 @@ do
 
 		rm -rf build
 		make ARCH=$ARCH $DEFCONFIG
-		make CROSS_COMPILE=$CROSS_COMPILE -j
+		make CROSS_COMPILE=$CROSS_COMPILE
 
 		# cancel trap
 		trap - EXIT
