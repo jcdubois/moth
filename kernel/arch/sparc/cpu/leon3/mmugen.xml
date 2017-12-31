@@ -43,6 +43,12 @@
       <physical_map name="interrupt.rodata">
         <size>0x00001000</size>
       </physical_map>
+      <physical_map name="timer.text">
+        <size>0x00001000</size>
+      </physical_map>
+      <physical_map name="timer.rodata">
+        <size>0x00001000</size>
+      </physical_map>
       <physical_map name="app1.data">
         <size>0x00001000</size>
       </physical_map>
@@ -55,6 +61,9 @@
       <physical_map name="interrupt.data">
         <size>0x00001000</size>
       </physical_map>
+      <physical_map name="timer.data">
+        <size>0x00001000</size>
+      </physical_map>
       <physical_map name="app1.stack">
         <size>0x00001000</size>
       </physical_map>
@@ -65,6 +74,9 @@
         <size>0x00001000</size>
       </physical_map>
       <physical_map name="interrupt.stack">
+        <size>0x00001000</size>
+      </physical_map>
+      <physical_map name="timer.stack">
         <size>0x00001000</size>
       </physical_map>
       <physical_map name="app1.shm_app3">
@@ -89,10 +101,14 @@
       <size>0x00001000</size>
     </physical_map>
     <physical_map name="hw.PIC">
-      <address>0xff002000</address>
+      <address>0x80000000</address>
       <size>0x00001000</size>
     </physical_map>
     <physical_map name="hw.UART">
+      <address>0x80000000</address>
+      <size>0x00001000</size>
+    </physical_map>
+    <physical_map name="hw.TIMER">
       <address>0x80000000</address>
       <size>0x00001000</size>
     </physical_map>
@@ -170,7 +186,7 @@
       <virtual_map name="barrier4">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="uart" cache="false">
+      <virtual_map name="UART" cache="false">
         <physical_ref>/platform/physical/physical_map[@name="hw.UART"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -246,7 +262,7 @@
       <virtual_map name="barrier4">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="uart" cache="false">
+      <virtual_map name="UART" cache="false">
         <physical_ref>/platform/physical/physical_map[@name="hw.UART"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -322,7 +338,7 @@
       <virtual_map name="barrier4">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="uart" cache="false">
+      <virtual_map name="UART" cache="false">
         <physical_ref>/platform/physical/physical_map[@name="hw.UART"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -406,7 +422,7 @@
       <virtual_map name="barrier4">
         <size>0x00001000</size>
       </virtual_map>
-      <virtual_map name="uart" cache="false">
+      <virtual_map name="UART" cache="false">
         <physical_ref>/platform/physical/physical_map[@name="hw.UART"]</physical_ref>
         <protection>
           <user access="read"/>
@@ -424,6 +440,64 @@
         </protection>
       </virtual_map>
     </virtual>
+    <virtual name="timer">
+      <virtual_map name="text" cache="true">
+        <address>0x40800000</address>
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="timer.text"]</physical_ref>
+        <protection>
+          <user access="execute"/>
+        </protection>
+      </virtual_map>
+      <virtual_map name="barrier1">
+        <size>0x00001000</size>
+      </virtual_map>
+      <virtual_map name="rodata" cache="true">
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="timer.rodata"]</physical_ref>
+        <protection>
+          <user access="read"/>
+        </protection>
+      </virtual_map>
+      <virtual_map name="barrier2">
+        <size>0x00001000</size>
+      </virtual_map>
+      <virtual_map name="bss" cache="true">
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="timer.data"]</physical_ref>
+        <protection>
+          <user access="read"/>
+          <user access="write"/>
+        </protection>
+      </virtual_map>
+      <virtual_map name="barrier3">
+        <size>0x00001000</size>
+      </virtual_map>
+      <virtual_map name="stack" cache="true">
+        <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="timer.stack"]</physical_ref>
+        <protection>
+          <user access="read"/>
+          <user access="write"/>
+        </protection>
+      </virtual_map>
+      <virtual_map name="barrier4">
+        <size>0x00001000</size>
+      </virtual_map>
+      <virtual_map name="UART" cache="false">
+        <physical_ref>/platform/physical/physical_map[@name="hw.UART"]</physical_ref>
+        <protection>
+          <user access="read"/>
+          <user access="write"/>
+        </protection>
+      </virtual_map>
+      <virtual_map name="barrierX">
+        <size>0x00001000</size>
+      </virtual_map>
+      <virtual_map name="TIMER">
+        <physical_ref>/platform/physical/physical_map[@name="hw.TIMER"]</physical_ref>
+        <protection>
+          <user access="read"/>
+          <user access="write"/>
+        </protection>
+      </virtual_map>
+    </virtual>
   </virtuals>
   <contexts>
     <context name="interrupt">
@@ -433,10 +507,19 @@
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
       <virtual_ref>/platform/virtuals/virtual[@name="interrupt"]</virtual_ref>
     </context>
+    <context name="timer">
+      <priority>5</priority>
+      <mbx>
+        <permission>interrupt</permission>
+      </mbx>
+      <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
+      <virtual_ref>/platform/virtuals/virtual[@name="timer"]</virtual_ref>
+    </context>
     <context name="app1">
       <priority>10</priority>
       <mbx>
         <permission>interrupt</permission>
+        <permission>timer</permission>
         <permission>app3</permission>
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>
@@ -446,6 +529,7 @@
       <priority>10</priority>
       <mbx>
         <permission>interrupt</permission>
+        <permission>timer</permission>
         <permission>app3</permission>
       </mbx>
       <virtual_ref>/platform/virtuals/virtual[@name="kernel"]</virtual_ref>

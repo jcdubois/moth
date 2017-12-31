@@ -16,18 +16,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# @file openconf.cfg
+# @file objects.mk
 # @author Jean-Christophe Dubois (jcd@tribudubois.net)
-# @brief config file for apps
+# @brief list of objects for timer.
 # */
 
-menu "Apps Options"
+apps-objs-$(CONFIG_APP_TIMER) += timer/main.o
 
-source apps/libs/openconf.cfg
-source apps/interrupt/openconf.cfg
-source apps/timer/openconf.cfg
-source apps/app1/openconf.cfg
-source apps/app2/openconf.cfg
-source apps/app3/openconf.cfg
-
-endmenu
+apps-exec-$(CONFIG_APP_TIMER) += timer.elf

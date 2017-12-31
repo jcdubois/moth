@@ -41,14 +41,31 @@
 
 #include <ioports.h>
 
-#include <os_arch_irq.h>
-
 #define UART1_DEVICE_OFFSET 0x100
 
 #include <os_arch_cons.h>
 
+#define TIMER1_DEVICE_OFFSET 0x300
+
+/* GPTimer Config register fields */
+#define GPTIMER_ENABLE      (1 << 0)
+#define GPTIMER_RESTART     (1 << 1)
+#define GPTIMER_LOAD        (1 << 2)
+#define GPTIMER_INT_ENABLE  (1 << 3)
+#define GPTIMER_INT_PENDING (1 << 4)
+#define GPTIMER_CHAIN       (1 << 5) /* Not supported */
+#define GPTIMER_DEBUG_HALT  (1 << 6) /* Not supported */
+
+/* Memory mapped register offsets */
+#define SCALER_OFFSET         0x00
+#define SCALER_RELOAD_OFFSET  0x04
+#define CONFIG_OFFSET         0x08
+#define COUNTER_OFFSET        0x00
+#define COUNTER_RELOAD_OFFSET 0x04
+#define TIMER_BASE            0x10
+
 extern uint8_t __UART_begin[UART1_DEVICE_OFFSET * 2];
-extern uint8_t __PIC_begin[UART1_DEVICE_OFFSET * 3];
+extern uint8_t __TIMER_begin[UART1_DEVICE_OFFSET * 4];
 
 static void putc(void *opaque, char car) {
 
@@ -61,38 +78,13 @@ static void putc(void *opaque, char car) {
   io_write8(uart_addr + UART_DATA_OFFSET, (uint8_t)car);
 }
 
-static os_task_id_t interrupt_dest[14] = {
-  OS_TASK_ID_NONE, // interrupt 0
-  OS_TASK_ID_NONE, // interrupt 1
-  OS_TASK_ID_NONE, // interrupt 2
-  OS_TASK_ID_NONE, // interrupt 3
-  OS_TASK_ID_NONE, // interrupt 4
-  OS_TASK_ID_NONE, // interrupt 5
-  OS_TIMER_TASK_ID, // interrupt 6
-  OS_TASK_ID_NONE, // interrupt 7
-  OS_TASK_ID_NONE, // interrupt 8
-  OS_TASK_ID_NONE, // interrupt 9
-  OS_TASK_ID_NONE, // interrupt 10
-  OS_TASK_ID_NONE, // interrupt 11
-  OS_TASK_ID_NONE, // interrupt 12
-  OS_TASK_ID_NONE, // interrupt 13
-};
-
-static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) { 
-  if (interrupt >= 32) {
-    return OS_TASK_ID_NONE;
-  } else {
-    return interrupt_dest[interrupt];
-  }
-}
-
 int main(int argc, char **argv, char **argp) {
   uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
-  uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
+  uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER1_DEVICE_OFFSET]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
   os_task_id_t task_id = getpid();
-  int i;
+  os_task_id_t tmp_id;
 
   (void)argc;
   (void)argv;
@@ -102,53 +94,37 @@ int main(int argc, char **argv, char **argp) {
 
   io_write32(uart_addr + UART_CTRL_OFFSET, UART_CTRL_TE);
 
-  /*
-   * we don't need to enable the interrupts as we don't want to be
-   * interrupted
-   */
+  io_write32(timer_addr + TIMER_BASE + COUNTER_OFFSET, 0x1000000);
 
-  io_write32(pic_addr + IRQMP_MASK_OFFSET, 0xFFFFFFFF);
+  io_write32(timer_addr + TIMER_BASE + COUNTER_RELOAD_OFFSET, 0x1000000);
+
+  io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET, (uint32_t)(GPTIMER_ENABLE | GPTIMER_INT_ENABLE | GPTIMER_LOAD | GPTIMER_RESTART));
 
   printf("task %d: init done\n", (int)task_id);
 
   while (1) {
-    uint32_t irq_pending = io_read32(pic_addr + IRQMP_PENDING_OFFSET);
+    cr = wait(OS_MBX_MASK_ALL);
 
-    if (irq_pending) {
-      printf("task %d: pending mask = 0x%08x\n", (int)task_id, irq_pending);
+    if (cr == OS_SUCCESS) {
+      printf("task %d: wait OK\n", (int)task_id);
 
-      for (i = 0; i < 14; i++) {
-        if ((1 << i) & irq_pending) {
-          os_task_id_t dest_id = get_interrupt_dest_id(i);
+      cr = mbx_recv(&tmp_id, &msg);
 
-          if (dest_id != OS_TASK_ID_NONE) {
-            /* send a mailbox to the waiting task */
-            cr = mbx_send(dest_id, msg);
+      if (cr == OS_SUCCESS) {
+        printf("task %d: mbx received from task %d\n", (int)task_id,
+               (int)tmp_id);
 
-            if (cr == OS_SUCCESS) {
-              printf("task %d: mbx sent to task %d\n", (int)task_id,
-                     (int)dest_id);
-            } else {
-              printf("task %d: failed (cr = %d) to send mbx to task %d\n",
-                     (int)task_id, cr, (int)dest_id);
-            }
-          } else {
-            printf("task %d: no task to send interrupt %d to\n", (int)task_id,
-                   i);
-          }
+        if (tmp_id == OS_INTERRUPT_TASK_ID) {
+          tmp_id = OS_APP3_TASK_ID;
+
+          cr = mbx_send(OS_TASK_ID_ALL, msg);
         } else {
-          // printf("task %d: interrupt %d is not raised\n", (int)task_id, i);
         }
+      } else {
+        printf("task %d: failed (cr = %d) to recv mbx\n", (int)task_id, (int)cr);
       }
-
-      /* clear all interrupts we processed */
-      io_write32(pic_addr + IRQMP_CLEAR_OFFSET, irq_pending);
-
     } else {
-      printf("task %d: no irq pending\n", (int)task_id);
+      printf("task %d: failed (cr = %d) to wait for mbx\n", (int)task_id, (int)cr);
     }
-
-    /* wait for next interrupt */
-    wait(OS_MBX_MASK_ALL);
   }
 }
