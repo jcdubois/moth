@@ -425,8 +425,6 @@ os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask) {
 
   /*
    * We check that the expected mbx source are allowed
-   * TODO: Is it expected that the calling task asked for
-   * forbiden sources.
    */
   waiting_mask &= os_task_ro[current].mbx_permission;
 
@@ -450,12 +448,22 @@ os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask) {
        * out of the ready list for now.
        */
     }
-  } else {
+  } else if (current != OS_INTERRUPT_TASK_ID) {
     /*
      * Put back the task in the ready list as there is nothing
      * to wait for.
+     * Note: This is not supposed to happen so often. Actually this is
+     * kind of an application bug.
      */
     os_sched_add_task_to_ready_list(current);
+  } else {
+    /*
+     * The interrupt task is the only application that is allowed to
+     * wait for mbx even if no task can send it a mbx (configured through
+     * permissions). Most of the time the interrupt task does not receive
+     * mbx from other tasks but only from the kernel itself when external
+     * interrupt are detected.
+     */
   }
 
   return os_sched_schedule();
