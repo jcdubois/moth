@@ -35,8 +35,6 @@ typedef uint32_t os_mbx_mask_t;
 
 typedef int8_t os_task_id_t;
 
-typedef uint32_t os_context_t;
-
 typedef int32_t os_status_t;
 
 #if defined(CONFIG_MBX_MSG_SIZE_1)
@@ -79,7 +77,6 @@ typedef struct {
   os_task_id_t next;
   os_task_id_t prev;
   os_virtual_address_t stack_pointer;
-  os_context_t context;
   os_mbx_mask_t mbx_waiting_mask;
   os_mbx_t mbx;
 } os_task_rw_t;
@@ -96,12 +93,12 @@ typedef struct {
 #define OS_ERROR_RECEIVE -4
 
 os_task_id_t os_sched_get_current_task_id(void);
-os_task_id_t os_sched_wait(os_mbx_mask_t);
+os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask);
 os_task_id_t os_sched_yield(void);
 os_task_id_t os_sched_exit(void);
 os_task_id_t os_init(void);
 os_status_t os_mbx_receive(os_mbx_entry_t *entry);
-os_status_t os_mbx_send(os_task_id_t, os_mbx_msg_t);
+os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg);
 
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
 extern os_task_rw_t os_task_rw[CONFIG_MAX_TASK_COUNT];
