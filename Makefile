@@ -232,7 +232,7 @@ core-object-mks=$(shell if [ -d $(core_dir) ]; then find $(core_dir) -iname "obj
 kernel-libs-object-mks=$(shell if [ -d $(kernel_libs_dir) ]; then find $(kernel_libs_dir) -iname "objects.mk" | sort -r; fi)
 common-libs-object-mks=$(shell if [ -d $(common_libs_dir) ]; then find $(common_libs_dir) -iname "objects.mk" | sort -r; fi)
 apps-libs-object-mks=$(shell if [ -d $(apps_libs_dir) ]; then find $(apps_libs_dir) -iname "objects.mk" | sort -r; fi)
-apps-object-mks=$(shell if [ -d $(apps_dir) ]; then find $(apps_dir) -iname "objects.mk" | sort -r; fi)
+apps-object-mks=$(shell if [ -d $(apps_dir) ]; then find $(apps_dir)/$(CONFIG_ARCH) -iname "objects.mk" | sort -r; fi)
 
 # Default rule "make" should always be first rule
 .PHONY: all
@@ -360,6 +360,9 @@ $(build_dir)/%.o: $(build_dir)/%.c
 
 $(build_dir)/%.xo: $(build_dir)/%.o
 	$(call copy_file,$@,$^)
+
+$(build_dir)/apps/%.o: $(src_dir)/apps/$(CONFIG_ARCH)/%.c
+	$(call compile_cc,$@,$<)
 
 $(build_dir)/%.c: $(src_dir)/%.xml $(xsl_dir)/mmugen.xsl
 	$(call compile_xml,$@,$(filter-out $<,$^),$<)
