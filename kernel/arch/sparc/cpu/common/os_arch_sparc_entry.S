@@ -346,7 +346,8 @@ _os_arch_reset_prehandler:
 
 	/* set PSR : Processor State Register */
 	/* We are in supervisor state and trap are anabled */
-	set   (PSR_S | PSR_ET), %l0
+	/* interrupts are disabled */
+	set   (PSR_S | PSR_ET | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
 	nop                           /* delay slot */
 	nop
@@ -467,10 +468,11 @@ __os_arch_clean_win_loop:
 	 *   %l4 = npc
 	 */
 
-	/* Disable Traps and enable interrupts before ret */
+	/* Disable Traps before ret */
+	/* interrupt are kept disabled */
 	/* Make sure we will return to user space */
 	mov   %psr, %l0
-	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
+	andn  %l0, (PSR_ET | PSR_PS), %l0
 	mov   %l0, %psr
 	mov   %g0, %l0                /* clear %l0 */
 	nop                           /* delay slot */
@@ -543,9 +545,10 @@ _os_arch_trap_prehandler:
 	 */
 
 	/* Disable Traps and enable interrupts before ret */
+	/* interrupts are kept disabled */
 	/* Make sure we will return to user space */
 	mov   %psr, %l0
-	andn  %l0, (PSR_ET | PSR_PS | PSR_PIL_MASK), %l0
+	andn  %l0, (PSR_ET | PSR_PS), %l0
 	mov   %l0, %psr
 	nop                           /* delay slot */
 	nop
