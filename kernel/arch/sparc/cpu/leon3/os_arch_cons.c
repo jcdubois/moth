@@ -36,6 +36,8 @@
 #include <syslog.h>
 
 static void os_arch_cons_write_char(void *opaque, char a) {
+  (void)opaque;
+
   while ((os_arch_io_read32(UART1 + UART_STAT_OFFSET) & UART_STATUS_THE) == 0) {
     continue;
   }
