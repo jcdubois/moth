@@ -136,8 +136,6 @@ int main(int argc, char **argv, char **argp) {
             printf("task %d: no task to send interrupt %d to\n", (int)task_id,
                    i);
           }
-        } else {
-          // printf("task %d: interrupt %d is not raised\n", (int)task_id, i);
         }
       }
 
