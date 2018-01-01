@@ -519,7 +519,7 @@ _os_arch_trap_prehandler:
 	/* return on kernel stack */
 	set   __stack_end, %fp        /* This should already be aligned */
 	andn  %fp, 0x0f, %fp          /* align stack on 16-byte boundary */
-	sub   %fp, 0x40, %sp          /* move %sp 64 bytes from %fp */
+	sub   %fp, 0x80, %sp          /* move %sp 64 bytes from %fp */
 
 	mov   %l1, %o0                /* %pc - 1st arg */
 	mov   %l2, %o1                /* %npc - 2nd arg */
