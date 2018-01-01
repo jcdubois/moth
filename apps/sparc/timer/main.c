@@ -94,9 +94,16 @@ int main(int argc, char **argv, char **argp) {
 
   io_write32(uart_addr + UART_CTRL_OFFSET, UART_CTRL_TE);
 
-  io_write32(timer_addr + TIMER_BASE + COUNTER_OFFSET, 0x1000000);
+  /* proc frequency is 40 MHz. By default scaller is set to 256 */
+  /* We set it to 200 to get a 200 KHz base freqency */
+  io_write32(timer_addr + SCALER_OFFSET, 200);
 
-  io_write32(timer_addr + TIMER_BASE + COUNTER_RELOAD_OFFSET, 0x1000000);
+  io_write32(timer_addr + SCALER_RELOAD_OFFSET, 200);
+
+  /* We set the counter to expire every 5 sec. So the value should be 1000000 */
+  io_write32(timer_addr + TIMER_BASE + COUNTER_OFFSET, 200000 * 5);
+
+  io_write32(timer_addr + TIMER_BASE + COUNTER_RELOAD_OFFSET, 200000 * 5);
 
   io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET, (uint32_t)(GPTIMER_ENABLE | GPTIMER_INT_ENABLE | GPTIMER_LOAD | GPTIMER_RESTART));
 
