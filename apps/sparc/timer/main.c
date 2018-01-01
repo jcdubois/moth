@@ -64,6 +64,15 @@
 #define COUNTER_RELOAD_OFFSET 0x04
 #define TIMER_BASE            0x10
 
+/* Default system clock. 40 MHz */
+#define CPU_CLK (40 * 1000 * 1000)
+/* scaller is set to 200 so we have a 200 KHz base freqency */
+#define CLK_SCALLER 200
+/* We set a 5 seconds delay */
+#define TIMER_DELAY 5
+/* The computed value for the timer */
+#define CLK_COUNTER (TIMER_DELAY * CPU_CLK / CLK_SCALLER)
+
 extern uint8_t __UART_begin[UART1_DEVICE_OFFSET * 2];
 extern uint8_t __TIMER_begin[UART1_DEVICE_OFFSET * 4];
 
@@ -94,44 +103,64 @@ int main(int argc, char **argv, char **argp) {
 
   io_write32(uart_addr + UART_CTRL_OFFSET, UART_CTRL_TE);
 
-  /* proc frequency is 40 MHz. By default scaller is set to 256 */
-  /* We set it to 200 to get a 200 KHz base freqency */
-  io_write32(timer_addr + SCALER_OFFSET, 200);
+  io_write32(timer_addr + SCALER_OFFSET, CLK_SCALLER);
+  io_write32(timer_addr + SCALER_RELOAD_OFFSET, CLK_SCALLER);
 
-  io_write32(timer_addr + SCALER_RELOAD_OFFSET, 200);
-
-  /* We set the counter to expire every 5 sec. So the value should be 1000000 */
-  io_write32(timer_addr + TIMER_BASE + COUNTER_OFFSET, 200000 * 5);
-
-  io_write32(timer_addr + TIMER_BASE + COUNTER_RELOAD_OFFSET, 200000 * 5);
-
-  io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET, (uint32_t)(GPTIMER_ENABLE | GPTIMER_INT_ENABLE | GPTIMER_LOAD | GPTIMER_RESTART));
+  io_write32(timer_addr + TIMER_BASE + COUNTER_OFFSET, CLK_COUNTER);
+  io_write32(timer_addr + TIMER_BASE + COUNTER_RELOAD_OFFSET, CLK_COUNTER);
+  io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET,
+             (uint32_t)(GPTIMER_ENABLE | GPTIMER_INT_ENABLE | GPTIMER_LOAD |
+                        GPTIMER_RESTART));
 
   printf("task %d: init done\n", (int)task_id);
 
   while (1) {
+    /* wait for a mbx from the interrupt task */
     cr = wait(OS_MBX_MASK_ALL);
 
     if (cr == OS_SUCCESS) {
       printf("task %d: wait OK\n", (int)task_id);
 
+      /* receive the mbx */
       cr = mbx_recv(&tmp_id, &msg);
 
       if (cr == OS_SUCCESS) {
         printf("task %d: mbx received from task %d\n", (int)task_id,
                (int)tmp_id);
 
+	/* process mbx from the interrupt task */
         if (tmp_id == OS_INTERRUPT_TASK_ID) {
-          tmp_id = OS_APP3_TASK_ID;
+          uint32_t config_reg =
+              io_read32(timer_addr + TIMER_BASE + CONFIG_OFFSET);
 
-          cr = mbx_send(OS_TASK_ID_ALL, msg);
+	  /* check the timer interrupt has not been already processed */
+          if (config_reg & GPTIMER_INT_PENDING) {
+            /* mark the timer as being processed */
+            config_reg &= ~GPTIMER_INT_PENDING;
+
+            io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET, config_reg);
+
+	    /* For now send a MBX to all permitted task */
+            cr = mbx_send(OS_TASK_ID_ALL, msg);
+
+            if (cr == OS_SUCCESS) {
+              printf("task %d: mbx sent to all tasks\n", (int)task_id);
+            } else {
+              printf("task %d: failed (cr = %d) to send mbx\n", (int)task_id,
+                     (int)cr);
+            }
+          } else {
+            printf("task %d: no int pending ???\n", (int)task_id);
+          }
         } else {
         }
       } else {
-        printf("task %d: failed (cr = %d) to recv mbx\n", (int)task_id, (int)cr);
+        printf("task %d: failed (cr = %d) to recv mbx\n", (int)task_id,
+               (int)cr);
       }
     } else {
-      printf("task %d: failed (cr = %d) to wait for mbx\n", (int)task_id, (int)cr);
+      printf("task %d: failed (cr = %d) to wait for mbx\n", (int)task_id,
+             (int)cr);
     }
   }
 }
