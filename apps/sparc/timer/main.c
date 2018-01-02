@@ -68,8 +68,8 @@
 #define CPU_CLK (40 * 1000 * 1000)
 /* scaller is set to 200 so we have a 200 KHz base freqency */
 #define CLK_SCALLER 200
-/* We set a 5 seconds delay */
-#define TIMER_DELAY 5
+/* We set a 2 seconds delay */
+#define TIMER_DELAY 2
 /* The computed value for the timer */
 #define CLK_COUNTER (TIMER_DELAY * CPU_CLK / CLK_SCALLER)
 
@@ -92,7 +92,6 @@ int main(int argc, char **argv, char **argp) {
   uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER1_DEVICE_OFFSET]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
-  os_task_id_t task_id = getpid();
   os_task_id_t tmp_id;
 
   (void)argc;
@@ -112,21 +111,19 @@ int main(int argc, char **argv, char **argp) {
              (uint32_t)(GPTIMER_ENABLE | GPTIMER_INT_ENABLE | GPTIMER_LOAD |
                         GPTIMER_RESTART));
 
-  printf("task %d: init done\n", (int)task_id);
+  printf("timer: init done\n");
 
   while (1) {
     /* wait for a mbx from the interrupt task */
     cr = wait(OS_MBX_MASK_ALL);
 
     if (cr == OS_SUCCESS) {
-      printf("task %d: wait OK\n", (int)task_id);
 
       /* receive the mbx */
       cr = mbx_recv(&tmp_id, &msg);
 
       if (cr == OS_SUCCESS) {
-        printf("task %d: mbx received from task %d\n", (int)task_id,
-               (int)tmp_id);
+        printf("timer: mbx received from task %d\n", (int)tmp_id);
 
 	/* process mbx from the interrupt task */
         if (tmp_id == OS_INTERRUPT_TASK_ID) {
@@ -144,23 +141,20 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(OS_TASK_ID_ALL, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("task %d: mbx sent to all tasks\n", (int)task_id);
+              printf("timer: mbx sent to all tasks\n");
             } else {
-              printf("task %d: failed (cr = %d) to send mbx\n", (int)task_id,
-                     (int)cr);
+              printf("timer: failed (cr = %d) to send mbx\n", (int)cr);
             }
           } else {
-            printf("task %d: no int pending ???\n", (int)task_id);
+            printf("timer: no int pending ???\n");
           }
         } else {
         }
       } else {
-        printf("task %d: failed (cr = %d) to recv mbx\n", (int)task_id,
-               (int)cr);
+        printf("timer: failed (cr = %d) to recv mbx\n", (int)cr);
       }
     } else {
-      printf("task %d: failed (cr = %d) to wait for mbx\n", (int)task_id,
-             (int)cr);
+      printf("timer: failed (cr = %d) to wait for mbx\n", (int)cr);
     }
   }
 }

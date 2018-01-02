@@ -91,7 +91,6 @@ int main(int argc, char **argv, char **argp) {
   uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
-  os_task_id_t task_id = getpid();
   int i;
 
   (void)argc;
@@ -109,13 +108,13 @@ int main(int argc, char **argv, char **argp) {
 
   io_write32(pic_addr + IRQMP_MASK_OFFSET, 0xFFFFFFFF);
 
-  printf("task %d: init done\n", (int)task_id);
+  printf("interrupt: init done\n");
 
   while (1) {
     uint32_t irq_pending = io_read32(pic_addr + IRQMP_PENDING_OFFSET);
 
     if (irq_pending) {
-      printf("task %d: pending mask = 0x%08x\n", (int)task_id, irq_pending);
+      printf("interrupt: pending mask = 0x%08x\n", irq_pending);
 
       for (i = 0; i < 14; i++) {
         if ((1 << i) & irq_pending) {
@@ -126,14 +125,13 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(dest_id, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("task %d: mbx sent to task %d\n", (int)task_id,
-                     (int)dest_id);
+              printf("interrupt: mbx sent to task %d\n", (int)dest_id);
             } else {
-              printf("task %d: failed (cr = %d) to send mbx to task %d\n",
-                     (int)task_id, cr, (int)dest_id);
+              printf("interrupt: failed (cr = %d) to send mbx to task %d\n",
+                     (int)cr, (int)dest_id);
             }
           } else {
-            printf("task %d: no task to send interrupt %d to\n", (int)task_id,
+            printf("interrupt: no task to send interrupt %d to\n",
                    i);
           }
         }
@@ -143,7 +141,7 @@ int main(int argc, char **argv, char **argp) {
       io_write32(pic_addr + IRQMP_CLEAR_OFFSET, irq_pending);
 
     } else {
-      printf("task %d: no irq pending\n", (int)task_id);
+      printf("interrupt: no irq pending\n");
     }
 
     /* wait for next interrupt */
