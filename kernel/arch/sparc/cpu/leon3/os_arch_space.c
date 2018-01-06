@@ -43,7 +43,8 @@ void os_arch_space_switch(os_task_id_t old_context_id,
 
   syslog("%s( task_id = %d )\n", __func__, (int)new_context_id);
 
-  asm volatile("sta %0, [%1] %2;\n"
+  asm volatile("flush;\n"
+               "sta %0, [%1] %2;\n"
                : /* no output */
                : "r"(new_context_id), "r"(MMU_CTX_REG), "i"(ASI_M_MMUREGS)
                : "memory");
@@ -69,15 +70,7 @@ void os_arch_space_init(void) {
   /*
    * flush all memory before enabling MMU
    */
-  asm volatile("flush\n"
-               "nop\n"
-               "nop\n"
-               "nop\n"
-               "nop\n"
-               "nop;\n"
-               :
-               :
-               : "memory");
+  asm volatile("flush\n" : : : "memory");
 
   syslog("%s: MMU table is fixed\n", __func__);
 
