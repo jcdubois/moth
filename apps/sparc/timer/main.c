@@ -45,7 +45,7 @@
 
 #include <os_arch_cons.h>
 
-#define TIMER1_DEVICE_OFFSET 0x300
+#define TIMER_DEVICE_OFFSET 0x300
 
 /* GPTimer Config register fields */
 #define GPTIMER_ENABLE      (1 << 0)
@@ -71,7 +71,7 @@
 /* We set a 2 seconds delay */
 #define TIMER_DELAY 2
 /* The computed value for the timer */
-#define CLK_COUNTER (TIMER_DELAY * CPU_CLK / CLK_SCALLER)
+#define CLK_COUNTER (TIMER_DELAY * (CPU_CLK / CLK_SCALLER))
 
 extern uint8_t __UART_begin[UART1_DEVICE_OFFSET * 2];
 extern uint8_t __TIMER_begin[UART1_DEVICE_OFFSET * 4];
@@ -89,7 +89,7 @@ static void putc(void *opaque, char car) {
 
 int main(int argc, char **argv, char **argp) {
   uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
-  uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER1_DEVICE_OFFSET]);
+  uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER_DEVICE_OFFSET]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
   os_task_id_t tmp_id;
