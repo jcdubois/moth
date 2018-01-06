@@ -534,7 +534,7 @@ os_task_id_t os_init(void) {
   /*
    * Switch the MMU to the selected task
    */
-  os_arch_space_switch(0, task_id);
+  os_arch_space_switch(prev_id, task_id);
 
   return task_id;
 }
