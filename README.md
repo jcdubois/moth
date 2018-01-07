@@ -68,17 +68,17 @@ Development Environment
 The Moth SK has been developed and successfully tested using the development
 environment listed in the following table.
 
-| Software               | Version                                 |
-|:---------------------- |:--------------------------------------- |
-| Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64  |
-| GCC                    | 7.2.0                                   |
+| Software          | Version                                 |
+|:----------------- |:--------------------------------------- |
+| Operating systems | Ubuntu 17.10 (Artful Aardvark), x86_64  |
+| GCC               | 7.2.0                                   |
 
 The following hardware is used for the development of Moth.
 
-| Platform                       | Architecture | Processor        |
-|:------------------------------ |:------------ |:---------------- |
-| Qemu                           | Sparc        | LEON3            |
-| tsim                           | Sparc        | LEON3            |
+| Platform | Architecture | Processor |
+|:---------|:------------ |:--------- |
+| Qemu     | Sparc        | LEON3     |
+| tsim     | Sparc        | LEON3     |
 
 Required Tools
 --------------
@@ -95,8 +95,10 @@ $ sudo apt-get install qemu-system-sparc
 ```
 
 **tsim**
-You can also install the tsim simulator from gaisler.
-You will find it at the following address: http://www.gaisler.com/index.php/downloads/simulators?task=view&id=157
+
+You can also install the tsim LEON3 simulator from gaisler.
+You will find it at the following address: http://www.gaisler.com/index.php/downloads/simulators .
+There is free evaluation version you can use. It has some limitation such as stoping the application after 2^32 clock cycles but it is cycle acurate and is more precise in the emulation (for example it emulates the cache).
 
 Download
 ---------
