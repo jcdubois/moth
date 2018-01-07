@@ -63,6 +63,41 @@ The following detailed project documentation is available:
 
 TBD
 
+Development Environment
+-----------------------
+The Moth SK has been developed and successfully tested using the development
+environment listed in the following table.
+
+| Software               | Version                                 |
+|:---------------------- |:--------------------------------------- |
+| Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64  |
+| GCC                    | 7.2.0                                   |
+
+The following hardware is used for the development of Moth.
+
+| Platform                       | Architecture | Processor        |
+|:------------------------------ |:------------ |:---------------- |
+| Qemu                           | Sparc        | LEON3            |
+| tsim                           | Sparc        | LEON3            |
+
+Required Tools
+--------------
+The first step to build Moth is to install the required packages:
+
+**Development tools**
+```bash
+$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git
+```
+
+**Qemu**
+```bash
+$ sudo apt-get install qemu-system-sparc
+```
+
+**tsim**
+You can also install the tsim simulator from gaisler.
+You will find it at the following address: http://www.gaisler.com/index.php/downloads/simulators?task=view&id=157
+
 Download
 ---------
 The Moth sources are available through the following git repository:
@@ -81,26 +116,6 @@ https://github.com/jcdubois/moth/archive/master.zip
 
 Build
 -----
-The Moth SK has been developed and successfully tested using the development
-environment listed in the following table.
-
-| Software               | Version                                 |
-|:---------------------- |:--------------------------------------- |
-| Operating systems      | Ubuntu 17.10 (Artful Aardvark), x86_64  |
-| GCC                    | 7.2.0                                   |
-
-The following hardware is used for the development of Moth.
-
-| Platform                       | Architecture | Processor        |
-|:------------------------------ |:------------ |:---------------- |
-| Qemu                           | Sparc        | LEON3            |
-
-The first step to build Moth is to install the required packages:
-
-```bash
-$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git qemu-system-sparc
-```
-
 Once done, you can build Moth:
 
 ```bash
@@ -112,10 +127,17 @@ $ make
 
 Deploy
 ------
-For now we only support Qemu. Real platforms should come later.
+For now we only support Simulators. Real platforms should come later.
 
+**Qemu**
 ```bash
 $ qemu-system-sparc -M leon3_generic -display none -no-reboot -serial stdio -kernel build/moth.elf
+```
+
+**tsim**
+```bash
+$ tsim-leon3 -mmu build/moth.elf
+tsim> go
 ```
 
 References
