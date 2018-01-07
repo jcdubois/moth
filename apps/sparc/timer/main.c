@@ -123,7 +123,7 @@ int main(int argc, char **argv, char **argp) {
       cr = mbx_recv(&tmp_id, &msg);
 
       if (cr == OS_SUCCESS) {
-        printf("timer: mbx received from task %d\n", (int)tmp_id);
+        printf("timer: mbx %d received from task %d\n", (int)msg, (int)tmp_id);
 
 	/* process mbx from the interrupt task */
         if (tmp_id == OS_INTERRUPT_TASK_ID) {
@@ -141,7 +141,7 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(OS_TASK_ID_ALL, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("timer: mbx sent to all tasks\n");
+              printf("timer: mbx %d sent to all tasks\n", (int)msg);
             } else {
               printf("timer: failed (cr = %d) to send mbx\n", (int)cr);
             }

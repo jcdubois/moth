@@ -70,7 +70,7 @@ static os_task_id_t interrupt_dest[14] = {
   OS_TASK_ID_NONE, // interrupt 5
   OS_TIMER_TASK_ID, // interrupt 6
   OS_TASK_ID_NONE, // interrupt 7
-  OS_TASK_ID_NONE, // interrupt 8
+  OS_TIMER_TASK_ID, // interrupt 8
   OS_TASK_ID_NONE, // interrupt 9
   OS_TASK_ID_NONE, // interrupt 10
   OS_TASK_ID_NONE, // interrupt 11
@@ -125,11 +125,14 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(dest_id, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("interrupt: mbx sent to task %d\n", (int)dest_id);
+              printf("interrupt: mbx %d sent to task %d\n", (int)msg, (int)dest_id);
             } else {
               printf("interrupt: failed (cr = %d) to send mbx to task %d\n",
                      (int)cr, (int)dest_id);
             }
+
+	    msg++;
+
           } else {
             printf("interrupt: no task to send interrupt %d to\n",
                    i);
