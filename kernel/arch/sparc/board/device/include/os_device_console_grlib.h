@@ -21,8 +21,8 @@
  * @brief 
  */
 
-#ifndef __MOTH_SPARC_LEON3_CONS_H__
-#define __MOTH_SPARC_LEON3_CONS_H__
+#ifndef __OS_DEVICE_CONSOLE_GRLIB_H__
+#define __OS_DEVICE_CONSOLE_GRLIB_H__
 
 #define UART_STATUS_DR 0x00000001  /**< Data Ready */
 #define UART_STATUS_TSE 0x00000002 /**< TX Send Register Empty */
@@ -47,6 +47,4 @@
 #define UART_CTRL_OFFSET 0x8   /**< Control register offset */
 #define UART_SCALER_OFFSET 0xc /**< Scaler register offset */
 
-#define UART1 0x80000100 /**< First Leon3 UART IO adress */
-
-#endif /* ! __MOTH_SPARC_LEON3_CONS_H__ */
+#endif /* ! __OS_DEVICE_CONSOLE_GRLIB_H__ */

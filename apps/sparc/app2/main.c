@@ -43,7 +43,7 @@
 
 #define UART1_DEVICE_OFFSET 0x100
 
-#include <os_arch_cons.h>
+#include <os_device_console_grlib.h>
 
 extern uint8_t __UART_begin[UART1_DEVICE_OFFSET * 2];
 

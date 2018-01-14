@@ -18,7 +18,9 @@
 #
 # @file objects.mk
 # @author Jean-Christophe Dubois (jcd@tribudubois.net)
-# @brief list of Generic board objects.
+# @brief list of uart objects.
 # */
 
-board-objs-y+=
+board-device-objs-$(CONFIG_LEON_GRLIB_UART) += uart/os_device_console_grlib.o
+board-device-objs-$(CONFIG_NONE_UART) += uart/os_device_console_none.o
+

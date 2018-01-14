@@ -2,7 +2,7 @@
 # Automatically generated make config: don't edit
 # Project: MOTH
 # Version: 0.0.1
-# Thu Dec  7 21:46:11 2017
+# Sun Jan 14 20:43:27 2018
 #
 # CONFIG_ARCH_ARM is not set
 # CONFIG_ARCH_x86 is not set
@@ -10,12 +10,9 @@ CONFIG_ARCH_SPARC=y
 CONFIG_ARCH="sparc"
 CONFIG_CPU_SPARC_LEON3=y
 # CONFIG_CPU_SPARC_LEON4 is not set
-CONFIG_SPARC=y
-CONFIG_LEON3=y
-# CONFIG_LEON4 is not set
 
 #
-# SPARC CPU Options
+# Target CPU Options
 #
 
 #
@@ -27,17 +24,22 @@ CONFIG_CPU="leon3"
 # LEON3 Options
 #
 CONFIG_BOARD_QEMU=y
+# CONFIG_BOARD_TSIM is not set
 
 #
-# Sparc Board Options
+# Target Board Options
 #
 CONFIG_BOARD="qemu"
+# CONFIG_LEON_GRLIB_UART is not set
+CONFIG_NONE_UART=y
+CONFIG_LEON_GRLIB_IRQMP=y
+CONFIG_GRLIB_IRQMP_ADDR=0x80000100
 
 #
 # Kernel Options
 #
 # CONFIG_VERBOSE_MODE is not set
-CONFIG_MAX_TASK_COUNT=4
+CONFIG_MAX_TASK_COUNT=5
 # CONFIG_MBX_MSG_SIZE_1 is not set
 # CONFIG_MBX_MSG_SIZE_2 is not set
 CONFIG_MBX_MSG_SIZE_4=y
@@ -67,6 +69,7 @@ CONFIG_MEM=y
 #
 CONFIG_LIBMOTH=y
 CONFIG_APP_INTERRUPT=y
+CONFIG_APP_TIMER=y
 CONFIG_APP_APP1=y
 CONFIG_APP_APP2=y
 CONFIG_APP_APP3=y

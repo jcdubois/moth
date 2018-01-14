@@ -21,4 +21,4 @@
 # @brief list of Generic board objects.
 # */
 
-board-objs-y+= qemu.o
+board-objs-$(CONFIG_BOARD_QEMU) += qemu.o

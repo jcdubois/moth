@@ -40,7 +40,6 @@ cpu-ldflags += -msoft-float
 cpu-ldflags += -mno-v8plus
 cpu-mergeflags += -m elf32_sparc
 
-cpu-objs-y += os_arch_cons.o
 cpu-objs-y += os_arch_leon.o
 cpu-objs-y += os_arch_space.o
 cpu-objs-y += mmugen.o

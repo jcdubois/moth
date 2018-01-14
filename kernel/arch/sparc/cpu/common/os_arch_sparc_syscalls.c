@@ -181,10 +181,10 @@ void os_arch_trap_handler(uint32_t pc, uint32_t npc, uint32_t psr,
     os_arch_sched_exit();
     break;
   default:
-    syslog("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%x %%nPC=%x "
+    printf("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%x %%nPC=%x "
            "%%sp=0x%x\n",
            trap_nb, psr, pc, npc, stack_pointer);
-    syslog("%%psr : impl:0x%x ver:%x nzvc:%u%u%u%u EC:%u EF:%u PIL:0x%x S:%u "
+    printf("%%psr : impl:0x%x ver:%x nzvc:%u%u%u%u EC:%u EF:%u PIL:0x%x S:%u "
            "PS:%u ET:%u CWP:%u\n\r",
            (psr >> 28) & 0xF, (psr >> 24) & 0xF, (psr >> 23) & 0x1,
            (psr >> 22) & 0x1c, (psr >> 21) & 0x1, (psr >> 20) & 0x1,
