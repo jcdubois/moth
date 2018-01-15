@@ -21,10 +21,8 @@
  * @brief 
  */
 
-#ifndef __MOTH_SPARC_LEON3_IRQ_H__
-#define __MOTH_SPARC_LEON3_IRQ_H__
-
-#define IRQMP_BASE        0x80000200   /**< Leon3 IRQMP IO adress */
+#ifndef __OS_DEVICE_INTC_IRQMP_H__
+#define __OS_DEVICE_INTC_IRQMP_H__
 
 #define IRQMP_LEVEL_OFFSET     0x00U   /**< Level register offset */
 #define IRQMP_PENDING_OFFSET   0x04U   /**< Pending register offset */
@@ -37,4 +35,4 @@
 
 #define IRQMP_IRQ_MASK 0x0000FFFE
 
-#endif /* __MOTH_SPARC_LEON3_IRQ_H__ */
+#endif /* __OS_DEVICE_INTC_IRQMP_H__ */

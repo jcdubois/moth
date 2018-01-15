@@ -25,7 +25,14 @@
 /* function prototypes for this file */
 #include <os_arch.h>
 
-void os_arch_idle(void) {
-  /* For LEON3 or LEON4 */
-  asm volatile("wr %g0, %asr19");
+/* for os_arch_io_read32() */
+#include "os_arch_ioports.h"
+
+/* for IRQMP_XXX macros */
+#include "os_device_intc_irqmp.h"
+
+uint8_t os_arch_interrupt_is_pending(void) {
+  uint32_t pending_irq = os_arch_io_read32(CONFIG_GRLIB_IRQMP_ADDR + IRQMP_PENDING_OFFSET);
+
+  return (pending_irq & IRQMP_IRQ_MASK) ? 1 : 0;
 }

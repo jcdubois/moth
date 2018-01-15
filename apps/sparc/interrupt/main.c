@@ -41,7 +41,7 @@
 
 #include <ioports.h>
 
-#include <os_arch_irq.h>
+#include <os_device_intc_irqmp.h>
 
 #define UART1_DEVICE_OFFSET 0x100
 
