@@ -22,5 +22,4 @@
 # */
 
 board-device-objs-$(CONFIG_LEON_GRLIB_UART) += uart/os_device_console_grlib.o
-board-device-objs-$(CONFIG_NONE_UART) += uart/os_device_console_none.o
 

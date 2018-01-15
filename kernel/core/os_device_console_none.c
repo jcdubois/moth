@@ -21,7 +21,4 @@
  * @brief
  */
 
-/* for basic types */
-#include <types.h>
-
 void os_arch_cons_init(void) {}

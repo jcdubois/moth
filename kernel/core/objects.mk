@@ -22,3 +22,5 @@
 # */
 
 core-objs-y += os.o
+core-objs-$(CONFIG_NONE_UART) += os_device_console_none.o
+
