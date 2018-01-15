@@ -2,7 +2,7 @@
 # Automatically generated make config: don't edit
 # Project: MOTH
 # Version: 0.0.1
-# Sun Jan 14 20:43:27 2018
+# Mon Jan 15 07:58:57 2018
 #
 # CONFIG_ARCH_ARM is not set
 # CONFIG_ARCH_x86 is not set
@@ -33,7 +33,7 @@ CONFIG_BOARD="qemu"
 # CONFIG_LEON_GRLIB_UART is not set
 CONFIG_NONE_UART=y
 CONFIG_LEON_GRLIB_IRQMP=y
-CONFIG_GRLIB_IRQMP_ADDR=0x80000100
+CONFIG_GRLIB_IRQMP_ADDR=0x80000200
 
 #
 # Kernel Options
