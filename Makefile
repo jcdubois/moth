@@ -97,7 +97,8 @@ export kernel_libs_dir=$(CURDIR)/kernel/libs
 export common_libs_dir=$(CURDIR)/libs
 export apps_dir=$(CURDIR)/apps
 export apps_libs_dir=$(apps_dir)/libs
-export xsl_dir=$(tools_dir)/xsl/$(CONFIG_ARCH)
+export xsl_arch_dir=$(tools_dir)/xsl/$(CONFIG_ARCH)
+export xsl_common_dir=$(tools_dir)/xsl/common
 
 # Setup list of tools for compilation
 include $(tools_dir)/tools.mk
@@ -301,7 +302,7 @@ all: $(CONFIG_FILE) $(tools-y) $(targets-y)
 # Include additional rules for tools
 include $(tools_dir)/rules.mk
 
-$(build_dir)/os_task_ro.c: $(cpu_dir)/mmugen.xml $(xsl_dir)/task_config.xsl
+$(build_dir)/os_task_ro.c: $(cpu_dir)/mmugen.xml $(xsl_common_dir)/task_config.xsl
 	$(call compile_xml,$@,$(filter-out $<,$^),$<)
 
 $(build_dir)/moth.bin: $(build_dir)/moth.elf
@@ -364,10 +365,10 @@ $(build_dir)/%.xo: $(build_dir)/%.o
 $(build_dir)/apps/%.o: $(src_dir)/apps/$(CONFIG_ARCH)/%.c
 	$(call compile_cc,$@,$<)
 
-$(build_dir)/%.c: $(src_dir)/%.xml $(xsl_dir)/mmugen.xsl
+$(build_dir)/%.c: $(src_dir)/%.xml $(xsl_arch_dir)/mmugen.xsl
 	$(call compile_xml,$@,$(filter-out $<,$^),$<)
 
-$(build_dir)/%.ld: $(cpu_dir)/mmugen.xml $(xsl_dir)/linker.xsl
+$(build_dir)/%.ld: $(cpu_dir)/mmugen.xml $(xsl_arch_dir)/linker.xsl
 	$(call compile_xml,$(build_dir)/moth.ld,$(filter-out $<,$^),$<)
 
 $(build_dir)/%.elf: $(build_dir)/%.ld $(build_dir)/apps/%/main.o $(apps-all-y)
