@@ -208,7 +208,7 @@ compile_ar = $(V)mkdir -p `dirname $(1)`; \
 	     $(ar) -s $(1)
 compile_xml = $(V)mkdir -p `dirname $(1)`; \
 	      echo " (xsl)       $(subst $(build_dir)/,,$(1))"; \
-	      $(xsl) -o $(1) $(2) $(3)
+	      $(xsl) --maxdepth 30000 --maxvars 30000 -o $(1) $(2) $(3)
 compose_bin = $(V)mkdir -p `dirname $(1)`; \
 	      echo " (compose)   $(subst $(build_dir)/,,$(1))"; \
 	      cp -f $(2) $(1); \

@@ -1,0 +1,84 @@
+#
+# Automatically generated make config: don't edit
+# Project: MOTH
+# Version: 0.0.1
+# Sun Jan 21 19:20:14 2018
+#
+CONFIG_ARCH_ARM=y
+# CONFIG_ARCH_x86 is not set
+# CONFIG_ARCH_SPARC is not set
+CONFIG_ARCH="arm"
+CONFIG_CPU_ARM926T=y
+# CONFIG_CPU_ARM11 is not set
+# CONFIG_CPU_ARM11MP is not set
+# CONFIG_CPU_CORTEX_A8 is not set
+# CONFIG_CPU_CORTEX_A9 is not set
+# CONFIG_CPU_CORTEX_A7 is not set
+# CONFIG_CPU_CORTEX_A15 is not set
+# CONFIG_CPU_GENERIC_V5 is not set
+# CONFIG_CPU_GENERIC_V6 is not set
+# CONFIG_CPU_GENERIC_V7 is not set
+# CONFIG_CPU_GENERIC_V7_VE is not set
+# CONFIG_CPU_GENERIC_V8 is not set
+CONFIG_ARMV5=y
+# CONFIG_ARMV6 is not set
+# CONFIG_ARMV6K is not set
+# CONFIG_ARMV7A is not set
+# CONFIG_ARMV7A_VE is not set
+# CONFIG_ARMV8 is not set
+CONFIG_ARM=y
+CONFIG_ARM32=y
+# CONFIG_ARM32VE is not set
+# CONFIG_ARM64 is not set
+
+#
+# ARM CPU Options
+#
+CONFIG_CPU_COUNT=1
+
+#
+# CPU Options
+#
+CONFIG_CPU="arm32"
+
+#
+# CPU Options
+#
+
+#
+# Boards Options
+#
+
+#
+# Kernel Options
+#
+# CONFIG_VERBOSE_MODE is not set
+CONFIG_MAX_TASK_COUNT=5
+# CONFIG_MBX_MSG_SIZE_1 is not set
+# CONFIG_MBX_MSG_SIZE_2 is not set
+CONFIG_MBX_MSG_SIZE_4=y
+# CONFIG_MBX_MSG_SIZE_8 is not set
+CONFIG_TASK_MBX_COUNT=3
+
+#
+# Libs Options
+#
+
+#
+# Printf lib Options
+#
+CONFIG_PRINTF=y
+
+#
+# Memory lib Options
+#
+CONFIG_MEM=y
+
+#
+# Apps Options
+#
+
+#
+# Limoth syscall library Options
+#
+CONFIG_LIBMOTH=y
