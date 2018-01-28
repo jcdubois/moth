@@ -18,13 +18,13 @@
     <xsl:text>/*****************************************************************************&#xa;</xsl:text>
     <xsl:text> * Macros&#xa;</xsl:text>
     <xsl:text> * Note: The PTD macro is not complete as the address needs to be shifted&#xa;</xsl:text>
-    <xsl:text> * 	4 bits right. The compiler is not able to do this before link time.&#xa;</xsl:text>
-    <xsl:text> * 	This will need to be done at runtime during the init process. See&#xa;</xsl:text>
-    <xsl:text> * 	os_arch_mmu_table_init() below for details.&#xa;</xsl:text>
+    <xsl:text> *&#x9;4 bits right. The compiler is not able to do this before link time.&#xa;</xsl:text>
+    <xsl:text> *&#x9;This will need to be done at runtime during the init process. See&#xa;</xsl:text>
+    <xsl:text> *&#x9;os_arch_mmu_table_init() below for details.&#xa;</xsl:text>
     <xsl:text> *****************************************************************************/&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>#define PTD(paddr) ((uint32_t)(((char *)(paddr)) + MM_ET_PTD))&#xa;</xsl:text>
-    <xsl:text>#define PTE(paddr, cache, prot) ((((paddr) &gt;&gt; 4) &amp; 0xffffff00) | (cache) | (prot) | MM_ET_PTE)&#xa;</xsl:text>
+    <xsl:text>#define PTE(paddr, cache, prot) ((((paddr) >> 4) &amp; 0xffffff00) | (cache) | (prot) | MM_ET_PTE)&#xa;</xsl:text>
     <xsl:text>#define FAULT() 0&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>/*****************************************************************************&#xa;</xsl:text>
@@ -39,8 +39,8 @@
     <xsl:text> *****************************************************************************/&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>static uint32_t mmu_entry[MM_LVL0_CTX_NBR]&#xa;</xsl:text>
-    <xsl:text>	__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
-    <xsl:text>	__attribute__ ((aligned (MM_LVL0_CTX_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
+    <xsl:text>&#x9;__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
+    <xsl:text>&#x9;__attribute__ ((aligned (MM_LVL0_CTX_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
     <xsl:apply-templates select="context" mode="level0"/>
     <xsl:call-template name="iterFault">
       <xsl:with-param name="num" select="256 - count(context)"/>
@@ -63,21 +63,21 @@
     <xsl:text>    return;&#xa;</xsl:text>
     <xsl:text>  }&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
-    <xsl:text>  for (i = 0; MM_LVL0_CTX_NBR &gt; i; i++) {&#xa;</xsl:text>
+    <xsl:text>  for (i = 0; MM_LVL0_CTX_NBR > i; i++) {&#xa;</xsl:text>
     <xsl:text>    if (mmu_entry[i] &amp; MM_ET_PTD) {&#xa;</xsl:text>
     <xsl:text>      uint32_t *ptr1 = (uint32_t *)(mmu_entry[i] &amp; 0xffffff00);&#xa;</xsl:text>
-    <xsl:text>      for (j = 0; MM_LVL1_ENTRIES_NBR &gt; j; j++) {&#xa;</xsl:text>
+    <xsl:text>      for (j = 0; MM_LVL1_ENTRIES_NBR > j; j++) {&#xa;</xsl:text>
     <xsl:text>        if (ptr1[j] &amp; MM_ET_PTD) {&#xa;</xsl:text>
     <xsl:text>          uint32_t *ptr2 = (uint32_t *)(ptr1[j] &amp; 0xffffff00);&#xa;</xsl:text>
-    <xsl:text>          for (k = 0; MM_LVL2_ENTRIES_NBR &gt; k; k++) {&#xa;</xsl:text>
+    <xsl:text>          for (k = 0; MM_LVL2_ENTRIES_NBR > k; k++) {&#xa;</xsl:text>
     <xsl:text>            if (ptr2[k] &amp; MM_ET_PTD) {&#xa;</xsl:text>
-    <xsl:text>              ptr2[k] = ((ptr2[k] &gt;&gt; 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
+    <xsl:text>              ptr2[k] = ((ptr2[k] >> 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
     <xsl:text>            }&#xa;</xsl:text>
     <xsl:text>          }&#xa;</xsl:text>
-    <xsl:text>          ptr1[j] = ((ptr1[j] &gt;&gt; 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
+    <xsl:text>          ptr1[j] = ((ptr1[j] >> 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
     <xsl:text>        }&#xa;</xsl:text>
     <xsl:text>      }&#xa;</xsl:text>
-    <xsl:text>      mmu_entry[i] = ((mmu_entry[i] &gt;&gt; 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
+    <xsl:text>      mmu_entry[i] = ((mmu_entry[i] >> 4) &amp; 0xfffffff0) | MM_ET_PTD;&#xa;</xsl:text>
     <xsl:text>    }&#xa;</xsl:text>
     <xsl:text>  }&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
@@ -92,7 +92,7 @@
   </xsl:template>
 
   <xsl:template match="context" mode="level0">
-    <xsl:text>	PTD(</xsl:text>
+    <xsl:text>&#x9;PTD(</xsl:text>
     <xsl:value-of select="@name"/>
     <xsl:text>_level1),&#xa;</xsl:text>
   </xsl:template>
@@ -126,8 +126,8 @@
     <xsl:text>static uint32_t </xsl:text>
     <xsl:value-of select="@name"/>
     <xsl:text>_level1[MM_LVL1_ENTRIES_NBR]&#xa;</xsl:text>
-    <xsl:text>	__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
-    <xsl:text>	__attribute__ ((aligned (MM_LVL1_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
+    <xsl:text>&#x9;__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
+    <xsl:text>&#x9;__attribute__ ((aligned (MM_LVL1_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
     <xsl:call-template name="level1">
       <xsl:with-param name="pages" select="$virtualMapping"/>
       <xsl:with-param name="name" select="@name"/>
@@ -148,11 +148,11 @@
         <xsl:with-param name="num" select="$vaddress"/>
       </xsl:call-template>
       <xsl:text>_level3[MM_LVL3_ENTRIES_NBR]&#xa;</xsl:text>
-      <xsl:text>	__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
-      <xsl:text>	__attribute__ ((aligned (MM_LVL3_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
+      <xsl:text>&#x9;__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
+      <xsl:text>&#x9;__attribute__ ((aligned (MM_LVL3_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
       <xsl:variable name="head">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="$nextaddress &gt; virt">
+          <xsl:if test="$nextaddress > virt">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -167,7 +167,7 @@
       <xsl:text> &#xa;</xsl:text>
       <xsl:variable name="tail">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="virt &gt;=  $nextaddress">
+          <xsl:if test="virt >=  $nextaddress">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -184,7 +184,7 @@
     <xsl:param name="name"/>
     <xsl:param name="vaddress" select="0"/>
     <xsl:param name="endaddress" select="0"/>
-    <xsl:if test="$endaddress &gt; $vaddress">
+    <xsl:if test="$endaddress > $vaddress">
       <xsl:variable name="nextaddress" select="$vaddress + 4096"/>
       <xsl:text>/* </xsl:text>
       <xsl:call-template name="toHex">
@@ -196,7 +196,7 @@
       </xsl:call-template>
       <xsl:text> */ </xsl:text>
       <xsl:choose>
-        <xsl:when test="$nextaddress &gt; ext:node-set($pages)/virtual_page[1]/virt">
+        <xsl:when test="$nextaddress > ext:node-set($pages)/virtual_page[1]/virt">
           <xsl:choose>
             <xsl:when test="ext:node-set($pages)/virtual_page[1]/protection!='fault'">
               <xsl:text>PTE(</xsl:text>
@@ -226,7 +226,7 @@
       <xsl:text>&#xa;</xsl:text>
       <xsl:variable name="tail">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="virt &gt;=  $nextaddress">
+          <xsl:if test="virt >=  $nextaddress">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -253,11 +253,11 @@
         <xsl:with-param name="num" select="$vaddress"/>
       </xsl:call-template>
       <xsl:text>_level2[MM_LVL2_ENTRIES_NBR]&#xa;</xsl:text>
-      <xsl:text>	__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
-      <xsl:text>	__attribute__ ((aligned (MM_LVL2_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
+      <xsl:text>&#x9;__attribute__ ((section(".mmutable")))&#xa;</xsl:text>
+      <xsl:text>&#x9;__attribute__ ((aligned (MM_LVL2_ENTRIES_NBR * sizeof(uint32_t)))) = {&#xa;</xsl:text>
       <xsl:variable name="head">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="$nextaddress &gt; virt">
+          <xsl:if test="$nextaddress > virt">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -272,7 +272,7 @@
       <xsl:text>&#xa;</xsl:text>
       <xsl:variable name="tail">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="virt &gt;=  $nextaddress">
+          <xsl:if test="virt >=  $nextaddress">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -289,7 +289,7 @@
     <xsl:param name="name"/>
     <xsl:param name="vaddress" select="0"/>
     <xsl:param name="endaddress" select="0"/>
-    <xsl:if test="$endaddress &gt; $vaddress">
+    <xsl:if test="$endaddress > $vaddress">
       <xsl:variable name="nextaddress" select="$vaddress + 262144"/>
       <xsl:text>/* </xsl:text>
       <xsl:call-template name="toHex">
@@ -301,7 +301,7 @@
       </xsl:call-template>
       <xsl:text> */ </xsl:text>
       <xsl:choose>
-        <xsl:when test="$nextaddress &gt; ext:node-set($pages)/virtual_page[1]/virt">
+        <xsl:when test="$nextaddress > ext:node-set($pages)/virtual_page[1]/virt">
           <xsl:text>PTD(</xsl:text>
           <xsl:value-of select="$name"/>
           <xsl:text>_</xsl:text>
@@ -317,7 +317,7 @@
       <xsl:text>&#xa;</xsl:text>
       <xsl:variable name="tail">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="virt &gt;=  $nextaddress">
+          <xsl:if test="virt >=  $nextaddress">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -335,7 +335,7 @@
     <xsl:param name="pages"/>
     <xsl:param name="name"/>
     <xsl:param name="vaddress" select="0"/>
-    <xsl:if test="4294967296 &gt; $vaddress">
+    <xsl:if test="4294967296 > $vaddress">
       <xsl:variable name="nextaddress" select="$vaddress + 16777216"/>
       <xsl:text>/* </xsl:text>
       <xsl:call-template name="toHex">
@@ -347,7 +347,7 @@
       </xsl:call-template>
       <xsl:text> */ </xsl:text>
       <xsl:choose>
-        <xsl:when test="$nextaddress &gt; ext:node-set($pages)/virtual_page[1]/virt">
+        <xsl:when test="$nextaddress > ext:node-set($pages)/virtual_page[1]/virt">
           <xsl:text>PTD(</xsl:text>
           <xsl:value-of select="$name"/>
           <xsl:text>_</xsl:text>
@@ -363,7 +363,7 @@
       <xsl:text>&#xa;</xsl:text>
       <xsl:variable name="tail">
         <xsl:for-each select="ext:node-set($pages)/virtual_page">
-          <xsl:if test="virt &gt;=  $nextaddress">
+          <xsl:if test="virt >=  $nextaddress">
             <xsl:copy-of select="."/>
           </xsl:if>
         </xsl:for-each>
@@ -443,7 +443,7 @@
     <xsl:param name="name"/>
     <xsl:param name="cache"/>
     <xsl:param name="partition"/>
-    <xsl:if test="$size &gt; 0">
+    <xsl:if test="$size > 0">
       <xsl:element name="virtual_page">
         <xsl:element name="virt">
           <xsl:value-of select="$vaddress"/>
@@ -711,7 +711,7 @@
       <xsl:otherwise>
         <xsl:text>0x</xsl:text>
         <xsl:choose>
-          <xsl:when test="$num &gt; 0">
+          <xsl:when test="$num > 0">
             <xsl:call-template name="num2hex">
               <xsl:with-param name="dec" select="$num"/>
             </xsl:call-template>
@@ -726,7 +726,7 @@
 
   <xsl:template name="num2hex">
     <xsl:param name="dec"/>
-    <xsl:if test="$dec &gt; 0">
+    <xsl:if test="$dec > 0">
       <xsl:call-template name="num2hex">
         <xsl:with-param name="dec" select="floor($dec div 16)"/>
       </xsl:call-template>
@@ -757,7 +757,7 @@
     <xsl:param name="value" select="string-length(substring-before('0123456789ABCDEF', $MSB))"/>
     <xsl:param name="result" select="16 * $num + $value"/>
     <xsl:choose>
-      <xsl:when test="string-length($hex) &gt; 1">
+      <xsl:when test="string-length($hex) > 1">
         <xsl:call-template name="hex2num">
           <xsl:with-param name="hex" select="substring($hex, 2)"/>
           <xsl:with-param name="num" select="$result"/>
@@ -773,7 +773,7 @@
     <xsl:param name="total" select="0"/>
     <xsl:param name="objects"/>
     <xsl:variable name="head" select="$objects[1]"/>
-    <xsl:variable name="tail" select="$objects[position()&gt;1]"/>
+    <xsl:variable name="tail" select="$objects[position()>1]"/>
     <xsl:variable name="calc">
       <xsl:apply-templates select="$head" mode="size"/>
     </xsl:variable>
@@ -798,8 +798,8 @@
   <xsl:template name="iterFault">
     <xsl:param name="num"/>
     <xsl:param name="index"/>
-    <xsl:if test="$num &gt; 0">
-      <xsl:text>	FAULT(),	/* MMU entry #</xsl:text>
+    <xsl:if test="$num > 0">
+      <xsl:text>&#x9;FAULT(),&#x9;/* MMU entry #</xsl:text>
       <xsl:value-of select="$index"/>
       <xsl:text>*/&#xa;</xsl:text>
       <xsl:call-template name="iterFault">
