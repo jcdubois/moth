@@ -76,29 +76,11 @@ extern "C"
 #define MM_LVL3_ENTRIES_NBR 64 /**< Number of entries in 3rd level table */
 #define MM_LVL3_PAGE_SIZE   (4 * 1024) /**< 4 KiloBytes */
 
-/**
- * @def mm_index3(addr)
- * Compute the index in 3rd level table for the given adress.
- */
-#define mm_index3(addr) (((addr) >> 12) & 0x3F)
-
 #define MM_LVL2_ENTRIES_NBR 64 /**< Number of entries in 2nd level table */
 #define MM_LVL2_PAGE_SIZE   (MM_LVL3_ENTRIES_NBR * MM_LVL3_PAGE_SIZE) /**< 256 KiloBytes */
 
-/**
- * @def mm_index2(addr)
- * Compute the index in 2nd level table for the given adress.
- */
-#define mm_index2(addr) (((addr) >> 18) & 0x3F)
-
 #define MM_LVL1_ENTRIES_NBR 256 /**< Number of entries in 1st level table */
 #define MM_LVL1_PAGE_SIZE   (MM_LVL2_ENTRIES_NBR * MM_LVL2_PAGE_SIZE) /**< 16 MegaBytes */
-
-/**
- * @def mm_index1(addr)
- * Compute the index in 1st level table for the given adress.
- */
-#define mm_index1(addr) (((addr) >> 24) & 0xFF)
 
 #define MM_LVL0_CTX_NBR  256 /**< Maximum number of contexts */
 /** @} */
