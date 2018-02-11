@@ -103,7 +103,7 @@
     </xsl:variable>
     <xsl:variable name="virtualMapping">
       <xsl:for-each select="ext:node-set($tmp)/virtual_page">
-        <xsl:sort select="virt"/>
+        <xsl:sort select="virt" data-type="number"/>
         <xsl:copy-of select="."/>
       </xsl:for-each>
     </xsl:variable>

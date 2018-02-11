@@ -70,8 +70,7 @@
   <xsl:template match="context" mode="level0">
     <xsl:text>&#x9;CTX(</xsl:text>
     <xsl:value-of select="@name"/>
-    <xsl:text>_level1),
-</xsl:text>
+    <xsl:text>_level1),&#xa;</xsl:text>
   </xsl:template>
 
   <xsl:template match="context" mode="level1">
@@ -80,7 +79,7 @@
     </xsl:variable>
     <xsl:variable name="virtualMapping">
       <xsl:for-each select="ext:node-set($tmp)/virtual_page">
-        <xsl:sort select="virt"/>
+        <xsl:sort select="virt" data-type="number"/>
         <xsl:copy-of select="."/>
       </xsl:for-each>
     </xsl:variable>
