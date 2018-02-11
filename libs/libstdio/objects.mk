@@ -26,4 +26,4 @@ cpu-cflags += -DTINYPRINTF_DEFINE_TFP_PRINTF=1
 cpu-cflags += -DTINYPRINTF_DEFINE_TFP_SPRINTF=0
 cpu-cflags += -DTINYPRINTF_OVERRIDE_LIBC=1
 
-common-libs-objs-$(CONFIG_PRINTF)+= libstdio/tinyprintf.o
+common-libs-objs-y += libstdio/tinyprintf.o

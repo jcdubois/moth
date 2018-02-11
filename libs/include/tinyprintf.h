@@ -101,10 +101,6 @@ regs Kusti, 23.10.2004
 #ifndef __TFP_PRINTF__
 #define __TFP_PRINTF__
 
-#ifndef CONFIG_PRINTF
-#define init_printf(...)
-#define printf(...)
-#else // CONFIG_PRINTF
 #include <stdarg.h>
 
 /* Global configuration */
@@ -185,7 +181,5 @@ void tfp_printf(const char *fmt, ...) _TFP_SPECIFY_PRINTF_FMT(1, 2);
 #ifdef __cplusplus
 }
 #endif
-
-#endif // CONFIG_PRINTF
 
 #endif // __TFP_PRINTF__

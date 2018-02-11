@@ -21,6 +21,6 @@
 # @brief list of common objects.
 # */
 
-common-libs-objs-$(CONFIG_MEM)+= libmem/memcpy.o
-common-libs-objs-$(CONFIG_MEM)+= libmem/memset.o
+common-libs-objs-y += libmem/memcpy.o
+common-libs-objs-y += libmem/memset.o
 
