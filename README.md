@@ -3,8 +3,8 @@ The Moth Separation Kernel
 
 The Moth Separation kernet is a pet project trying to define a very minimal
 microkernel. The goal is for the kernel binary to fit in one or two
-memory pages (4KB to 8KB). So the code need to be very minimal with only
-required features.
+memory pages (4KB to 8KB). So the code needs to be very minimal with only
+mandatory features.
 
 Moth has only 5 system calls:
 
@@ -14,13 +14,13 @@ Moth has only 5 system calls:
 + mbx_receive: to retreive a mailbox sent by another task
 + exit: to end a task
 
-These are the services provided by the Moth kernel. All other features 
+These are the only services provided by the Moth kernel. All other features
 (drivers, interrupt handling, timer services) need to be provided by tasks
 from user space.
 
 Moth is writen in C but the goal is to move to a formal langage that
-would allow to prove that it does not contain any runtime error. [Frama-C](https://frama-c.com/)  and
-[Spark](http://www.spark-2014.org/)  are candidate languages for this future phase.
+would allow to prove that it does not contain any runtime error. [Frama-C](https://frama-c.com/) and
+[Spark](http://www.spark-2014.org/) are candidate languages for this future phase.
 
 A Separation Kernel (SK) is a specialized microkernel that provides an
 execution environment for components that exclusively communicate according to
@@ -46,7 +46,7 @@ The following list outlines the most-prominent features of the Moth kernel:
 + Shared memory for inter-partition communication
 + cooperative non interruptible scheduling
 
-**Toolchain**
+**Tools**
 
 + XSL script to generate static MMU table from an XML description
 + XSL script to generate linker files fron an XML description
