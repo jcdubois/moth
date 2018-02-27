@@ -59,7 +59,7 @@
 /* unhandled trap */
 # define unhandled_trap(trap_nbr) trap_reset()
 
-.section .text.entry
+.section .text.entry, "ax"
 .align 4
 .global entry
 .global _os_arch_trap_vector_table

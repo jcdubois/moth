@@ -89,7 +89,8 @@ extern "C"
  * @{
  * @name MMU ASI and registers
 */
-#define ASI_M_MMUREGS    0x19 /* not sparc v8 compliant */
+#define ASI_LEON_DFLUSH  0x11 /* not sparc v8 compliant */
+#define ASI_LEON_MMUREGS 0x19 /* not sparc v8 compliant */
 #define MMU_CTRL_REG     0x00000000
 #define MMU_CTXTBL_PTR   0x00000100
 #define MMU_CTX_REG      0x00000200

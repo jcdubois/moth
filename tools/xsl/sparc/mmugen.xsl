@@ -85,9 +85,9 @@
     <xsl:text>&#xa;</xsl:text>
     <xsl:text>}&#xa;</xsl:text>
     <xsl:text>&#xa;</xsl:text>
-    <xsl:text>uint32_t os_arch_mmu_get_ctx_table(void)&#xa;</xsl:text>
+    <xsl:text>uint32_t *os_arch_mmu_get_ctx_table(void)&#xa;</xsl:text>
     <xsl:text>{&#xa;</xsl:text>
-    <xsl:text>  return (uint32_t)mmu_entry;&#xa;</xsl:text>
+    <xsl:text>  return mmu_entry;&#xa;</xsl:text>
     <xsl:text>}&#xa;</xsl:text>
   </xsl:template>
 

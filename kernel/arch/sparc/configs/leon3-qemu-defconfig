@@ -2,12 +2,14 @@
 # Automatically generated make config: don't edit
 # Project: MOTH
 # Version: 0.0.1
-# Mon Jan 15 07:58:57 2018
+# Sun Feb 11 18:51:08 2018
 #
 # CONFIG_ARCH_ARM is not set
 # CONFIG_ARCH_x86 is not set
 CONFIG_ARCH_SPARC=y
 CONFIG_ARCH="sparc"
+CONFIG_CPU="leon3"
+CONFIG_BOARD="qemu"
 CONFIG_CPU_SPARC_LEON3=y
 # CONFIG_CPU_SPARC_LEON4 is not set
 
@@ -18,20 +20,18 @@ CONFIG_CPU_SPARC_LEON3=y
 #
 # Common Sparc Options
 #
-CONFIG_CPU="leon3"
 
 #
 # LEON3 Options
 #
-CONFIG_BOARD_QEMU=y
-# CONFIG_BOARD_TSIM is not set
+CONFIG_BOARD_LEON_QEMU=y
+# CONFIG_BOARD_LEON_TSIM is not set
 
 #
 # Target Board Options
 #
-CONFIG_BOARD="qemu"
-# CONFIG_LEON_GRLIB_UART is not set
-CONFIG_NONE_UART=y
+CONFIG_LEON_GRLIB_UART=y
+CONFIG_GRLIB_UART_ADDR=0x80000100
 CONFIG_LEON_GRLIB_IRQMP=y
 CONFIG_GRLIB_IRQMP_ADDR=0x80000200
 
