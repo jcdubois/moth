@@ -37,4 +37,6 @@ cpu-ldflags += -msoft-float
 #cpu-mergeflags += -m elf32-littlearm
 
 cpu-objs-y += mmugen.o
+cpu-objs-y += os_arch_space.o
+cpu-objs-y += os_arch_arm32.o
 

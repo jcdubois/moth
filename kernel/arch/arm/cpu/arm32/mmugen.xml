@@ -2,7 +2,7 @@
 <platform xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <physical>
     <physical_map name="memory">
-      <address>0x80000000</address>
+      <address>0x10000000</address>
       <size>0x00300000</size>
       <physical_map name="kernel.text">
         <size>0x00003000</size>
@@ -128,7 +128,7 @@
   <virtuals>
     <virtual name="kernel">
       <virtual_map name="text" cache="true">
-        <address>0x80000000</address>
+        <address>0x10000000</address>
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="kernel.text"]</physical_ref>
         <protection>
           <supervisor access="execute"/>
@@ -406,7 +406,7 @@
       <virtual_map name="barrier6">
         <size>0x00001000</size>
       </virtual_map>
-        <virtual_map name="shm_app3_app2" cache="true">
+      <virtual_map name="shm_app3_app2" cache="true">
         <physical_ref>/platform/physical/physical_map[@name="memory"]/physical_map[@name="app3.shm_app2"]</physical_ref>
         <protection>
           <user access="read"/>

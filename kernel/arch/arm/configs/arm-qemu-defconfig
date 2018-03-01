@@ -2,16 +2,16 @@
 # Automatically generated make config: don't edit
 # Project: MOTH
 # Version: 0.0.1
-# Sun Jan 21 19:20:14 2018
+# Fri Feb  9 09:05:02 2018
 #
 CONFIG_ARCH_ARM=y
 # CONFIG_ARCH_x86 is not set
 # CONFIG_ARCH_SPARC is not set
 CONFIG_ARCH="arm"
-CONFIG_CPU_ARM926T=y
+# CONFIG_CPU_ARM926T is not set
 # CONFIG_CPU_ARM11 is not set
 # CONFIG_CPU_ARM11MP is not set
-# CONFIG_CPU_CORTEX_A8 is not set
+CONFIG_CPU_CORTEX_A8=y
 # CONFIG_CPU_CORTEX_A9 is not set
 # CONFIG_CPU_CORTEX_A7 is not set
 # CONFIG_CPU_CORTEX_A15 is not set
@@ -20,10 +20,10 @@ CONFIG_CPU_ARM926T=y
 # CONFIG_CPU_GENERIC_V7 is not set
 # CONFIG_CPU_GENERIC_V7_VE is not set
 # CONFIG_CPU_GENERIC_V8 is not set
-CONFIG_ARMV5=y
+# CONFIG_ARMV5 is not set
 # CONFIG_ARMV6 is not set
 # CONFIG_ARMV6K is not set
-# CONFIG_ARMV7A is not set
+CONFIG_ARMV7A=y
 # CONFIG_ARMV7A_VE is not set
 # CONFIG_ARMV8 is not set
 CONFIG_ARM=y
@@ -44,15 +44,21 @@ CONFIG_CPU="arm32"
 #
 # CPU Options
 #
+CONFIG_BOARD_ARM_QEMU=y
 
 #
-# Boards Options
+# Target Board Options
 #
+CONFIG_BOARD="qemu"
+CONFIG_ARM_FREESCALE_UART=y
+# CONFIG_NONE_UART is not set
+CONFIG_FREESCALE_UART_ADDR=0x02020000
+CONFIG_ARM_GIRC=y
 
 #
 # Kernel Options
 #
-# CONFIG_VERBOSE_MODE is not set
+CONFIG_VERBOSE_MODE=y
 CONFIG_MAX_TASK_COUNT=5
 # CONFIG_MBX_MSG_SIZE_1 is not set
 # CONFIG_MBX_MSG_SIZE_2 is not set

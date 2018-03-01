@@ -1,50 +1,25 @@
 #/**
-# Copyright (c) 2017 Jean-Christophe Dubois
+# Copyright (c) 2017 Jean-Christophe Dubois.
 # All rights reserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 2, or (at your option)
 # any later version.
-#
+# 
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#
+# 
 # You should have received a copy of the GNU General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #
-# @file    openconf.cfg
-# @author  Jean-Christophe Dubois (jcd@tribudubois.net)
-# @brief   Board config file for ARM boards
-#*/
+# @file objects.mk
+# @author Jean-Christophe Dubois (jcd@tribudubois.net)
+# @brief list of uart objects.
+# */
 
-choice
-	bool
-	prompt "Target Board/SOC"
-	default CONFIG_BOARD_ARM_QEMU
-	help
-		Select a target Board/SOC from available options
+board-device-objs-$(CONFIG_ARM_GIRC) += intc/os_device_intc_girc.o
 
-	config CONFIG_BOARD_ARM_QEMU
-		bool "qemu"
-		select CONFIG_LEON_GRLIB_UART
-		select CONFIG_LEON_GRLIB_IRQMP
-		help
-			Qemu arm simulator.
-
-endchoice
-
-menu "Target Board Options"
-
-if CONFIG_BOARD_ARM_QEMU
-
-source "kernel/arch/arm/board/qemu/openconf.cfg"
-
-endif
-
-source "kernel/arch/arm/board/device/openconf.cfg"
-
-endmenu

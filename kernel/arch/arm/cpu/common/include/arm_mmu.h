@@ -90,7 +90,7 @@ extern "C"
 
 void os_arch_mmu_table_init(void);
 
-uint32_t os_arch_mmu_get_ctx_table(void);
+uint32_t *os_arch_mmu_get_ctx_table(void);
 
 #ifdef __cplusplus
 }
