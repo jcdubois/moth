@@ -99,7 +99,11 @@ static void os_arch_mbx_receive(void) {
 
   syslog("%s: \n", __func__);
 
-  status = os_mbx_receive(entry);
+  status = os_mbx_receive();
+
+  if (status == OS_SUCCESS) {
+    *entry = os_task_rw[os_sched_get_current_task_id()].rx_mbx;
+  }
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
