@@ -794,7 +794,7 @@ int conf_write_autoconf(void)
 	struct symbol *sym;
 	const char *str;
 	char *name, *version, path[PATH_MAX], tmppath[PATH_MAX];
-	FILE *out, *out_h;
+	FILE *out, *out_h, *out_ada;
 	time_t now;
 	int i, l;
 
@@ -828,6 +828,13 @@ int conf_write_autoconf(void)
 		return 1;
 	}
 
+	out_ada = fopen(".tmpconfig.ads", "w");
+	if (!out_ada) {
+		fclose(out);
+		fclose(out_h);
+		return 1;
+	}
+
 	name = getenv(OPENCONF_PROJECT_ENVNAME);
 	if (!name)
 		name = OPENCONF_PROJECT_DEFAULT;
@@ -850,6 +857,15 @@ int conf_write_autoconf(void)
 		       " */\n"
 		       "#define AUTOCONF_INCLUDED\n",
 		       name, version, ctime(&now));
+	fprintf(out_ada, " --\n"
+		       " --  Automatically generated Ada config: don't edit\n"
+		       " --  Project: %s\n"
+		       " --  Version: %s\n"
+		       " --  %s"
+		       " --\n"
+		       "\n"
+		       "package OpenConf is\n",
+		       name, version, ctime(&now));
 
 	for_all_symbols(i, sym) {
 		sym_calc_value(sym);
@@ -857,17 +873,38 @@ int conf_write_autoconf(void)
 			continue;
 		switch (sym->type) {
 		case S_BOOLEAN:
-		case S_TRISTATE:
 			switch (sym_get_tristate_value(sym)) {
 			case no:
-				break;
-			case mod:
-				fprintf(out, "%s=m\n", sym->name);
-				fprintf(out_h, "#define %s_MODULE 1\n", sym->name);
+				fprintf(out_ada, "  %s : constant Boolean := false;\n", sym->name);
 				break;
 			case yes:
 				fprintf(out, "%s=y\n", sym->name);
 				fprintf(out_h, "#define %s 1\n", sym->name);
+				fprintf(out_ada, "  %s : constant Boolean := true;\n", sym->name);
+				break;
+			default:
+				break;
+			}
+			break;
+		case S_TRISTATE:
+			switch (sym_get_tristate_value(sym)) {
+			case no:
+				fprintf(out_ada, "  %s : constant Boolean := false;\n", sym->name);
+				fprintf(out_ada, "  %s_MODULE : constant Boolean := false;\n", sym->name);
+				break;
+			case mod:
+				fprintf(out, "%s=m\n", sym->name);
+				fprintf(out_h, "#define %s_MODULE 1\n", sym->name);
+				fprintf(out_ada, "  %s : constant Boolean := false;\n", sym->name);
+				fprintf(out_ada, "  %s_MODULE : constant Boolean := true;\n", sym->name);
+				break;
+			case yes:
+				fprintf(out, "%s=y\n", sym->name);
+				fprintf(out_h, "#define %s 1\n", sym->name);
+				fprintf(out_ada, "  %s : constant Boolean := true;\n", sym->name);
+				fprintf(out_ada, "  %s_MODULE : constant Boolean := false;\n", sym->name);
+				break;
+			default:
 				break;
 			}
 			break;
@@ -875,33 +912,43 @@ int conf_write_autoconf(void)
 			str = sym_get_string_value(sym);
 			fprintf(out, "%s=\"", sym->name);
 			fprintf(out_h, "#define %s \"", sym->name);
+			fprintf(out_ada, "  %s : constant string := \"", sym->name);
 			while (1) {
 				l = strcspn(str, "\"\\");
 				if (l) {
 					fwrite(str, l, 1, out);
 					fwrite(str, l, 1, out_h);
+					fwrite(str, l, 1, out_ada);
 					str += l;
 				}
 				if (!*str)
 					break;
 				fprintf(out, "\\%c", *str);
 				fprintf(out_h, "\\%c", *str);
+				fprintf(out_ada, "\\%c", *str);
 				str++;
 			}
 			fputs("\"\n", out);
 			fputs("\"\n", out_h);
+			fputs("\";\n", out_ada);
 			break;
 		case S_HEX:
 			str = sym_get_string_value(sym);
 			if (str[0] != '0' || (str[1] != 'x' && str[1] != 'X')) {
 				fprintf(out, "%s=%s\n", sym->name, str);
 				fprintf(out_h, "#define %s 0x%s\n", sym->name, str);
-				break;
+				fprintf(out_ada,  "  %s : constant := 16#%s#;\n", sym->name, str);
+			} else {
+				fprintf(out, "%s=%s\n", sym->name, str);
+				fprintf(out_h, "#define %s %s\n", sym->name, str);
+				fprintf(out_ada,  "  %s : constant := 16#%s#;\n", sym->name, str + 2);
 			}
+			break;
 		case S_INT:
 			str = sym_get_string_value(sym);
 			fprintf(out, "%s=%s\n", sym->name, str);
 			fprintf(out_h, "#define %s %s\n", sym->name, str);
+			fprintf(out_ada, "  %s : constant := %s;\n", sym->name, str);
 			break;
 		default:
 			break;
@@ -909,7 +956,17 @@ int conf_write_autoconf(void)
 	}
 	fclose(out);
 	fclose(out_h);
+	fprintf(out_ada, "end OpenConf;\n");
+	fclose(out_ada);
 
+	strcpy(path, tmppath);
+	strcat(path, "/");
+	name = getenv(OPENCONF_AUTOADS_ENVNAME);
+	if (!name)
+		name = OPENCONF_AUTOADS_DEFAULT;
+	strcat(path, name);
+	if (rename(".tmpconfig.ads", path))
+		return 1;
 	strcpy(path, tmppath);
 	strcat(path, "/");
 	name = getenv(OPENCONF_AUTOHEADER_ENVNAME);
