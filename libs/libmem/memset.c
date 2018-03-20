@@ -28,7 +28,7 @@
 /**
  * fill memory with a constant byte.
  */
-void *memset(void *s, int c, size_t n) {
+void *__memset(void *s, int c, size_t n) {
   os_assert(n > 0);
   os_assert((c >= 0) && (c < 256));
   os_assert(s != NULL);
@@ -40,4 +40,17 @@ void *memset(void *s, int c, size_t n) {
   }
 
   return s;
+}
+
+void *memset(void *s, int c, size_t n) {
+
+  static void *(* const __memset_vp)(void *, int, size_t)
+    = (__memset);
+
+  /**
+   * we call __memset through a funtion pointer to make sure it
+   * is not optimized out in case the result is left untouched after
+   * zeroization.
+   */
+  return (*__memset_vp)(s, c, n);
 }
