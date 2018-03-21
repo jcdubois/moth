@@ -18,10 +18,14 @@ These are the only services provided by the Moth kernel. All other features
 (drivers, interrupt handling, timer services) need to be provided by tasks
 from user space.
 
+All tasks are linked-in at proper memory location in the Moth binary during
+the build and therefore they are all created/present at start time.
+
 Moth is writen in C but the goal is to move to a formal langage that
 would allow to prove that it does not contain any runtime error. [Frama-C](https://frama-c.com/) and
 [Spark](http://www.spark-2014.org/) are candidate languages for this future phase.
 
+**Separation Kernel definition borowed from [MUEN](https://muen.codelabs.ch/)**
 A Separation Kernel (SK) is a specialized microkernel that provides an
 execution environment for components that exclusively communicate according to
 a given security policy and are otherwise strictly isolated from each other.
