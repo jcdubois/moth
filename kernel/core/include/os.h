@@ -91,6 +91,7 @@ typedef struct {
 #define OS_ERROR_FIFO_EMPTY -2
 #define OS_ERROR_DENIED -3
 #define OS_ERROR_RECEIVE -4
+#define OS_ERROR_PARAM -5
 
 os_task_id_t os_sched_get_current_task_id(void);
 os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask);

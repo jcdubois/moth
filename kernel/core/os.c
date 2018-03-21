@@ -321,8 +321,10 @@ static inline os_status_t os_mbx_send_all_task(os_mbx_msg_t mbx_msg) {
 os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg) {
   if (dest_id == OS_TASK_ID_ALL) {
     return os_mbx_send_all_task(mbx_msg);
-  } else {
+  } else if ((dest_id >= 0) && (dest_id < CONFIG_MAX_TASK_COUNT)) {
     return os_mbx_send_one_task(dest_id, mbx_msg);
+  } else {
+    return OS_ERROR_PARAM;
   }
 }
 
