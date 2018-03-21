@@ -26,6 +26,7 @@ would allow to prove that it does not contain any runtime error. [Frama-C](https
 [Spark](http://www.spark-2014.org/) are candidate languages for this future phase.
 
 **Separation Kernel definition borowed from [MUEN](https://muen.codelabs.ch/)**
+
 A Separation Kernel (SK) is a specialized microkernel that provides an
 execution environment for components that exclusively communicate according to
 a given security policy and are otherwise strictly isolated from each other.
