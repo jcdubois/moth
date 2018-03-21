@@ -621,7 +621,8 @@ package body os is
    -- os_mbx_receive --
    --------------------
 
-   function os_mbx_receive return os_status_t is
+   function os_mbx_receive
+     (mbx_entry : out os_mbx_entry_t) return os_status_t is
       current        : os_task_id_t;
       mbx_index      : os_mbx_index_t;
       next_mbx_index : os_mbx_index_t;
@@ -644,8 +645,7 @@ package body os is
             if os_mbx_is_waiting_mbx_entry (current, mbx_index) then
 
                --  copy the mbx into the task mbx entry
-               os_task_rw (Natural (current)).rx_mbx := 
-                    os_mbx_get_mbx_entry (current, mbx_index);
+               mbx_entry := os_mbx_get_mbx_entry (current, mbx_index);
 
                if iterator = 0 then
                   --  if this was the first mbx, we just increase the mbx head

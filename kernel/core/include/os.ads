@@ -1,4 +1,4 @@
-pragma Ada_2005;
+pragma Ada_2012;
 pragma Style_Checks (Off);
 
 with types;
@@ -114,7 +114,6 @@ package os is
       stack_pointer    : aliased os_virtual_address_t;
       mbx_waiting_mask : aliased os_mbx_mask_t;
       mbx              : aliased os_mbx_t;
-      rx_mbx           : aliased os_mbx_entry_t;
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_rw_t);
 
@@ -135,7 +134,7 @@ package os is
    function os_init return os_task_id_t;
    pragma Export (C, os_init, "os_init");
 
-   function os_mbx_receive return os_status_t;
+   function os_mbx_receive (mbx_entry : out os_mbx_entry_t) return os_status_t;
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
    function os_mbx_send (dest_id : os_task_id_param_t; mbx_msg : os_mbx_msg_t) return os_status_t;

@@ -79,7 +79,6 @@ typedef struct {
   os_virtual_address_t stack_pointer;
   os_mbx_mask_t mbx_waiting_mask;
   os_mbx_t mbx;
-  os_mbx_entry_t rx_mbx;
 } os_task_rw_t;
 
 #define OS_TASK_ID_NONE -1
@@ -99,7 +98,7 @@ os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask);
 os_task_id_t os_sched_yield(void);
 os_task_id_t os_sched_exit(void);
 os_task_id_t os_init(void);
-os_status_t os_mbx_receive(void);
+os_status_t os_mbx_receive(os_mbx_entry_t *);
 os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg);
 
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];

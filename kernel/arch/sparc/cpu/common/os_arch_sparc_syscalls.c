@@ -99,11 +99,11 @@ static void os_arch_mbx_receive(void) {
 
   syslog("%s: \n", __func__);
 
-  status = os_mbx_receive();
+  /* cleanup the MBX before receiving it */
+  entry->sender_id = OS_TASK_ID_NONE;
+  entry->msg = 0;
 
-  if (status == OS_SUCCESS) {
-    *entry = os_task_rw[os_sched_get_current_task_id()].rx_mbx;
-  }
+  status = os_mbx_receive(entry);
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
@@ -124,6 +124,10 @@ static void os_arch_mbx_send(void) {
   syslog("%s: \n", __func__);
 
   status = os_mbx_send(entry->sender_id, entry->msg);
+
+  /* cleanup the MBX after sending it */
+  entry->sender_id = OS_TASK_ID_NONE;
+  entry->msg = 0;
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
