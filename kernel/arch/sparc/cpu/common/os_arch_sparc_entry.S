@@ -451,7 +451,7 @@ __os_arch_clean_win_loop:
 	andn  %fp, 0x0f, %fp          /* align stack on 16-byte boundary */
 	sub   %fp, 0x40, %sp
 
-	call  os_init
+	call  os_arch_init
 	nop                           /* delay slot */
 
 	/* retreive the stack pointer of the current task */

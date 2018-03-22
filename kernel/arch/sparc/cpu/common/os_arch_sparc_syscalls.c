@@ -38,6 +38,12 @@
  * Syscalls handlers.
  */
 
+os_task_id_t os_arch_init(void) {
+  os_task_id_t task_id;
+  os_init(&task_id);
+  return task_id;
+}
+
 /**
  * Wait function handler.
  */
@@ -50,7 +56,7 @@ static void os_arch_sched_wait(void) {
   syslog("%s: \n", __func__);
 
   current_task_id = os_sched_get_current_task_id();
-  new_task_id = os_sched_wait(mbx_mask);
+  os_sched_wait(&new_task_id, mbx_mask);
 
   *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
@@ -74,7 +80,7 @@ static void os_arch_sched_yield(void) {
   syslog("%s: \n", __func__);
 
   current_task_id = os_sched_get_current_task_id();
-  new_task_id = os_sched_yield();
+  os_sched_yield(&new_task_id);
 
   *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
@@ -103,7 +109,7 @@ static void os_arch_mbx_receive(void) {
   entry->sender_id = OS_TASK_ID_NONE;
   entry->msg = 0;
 
-  status = os_mbx_receive(entry);
+  os_mbx_receive(&status, entry);
 
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
   *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
@@ -123,7 +129,7 @@ static void os_arch_mbx_send(void) {
 
   syslog("%s: \n", __func__);
 
-  status = os_mbx_send(entry->sender_id, entry->msg);
+  os_mbx_send(&status, entry->sender_id, entry->msg);
 
   /* cleanup the MBX after sending it */
   entry->sender_id = OS_TASK_ID_NONE;
@@ -145,7 +151,7 @@ static void os_arch_sched_exit(void) {
   syslog("%s: \n", __func__);
 
   current_task_id = os_sched_get_current_task_id();
-  new_task_id = os_sched_exit();
+  os_sched_exit(&new_task_id);
 
   os_arch_context_create(current_task_id);
 

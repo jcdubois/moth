@@ -296,8 +296,9 @@ package body os is
    -- os_sched_schedule --
    -----------------------
 
-   function os_sched_schedule return os_task_id_t is
-      task_id : os_task_id_t;
+   procedure os_sched_schedule
+      (task_id : out os_task_id_t)
+   is
    begin
       --  Check interrupt status
       if os_arch_interrupt_is_pending = 1 then
@@ -328,7 +329,6 @@ package body os is
 
       --  Return the ID of the elected task to allow context switch
       --  at low (arch) level
-      return task_id;
    end os_sched_schedule;
    pragma Inline (os_sched_schedule);
 
@@ -375,14 +375,14 @@ package body os is
    -- os_mbx_send_one_task --
    --------------------------
 
-   function os_mbx_send_one_task
-     (dest_id : os_task_id_t;
-      mbx_msg : os_mbx_msg_t) return os_status_t
+   procedure os_mbx_send_one_task
+     (status  : out os_status_t;
+      dest_id : os_task_id_t;
+      mbx_msg : os_mbx_msg_t)
    is
       current        : os_task_id_t;
       mbx_permission : os_mbx_mask_t;
       waiting_mask   : os_mbx_mask_t;
-      status         : os_status_t;
    begin
       current := os_sched_get_current_task_id;
 
@@ -406,7 +406,6 @@ package body os is
       else
          status := OS_ERROR_DENIED;
       end if;
-      return status;
    end os_mbx_send_one_task;
    pragma Inline (os_mbx_send_one_task);
 
@@ -414,14 +413,16 @@ package body os is
    -- os_mbx_send_all_task --
    --------------------------
 
-   function os_mbx_send_all_task (mbx_msg : os_mbx_msg_t) return os_status_t is
-      status : os_status_t;
+   procedure os_mbx_send_all_task
+     (status : out os_status_t;
+      mbx_msg : os_mbx_msg_t)
+   is
       ret    : os_status_t;
    begin
       status := OS_ERROR_DENIED;
 
       for iterator in 0 .. OS_MAX_TASK_ID loop
-         ret := os_mbx_send_one_task (os_task_id_t (iterator), mbx_msg);
+         os_mbx_send_one_task (ret, os_task_id_t (iterator), mbx_msg);
 
          if ret = OS_ERROR_FIFO_FULL then
             status := ret;
@@ -432,10 +433,7 @@ package body os is
                end if;
             end if;
          end if;
-
       end loop;
-
-      return status;
    end os_mbx_send_all_task;
    pragma Inline (os_mbx_send_all_task);
 
@@ -519,67 +517,72 @@ package body os is
    -- os_sched_wait --
    -------------------
 
-   function os_sched_wait (waiting_mask : os_mbx_mask_t) return os_task_id_t is
-      current  : os_task_id_t;
+   procedure os_sched_wait
+     (task_id  : out os_task_id_t;
+      waiting_mask : os_mbx_mask_t)
+   is
       tmp_mask : os_mbx_mask_t;
    begin
-      current := os_sched_get_current_task_id;
+      task_id := os_sched_get_current_task_id;
 
-      tmp_mask := waiting_mask and os_mbx_get_mbx_permission (current);
+      tmp_mask := waiting_mask and os_mbx_get_mbx_permission (task_id);
 
-      os_sched_remove_task_from_ready_list (current);
+      os_sched_remove_task_from_ready_list (task_id);
 
       if tmp_mask /= 0 then
-         os_mbx_set_waiting_mask (current, tmp_mask);
+         os_mbx_set_waiting_mask (task_id, tmp_mask);
 
-         tmp_mask := tmp_mask and os_mbx_get_posted_mask (current);
+         tmp_mask := tmp_mask and os_mbx_get_posted_mask (task_id);
 
          if tmp_mask /= 0 then
-            os_sched_add_task_to_ready_list (current);
+            os_sched_add_task_to_ready_list (task_id);
          end if;
-      elsif current /= OS_INTERRUPT_TASK_ID then
-         os_sched_add_task_to_ready_list (current);
+      elsif task_id /= OS_INTERRUPT_TASK_ID then
+         os_sched_add_task_to_ready_list (task_id);
       end if;
 
-      return os_sched_schedule;
+      os_sched_schedule (task_id);
    end os_sched_wait;
 
    --------------------
    -- os_sched_yield --
    --------------------
 
-   function os_sched_yield return os_task_id_t is
-      current : os_task_id_t;
+   procedure os_sched_yield
+     (task_id  : out os_task_id_t)
+   is
    begin
-      current := os_sched_get_current_task_id;
+      task_id := os_sched_get_current_task_id;
 
-      os_sched_remove_task_from_ready_list (current);
+      os_sched_remove_task_from_ready_list (task_id);
 
-      os_sched_add_task_to_ready_list (current);
+      os_sched_add_task_to_ready_list (task_id);
 
-      return os_sched_schedule;
+      os_sched_schedule (task_id);
    end os_sched_yield;
 
    -------------------
    -- os_sched_exit --
    -------------------
 
-   function os_sched_exit return os_task_id_t is
-      current : os_task_id_t;
+   procedure os_sched_exit
+     (task_id  : out os_task_id_t)
+   is
    begin
-      current := os_sched_get_current_task_id;
+      task_id := os_sched_get_current_task_id;
 
-      os_sched_remove_task_from_ready_list (current);
+      os_sched_remove_task_from_ready_list (task_id);
 
-      return os_sched_schedule;
+      os_sched_schedule (task_id);
    end os_sched_exit;
 
    -------------
    -- os_init --
    -------------
 
-   function os_init return os_task_id_t is
-      task_id : os_task_id_t;
+   procedure os_init
+     (task_id  : out os_task_id_t)
+   is
       prev_id : os_task_id_t;
    begin
       os_arch_cons_init;
@@ -609,21 +612,20 @@ package body os is
 
       end loop;
 
-      task_id := os_sched_schedule;
+      os_sched_schedule (task_id);
 
       os_arch_context_set (task_id);
 
       os_arch_space_switch (prev_id, task_id);
-
-      return task_id;
    end os_init;
 
    --------------------
    -- os_mbx_receive --
    --------------------
 
-   function os_mbx_receive
-     (mbx_entry : out os_mbx_entry_t) return os_status_t
+   procedure os_mbx_receive
+     (status    : out os_status_t;
+      mbx_entry : out os_mbx_entry_t)
    is
       current        : os_task_id_t;
       mbx_index      : os_mbx_index_t;
@@ -634,8 +636,11 @@ package body os is
 
       if os_mbx_is_empty (current) then
          --  mbx queue is empty, so we return with error
-         return OS_ERROR_FIFO_EMPTY;
+	 status := OS_ERROR_FIFO_EMPTY;
       else
+         --  We did not found any matching mbx for now
+         status := OS_ERROR_RECEIVE;
+
          --  go through received mbx for this task
          for iterator in 0 .. (os_mbx_get_mbx_count (current) - 1) loop
 
@@ -675,12 +680,10 @@ package body os is
                os_mbx_dec_mbx_count (current);
 
                --  We found a matching mbx
-               return OS_SUCCESS;
+               status := OS_SUCCESS;
+	       exit;
             end if;
          end loop;
-
-         --  We did not found any matching mbx
-         return OS_ERROR_RECEIVE;
       end if;
    end os_mbx_receive;
 
@@ -688,17 +691,18 @@ package body os is
    -- os_mbx_send --
    -----------------
 
-   function os_mbx_send
-     (dest_id : os_task_id_param_t;
-      mbx_msg : os_mbx_msg_t) return os_status_t
+   procedure os_mbx_send
+     (status  : out os_status_t;
+      dest_id : os_task_id_param_t;
+      mbx_msg : os_mbx_msg_t)
    is
    begin
       if dest_id = OS_TASK_ID_ALL then
-         return os_mbx_send_all_task (mbx_msg);
+         os_mbx_send_all_task (status, mbx_msg);
       elsif ((dest_id >= 0) and (dest_id < OS_MAX_TASK_CNT)) then
-         return os_mbx_send_one_task (dest_id, mbx_msg);
+         os_mbx_send_one_task (status, dest_id, mbx_msg);
       else
-         return OS_ERROR_PARAM;
+         status := OS_ERROR_PARAM;
       end if;
    end os_mbx_send;
 

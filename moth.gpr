@@ -9,7 +9,7 @@ project Moth is
    end Builder;
 
    package Prove is
-      for Switches use ("--level=4", "--report=all");
+      for Switches use ("--level=4", "--report=all", "--no-inlining");
    end Prove;
 
 end Moth;

@@ -120,22 +120,26 @@ package os is
    function os_sched_get_current_task_id return os_task_id_t;
    pragma Export (C, os_sched_get_current_task_id, "os_sched_get_current_task_id");
 
-   function os_sched_wait (waiting_mask : os_mbx_mask_t) return os_task_id_t;
+   procedure os_sched_wait (task_id      : out os_task_id_t;
+	                    waiting_mask : os_mbx_mask_t);
    pragma Export (C, os_sched_wait, "os_sched_wait");
 
-   function os_sched_yield return os_task_id_t;
+   procedure os_sched_yield (task_id : out os_task_id_t);
    pragma Export (C, os_sched_yield, "os_sched_yield");
 
-   function os_sched_exit return os_task_id_t;
+   procedure os_sched_exit (task_id : out os_task_id_t);
    pragma Export (C, os_sched_exit, "os_sched_exit");
 
-   function os_init return os_task_id_t;
+   procedure os_init (task_id : out os_task_id_t);
    pragma Export (C, os_init, "os_init");
 
-   function os_mbx_receive (mbx_entry : out os_mbx_entry_t) return os_status_t;
+   procedure os_mbx_receive (status    : out os_status_t;
+	                     mbx_entry : out os_mbx_entry_t);
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
-   function os_mbx_send (dest_id : os_task_id_param_t; mbx_msg : os_mbx_msg_t) return os_status_t;
+   procedure os_mbx_send (status  : out os_status_t;
+	                  dest_id : os_task_id_param_t;
+			  mbx_msg : os_mbx_msg_t);
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
    os_task_ro : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
