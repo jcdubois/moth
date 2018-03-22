@@ -1,10 +1,9 @@
-with Interfaces; use Interfaces;
+pragma SPARK_Mode;
 
+with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
-
-with os_arch; use os_arch;
-
-with types; use types;
+with os_arch;      use os_arch;
+with types;        use types;
 
 package body os is
 
@@ -205,7 +204,7 @@ package body os is
    begin
       os_task_ready_list_head := task_id;
 
-      if task_id /= OS_TASK_ID_NONE then
+      if task_id >= 0 then
          os_task_rw (Natural (task_id)).prev := OS_TASK_ID_NONE;
       end if;
    end os_sched_set_current_list_head;
@@ -301,7 +300,7 @@ package body os is
       task_id : os_task_id_t;
    begin
       --  Check interrupt status
-      if os_arch_interrupt_is_pending then
+      if os_arch_interrupt_is_pending = 1 then
          --  Put interrupt task in ready list if int is set.
          os_sched_add_task_to_ready_list (OS_INTERRUPT_TASK_ID);
       end if;
@@ -315,7 +314,7 @@ package body os is
          os_arch_idle;
 
          --  Check interrupt status
-         if os_arch_interrupt_is_pending then
+         if os_arch_interrupt_is_pending = 1 then
             --  Put interrupt task in ready list if int is set.
             os_sched_add_task_to_ready_list (OS_INTERRUPT_TASK_ID);
          end if;
@@ -383,6 +382,7 @@ package body os is
       current        : os_task_id_t;
       mbx_permission : os_mbx_mask_t;
       waiting_mask   : os_mbx_mask_t;
+      status         : os_status_t;
    begin
       current := os_sched_get_current_task_id;
 
@@ -391,7 +391,7 @@ package body os is
         os_mbx_mask_t (2**Natural (current));
       if mbx_permission /= 0 then
          if os_mbx_is_full (dest_id) then
-            return OS_ERROR_FIFO_FULL;
+            status := OS_ERROR_FIFO_FULL;
          else
             os_mbx_add_message (dest_id, current, mbx_msg);
             waiting_mask :=
@@ -401,11 +401,12 @@ package body os is
                os_sched_add_task_to_ready_list (dest_id);
             end if;
 
-            return OS_SUCCESS;
+            status := OS_SUCCESS;
          end if;
       else
-         return OS_ERROR_DENIED;
+         status := OS_ERROR_DENIED;
       end if;
+      return status;
    end os_mbx_send_one_task;
    pragma Inline (os_mbx_send_one_task);
 
@@ -622,7 +623,8 @@ package body os is
    --------------------
 
    function os_mbx_receive
-     (mbx_entry : out os_mbx_entry_t) return os_status_t is
+     (mbx_entry : out os_mbx_entry_t) return os_status_t
+   is
       current        : os_task_id_t;
       mbx_index      : os_mbx_index_t;
       next_mbx_index : os_mbx_index_t;
