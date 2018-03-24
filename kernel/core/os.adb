@@ -34,12 +34,11 @@ package body os is
    --  Get the mbx permission for a given task
 
    function os_mbx_get_mbx_permission
-     (task_id : os_task_id_t) return os_mbx_mask_t
+     (task_id : os_task_id_param_t) return os_mbx_mask_t
    is
    begin
       return os_task_ro (Natural (task_id)).mbx_permission;
    end os_mbx_get_mbx_permission;
-   pragma Inline (os_mbx_get_mbx_permission);
 
    -----------------------------
    -- os_mbx_get_waiting_mask --
@@ -47,12 +46,11 @@ package body os is
    --  Get a mask of task the given task is waiting mbx from
 
    function os_mbx_get_waiting_mask
-     (task_id : os_task_id_t) return os_mbx_mask_t
+     (task_id : os_task_id_param_t) return os_mbx_mask_t
    is
    begin
       return os_task_rw (Natural (task_id)).mbx_waiting_mask;
    end os_mbx_get_waiting_mask;
-   pragma Inline (os_mbx_get_waiting_mask);
 
    -----------------------------
    -- os_mbx_set_waiting_mask --
@@ -60,25 +58,24 @@ package body os is
    --  Set a mask of task the given task is waiting mbx from
 
    procedure os_mbx_set_waiting_mask
-     (task_id : os_task_id_t;
+     (task_id : os_task_id_param_t;
       mask    : os_mbx_mask_t)
    is
    begin
       os_task_rw (Natural (task_id)).mbx_waiting_mask := mask;
    end os_mbx_set_waiting_mask;
-   pragma Inline (os_mbx_set_waiting_mask);
 
    -------------------------
    -- os_mbx_inc_mbx_head --
    -------------------------
    --  Increment the mbx head index of the given task.
 
-   procedure os_mbx_inc_mbx_head (task_id : os_task_id_t) is
+   procedure os_mbx_inc_mbx_head (task_id : os_task_id_param_t)
+   is
    begin
       os_task_rw (Natural (task_id)).mbx.head :=
         (os_task_rw (Natural (task_id)).mbx.head + 1) mod OS_MAX_MBX_CNT;
    end os_mbx_inc_mbx_head;
-   pragma Inline (os_mbx_inc_mbx_head);
 
    -------------------------
    -- os_mbx_get_mbx_head --
@@ -86,12 +83,11 @@ package body os is
    --  Retrieve the mbx head index of the given task.
 
    function os_mbx_get_mbx_head
-     (task_id : os_task_id_t) return os_mbx_index_t
+     (task_id : os_task_id_param_t) return os_mbx_index_t
    is
    begin
       return os_task_rw (Natural (task_id)).mbx.head;
    end os_mbx_get_mbx_head;
-   pragma Inline (os_mbx_get_mbx_head);
 
    --------------------------
    -- os_mbx_get_mbx_count --
@@ -99,58 +95,59 @@ package body os is
    --  Retrieve the mbx count of the given task.
 
    function os_mbx_get_mbx_count
-     (task_id : os_task_id_t) return os_mbx_count_t
+     (task_id : os_task_id_param_t) return os_mbx_count_t
    is
    begin
       return os_task_rw (Natural (task_id)).mbx.count;
    end os_mbx_get_mbx_count;
-   pragma Inline (os_mbx_get_mbx_count);
 
    --------------------------
    -- os_mbx_inc_mbx_count --
    --------------------------
    --  Increment the mbx count of the given task.
 
-   procedure os_mbx_inc_mbx_count (task_id : os_task_id_t) is
+   procedure os_mbx_inc_mbx_count (task_id : os_task_id_param_t)
+      with Pre => os_task_rw (Natural (task_id)).mbx.count < OS_MAX_MBX_CNT
+   is
    begin
       os_task_rw (Natural (task_id)).mbx.count :=
         os_task_rw (Natural (task_id)).mbx.count + 1;
    end os_mbx_inc_mbx_count;
-   pragma Inline (os_mbx_inc_mbx_count);
 
    --------------------------
    -- os_mbx_dec_mbx_count --
    --------------------------
    --  Derement the mbx count of the given task.
 
-   procedure os_mbx_dec_mbx_count (task_id : os_task_id_t) is
+   procedure os_mbx_dec_mbx_count (task_id : os_task_id_param_t)
+      with Pre => os_task_rw (Natural (task_id)).mbx.count > 0
+   is
    begin
       os_task_rw (Natural (task_id)).mbx.count :=
         os_task_rw (Natural (task_id)).mbx.count - 1;
    end os_mbx_dec_mbx_count;
-   pragma Inline (os_mbx_dec_mbx_count);
 
    ---------------------
    -- os_mbx_is_empty --
    ---------------------
    --  check if the mbx fifo of a given task is empty.
 
-   function os_mbx_is_empty (task_id : os_task_id_t) return Boolean is
+   function os_mbx_is_empty (task_id : os_task_id_param_t) return Boolean
+   is
    begin
       return (os_mbx_get_mbx_count (task_id) = 0);
    end os_mbx_is_empty;
-   pragma Inline (os_mbx_is_empty);
 
    --------------------
    -- os_mbx_is_full --
    --------------------
    --  check if the mbx fifo of a given task is full.
 
-   function os_mbx_is_full (task_id : os_task_id_t) return Boolean is
+   function os_mbx_is_full (task_id : os_task_id_param_t) return Boolean
+   is
    begin
       return (os_mbx_get_mbx_count (task_id) = OS_MAX_MBX_CNT);
    end os_mbx_is_full;
-   pragma Inline (os_mbx_is_full);
 
    ------------------------
    -- os_mbx_add_message --
@@ -158,8 +155,8 @@ package body os is
    --  Add a mbx to the mbx fifo of a given task.
 
    procedure os_mbx_add_message
-     (dest_id : os_task_id_t;
-      src_id  : os_task_id_t;
+     (dest_id : os_task_id_param_t;
+      src_id  : os_task_id_param_t;
       mbx_msg : os_mbx_msg_t)
    is
       mbx_index : Natural;
@@ -174,17 +171,15 @@ package body os is
       os_task_rw (Natural (dest_id)).mbx.mbx_array (mbx_index).msg := mbx_msg;
       os_mbx_inc_mbx_count (dest_id);
    end os_mbx_add_message;
-   pragma Inline (os_mbx_add_message);
 
    ----------------------------------
    -- os_sched_set_current_task_id --
    ----------------------------------
 
-   procedure os_sched_set_current_task_id (task_id : os_task_id_t) is
+   procedure os_sched_set_current_task_id (task_id : os_task_id_param_t) is
    begin
       os_task_current := task_id;
    end os_sched_set_current_task_id;
-   pragma Inline (os_sched_set_current_task_id);
 
    ------------------------------------
    -- os_sched_get_current_list_head --
@@ -194,7 +189,6 @@ package body os is
    begin
       return os_task_ready_list_head;
    end os_sched_get_current_list_head;
-   pragma Inline (os_sched_get_current_list_head);
 
    ------------------------------------
    -- os_sched_set_current_list_head --
@@ -208,13 +202,13 @@ package body os is
          os_task_rw (Natural (task_id)).prev := OS_TASK_ID_NONE;
       end if;
    end os_sched_set_current_list_head;
-   pragma Inline (os_sched_set_current_list_head);
 
    -------------------------------------
    -- os_sched_add_task_to_ready_list --
    -------------------------------------
 
-   procedure os_sched_add_task_to_ready_list (task_id : os_task_id_t) is
+   procedure os_sched_add_task_to_ready_list (task_id : os_task_id_param_t)
+   is
       index_id : os_task_id_t;
       prev_id  : os_task_id_t;
    begin
@@ -257,13 +251,13 @@ package body os is
          end loop;
       end if;
    end os_sched_add_task_to_ready_list;
-   pragma Inline (os_sched_add_task_to_ready_list);
 
    ------------------------------------------
    -- os_sched_remove_task_from_ready_list --
    ------------------------------------------
 
-   procedure os_sched_remove_task_from_ready_list (task_id : os_task_id_t) is
+   procedure os_sched_remove_task_from_ready_list (task_id : os_task_id_param_t)
+   is
       next : os_task_id_t;
       prev : os_task_id_t;
    begin
@@ -290,14 +284,13 @@ package body os is
       os_task_rw (Natural (task_id)).next := OS_TASK_ID_NONE;
       os_task_rw (Natural (task_id)).prev := OS_TASK_ID_NONE;
    end os_sched_remove_task_from_ready_list;
-   pragma Inline (os_sched_remove_task_from_ready_list);
 
    -----------------------
    -- os_sched_schedule --
    -----------------------
 
    procedure os_sched_schedule
-      (task_id : out os_task_id_t)
+      (task_id : out os_task_id_param_t)
    is
    begin
       --  Check interrupt status
@@ -306,10 +299,7 @@ package body os is
          os_sched_add_task_to_ready_list (OS_INTERRUPT_TASK_ID);
       end if;
 
-      --  Get the elected task
-      task_id := os_sched_get_current_list_head;
-
-      while task_id = OS_TASK_ID_NONE loop
+      while os_sched_get_current_list_head = OS_TASK_ID_NONE loop
          --  No task is elected:
          --  Put processor in idle mode and wait for interrupt.
          os_arch_idle;
@@ -319,10 +309,9 @@ package body os is
             --  Put interrupt task in ready list if int is set.
             os_sched_add_task_to_ready_list (OS_INTERRUPT_TASK_ID);
          end if;
-
-         --  Get the elected task
-         task_id := os_sched_get_current_list_head;
       end loop;
+
+      task_id := os_sched_get_current_list_head;
 
       --  Select the elected task as current task.
       os_sched_set_current_task_id (task_id);
@@ -330,28 +319,27 @@ package body os is
       --  Return the ID of the elected task to allow context switch
       --  at low (arch) level
    end os_sched_schedule;
-   pragma Inline (os_sched_schedule);
 
    ---------------------------------
    -- os_mbx_get_mbx_entry_sender --
    ---------------------------------
 
    function os_mbx_get_mbx_entry_sender
-     (task_id   : os_task_id_t;
-      mbx_index : os_mbx_index_t) return os_task_id_t
+     (task_id   : os_task_id_param_t;
+      mbx_index : os_mbx_index_t) return os_task_id_param_t
    is
    begin
       return os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index))
           .sender_id;
    end os_mbx_get_mbx_entry_sender;
-   pragma Inline (os_mbx_get_mbx_entry_sender);
 
    ----------------------------
    -- os_mbx_get_posted_mask --
    ----------------------------
 
    function os_mbx_get_posted_mask
-     (task_id : os_task_id_t) return os_mbx_mask_t
+     (task_id : os_task_id_param_t) return os_mbx_mask_t
+      with Pre => task_id >= 0
    is
       mbx_mask  : os_mbx_mask_t;
       mbx_index : os_mbx_index_t;
@@ -369,7 +357,6 @@ package body os is
 
       return mbx_mask;
    end os_mbx_get_posted_mask;
-   pragma Inline (os_mbx_get_posted_mask);
 
    --------------------------
    -- os_mbx_send_one_task --
@@ -377,10 +364,11 @@ package body os is
 
    procedure os_mbx_send_one_task
      (status  : out os_status_t;
-      dest_id : os_task_id_t;
+      dest_id : os_task_id_param_t;
       mbx_msg : os_mbx_msg_t)
+      with Pre => os_sched_get_current_task_id >= 0
    is
-      current        : os_task_id_t;
+      current        : os_task_id_param_t;
       mbx_permission : os_mbx_mask_t;
       waiting_mask   : os_mbx_mask_t;
    begin
@@ -407,7 +395,6 @@ package body os is
          status := OS_ERROR_DENIED;
       end if;
    end os_mbx_send_one_task;
-   pragma Inline (os_mbx_send_one_task);
 
    --------------------------
    -- os_mbx_send_all_task --
@@ -416,13 +403,14 @@ package body os is
    procedure os_mbx_send_all_task
      (status : out os_status_t;
       mbx_msg : os_mbx_msg_t)
+      with Pre => os_sched_get_current_task_id >= 0
    is
       ret    : os_status_t;
    begin
       status := OS_ERROR_DENIED;
 
       for iterator in 0 .. OS_MAX_TASK_ID loop
-         os_mbx_send_one_task (ret, os_task_id_t (iterator), mbx_msg);
+         os_mbx_send_one_task (ret, os_task_id_param_t (iterator), mbx_msg);
 
          if ret = OS_ERROR_FIFO_FULL then
             status := ret;
@@ -435,14 +423,13 @@ package body os is
          end if;
       end loop;
    end os_mbx_send_all_task;
-   pragma Inline (os_mbx_send_all_task);
 
    ----------------------------
    -- os_mbx_clear_mbx_entry --
    ----------------------------
 
    procedure os_mbx_clear_mbx_entry
-     (task_id   : os_task_id_t;
+     (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t)
    is
    begin
@@ -452,14 +439,13 @@ package body os is
       os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).msg :=
         0;
    end os_mbx_clear_mbx_entry;
-   pragma Inline (os_mbx_clear_mbx_entry);
 
    --------------------------
    -- os_mbx_set_mbx_entry --
    --------------------------
 
    procedure os_mbx_set_mbx_entry
-     (task_id   : os_task_id_t;
+     (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t;
       mbx_entry : os_mbx_entry_t)
    is
@@ -467,28 +453,26 @@ package body os is
       os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)) :=
         mbx_entry;
    end os_mbx_set_mbx_entry;
-   pragma Inline (os_mbx_set_mbx_entry);
 
    --------------------------
    -- os_mbx_get_mbx_entry --
    --------------------------
 
    function os_mbx_get_mbx_entry
-     (task_id   : os_task_id_t;
+     (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return os_mbx_entry_t
    is
    begin
       return os_task_rw (Natural (task_id)).mbx.mbx_array
           (Natural (mbx_index));
    end os_mbx_get_mbx_entry;
-   pragma Inline (os_mbx_get_mbx_entry);
 
    ---------------------------------
    -- os_mbx_is_waiting_mbx_entry --
    ---------------------------------
 
    function os_mbx_is_waiting_mbx_entry
-     (task_id   : os_task_id_t;
+     (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return Boolean
    is
    begin
@@ -498,7 +482,6 @@ package body os is
            (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))) /=
         0;
    end os_mbx_is_waiting_mbx_entry;
-   pragma Inline (os_mbx_is_waiting_mbx_entry);
 
    ----------------
    -- Public API --
@@ -518,7 +501,7 @@ package body os is
    -------------------
 
    procedure os_sched_wait
-     (task_id  : out os_task_id_t;
+     (task_id      : out os_task_id_param_t;
       waiting_mask : os_mbx_mask_t)
    is
       tmp_mask : os_mbx_mask_t;
@@ -549,7 +532,7 @@ package body os is
    --------------------
 
    procedure os_sched_yield
-     (task_id  : out os_task_id_t)
+     (task_id  : out os_task_id_param_t)
    is
    begin
       task_id := os_sched_get_current_task_id;
@@ -566,7 +549,7 @@ package body os is
    -------------------
 
    procedure os_sched_exit
-     (task_id  : out os_task_id_t)
+     (task_id  : out os_task_id_param_t)
    is
    begin
       task_id := os_sched_get_current_task_id;
@@ -581,7 +564,7 @@ package body os is
    -------------
 
    procedure os_init
-     (task_id  : out os_task_id_t)
+     (task_id  : out os_task_id_param_t)
    is
       prev_id : os_task_id_t;
    begin
@@ -631,6 +614,9 @@ package body os is
       mbx_index      : os_mbx_index_t;
       next_mbx_index : os_mbx_index_t;
    begin
+      mbx_entry.sender_id := OS_TASK_ID_NONE;
+      mbx_entry.msg       := 0;
+
       --  retrieve current task id
       current := os_sched_get_current_task_id;
 
@@ -638,7 +624,7 @@ package body os is
          --  mbx queue is empty, so we return with error
 	 status := OS_ERROR_FIFO_EMPTY;
       else
-         --  We did not found any matching mbx for now
+         --  initialize status to error in case we don't find a mbx.
          status := OS_ERROR_RECEIVE;
 
          --  go through received mbx for this task
@@ -693,14 +679,14 @@ package body os is
 
    procedure os_mbx_send
      (status  : out os_status_t;
-      dest_id : os_task_id_param_t;
+      dest_id : types.int8_t;
       mbx_msg : os_mbx_msg_t)
    is
    begin
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
       elsif ((dest_id >= 0) and (dest_id < OS_MAX_TASK_CNT)) then
-         os_mbx_send_one_task (status, dest_id, mbx_msg);
+         os_mbx_send_one_task (status, os_task_id_param_t (dest_id), mbx_msg);
       else
          status := OS_ERROR_PARAM;
       end if;

@@ -57,7 +57,8 @@ package os is
    subtype os_task_id_t is types.int8_t
                            range OS_TASK_ID_NONE .. OS_MAX_TASK_ID;
 
-   subtype os_task_id_param_t is types.int8_t;
+   subtype os_task_id_param_t is os_task_id_t
+                           range 0 .. OS_MAX_TASK_ID;
 
    subtype os_status_t is types.int32_t
                            range OS_ERROR_MAX .. OS_SUCCESS;
@@ -120,17 +121,17 @@ package os is
    function os_sched_get_current_task_id return os_task_id_t;
    pragma Export (C, os_sched_get_current_task_id, "os_sched_get_current_task_id");
 
-   procedure os_sched_wait (task_id      : out os_task_id_t;
+   procedure os_sched_wait (task_id      : out os_task_id_param_t;
 	                    waiting_mask : os_mbx_mask_t);
    pragma Export (C, os_sched_wait, "os_sched_wait");
 
-   procedure os_sched_yield (task_id : out os_task_id_t);
+   procedure os_sched_yield (task_id : out os_task_id_param_t);
    pragma Export (C, os_sched_yield, "os_sched_yield");
 
-   procedure os_sched_exit (task_id : out os_task_id_t);
+   procedure os_sched_exit (task_id : out os_task_id_param_t);
    pragma Export (C, os_sched_exit, "os_sched_exit");
 
-   procedure os_init (task_id : out os_task_id_t);
+   procedure os_init (task_id : out os_task_id_param_t);
    pragma Export (C, os_init, "os_init");
 
    procedure os_mbx_receive (status    : out os_status_t;
@@ -138,7 +139,7 @@ package os is
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
    procedure os_mbx_send (status  : out os_status_t;
-	                  dest_id : os_task_id_param_t;
+	                  dest_id : types.int8_t;
 			  mbx_msg : os_mbx_msg_t);
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
