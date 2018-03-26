@@ -9,8 +9,12 @@ project Moth is
    end Builder;
 
    package Prove is
-      for Switches use ("--level=4", "--report=all", "--no-inlining");
+      for Switches use ("--level=4", "--report=all");
    end Prove;
+
+   package Pretty_Printer is
+      for Default_Switches ("ada") use ("-N", "-c4", "-c3");
+   end Pretty_Printer;
 
 end Moth;
 

@@ -14,17 +14,17 @@ package body os is
    ---------------------
    -- os_task_current --
    ---------------------
-   --  This variable holds the ID of the current elected task.
-   --  Note: Its value could be OS_TASK_ID_NONE if no task is elected.
+   --  This variable holds the ID of the current elected task. Note: Its value
+   --  could be OS_TASK_ID_NONE if no task is elected.
 
-   os_task_current : os_task_id_t;
+   os_task_current : os_task_id_param_t;
 
    -----------------------------
    -- os_task_ready_list_head --
    -----------------------------
-   --  This variable holds the ID of the first task in the ready list (the
-   --  next ne that will be elected).
-   --  Note: Its value could be OS_TASK_ID_NONE if no task is ready.
+   --  This variable holds the ID of the first task in the ready list (the next
+   --  ne that will be elected). Note: Its value could be OS_TASK_ID_NONE if no
+   --  task is ready.
 
    os_task_ready_list_head : os_task_id_t;
 
@@ -107,7 +107,6 @@ package body os is
    --  Increment the mbx count of the given task.
 
    procedure os_mbx_inc_mbx_count (task_id : os_task_id_param_t)
-      with Pre => os_task_rw (Natural (task_id)).mbx.count < OS_MAX_MBX_CNT
    is
    begin
       os_task_rw (Natural (task_id)).mbx.count :=
@@ -120,7 +119,6 @@ package body os is
    --  Derement the mbx count of the given task.
 
    procedure os_mbx_dec_mbx_count (task_id : os_task_id_param_t)
-      with Pre => os_task_rw (Natural (task_id)).mbx.count > 0
    is
    begin
       os_task_rw (Natural (task_id)).mbx.count :=
@@ -176,7 +174,8 @@ package body os is
    -- os_sched_set_current_task_id --
    ----------------------------------
 
-   procedure os_sched_set_current_task_id (task_id : os_task_id_param_t) is
+   procedure os_sched_set_current_task_id (task_id : os_task_id_param_t)
+   is
    begin
       os_task_current := task_id;
    end os_sched_set_current_task_id;
@@ -185,7 +184,8 @@ package body os is
    -- os_sched_get_current_list_head --
    ------------------------------------
 
-   function os_sched_get_current_list_head return os_task_id_t is
+   function os_sched_get_current_list_head return os_task_id_t
+   is
    begin
       return os_task_ready_list_head;
    end os_sched_get_current_list_head;
@@ -194,7 +194,10 @@ package body os is
    -- os_sched_set_current_list_head --
    ------------------------------------
 
-   procedure os_sched_set_current_list_head (task_id : os_task_id_t) is
+   procedure os_sched_set_current_list_head (task_id : os_task_id_t)
+   with
+      Pre => true
+   is
    begin
       os_task_ready_list_head := task_id;
 
@@ -256,7 +259,8 @@ package body os is
    -- os_sched_remove_task_from_ready_list --
    ------------------------------------------
 
-   procedure os_sched_remove_task_from_ready_list (task_id : os_task_id_param_t)
+   procedure os_sched_remove_task_from_ready_list
+     (task_id : os_task_id_param_t)
    is
       next : os_task_id_t;
       prev : os_task_id_t;
@@ -264,13 +268,12 @@ package body os is
       next := os_task_rw (Natural (task_id)).next;
 
       if task_id = os_sched_get_current_list_head then
-         --  We are removing the current running task.
-         --  So put the next task at list head.
-         --  Note: there could be no next task (OS_TASK_ID_NONE)
+         --  We are removing the current running task. So put the next task at
+         --  list head. Note: there could be no next task (OS_TASK_ID_NONE)
          os_sched_set_current_list_head (next);
       else
-         --  The task is not at the list head (it has a predecesor).
-         --  Link previous next to our next
+         --  The task is not at the list head (it has a predecesor). Link
+         --  previous next to our next
          prev := os_task_rw (Natural (task_id)).prev;
          os_task_rw (Natural (prev)).next := next;
 
@@ -289,8 +292,7 @@ package body os is
    -- os_sched_schedule --
    -----------------------
 
-   procedure os_sched_schedule
-      (task_id : out os_task_id_param_t)
+   procedure os_sched_schedule (task_id : out os_task_id_param_t)
    is
    begin
       --  Check interrupt status
@@ -316,8 +318,8 @@ package body os is
       --  Select the elected task as current task.
       os_sched_set_current_task_id (task_id);
 
-      --  Return the ID of the elected task to allow context switch
-      --  at low (arch) level
+      --  Return the ID of the elected task to allow context switch at low
+      --  (arch) level
    end os_sched_schedule;
 
    ---------------------------------
@@ -329,8 +331,9 @@ package body os is
       mbx_index : os_mbx_index_t) return os_task_id_param_t
    is
    begin
-      return os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index))
-          .sender_id;
+      return os_task_id_param_t
+          (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index))
+             .sender_id);
    end os_mbx_get_mbx_entry_sender;
 
    ----------------------------
@@ -339,21 +342,25 @@ package body os is
 
    function os_mbx_get_posted_mask
      (task_id : os_task_id_param_t) return os_mbx_mask_t
-      with Pre => task_id >= 0
    is
       mbx_mask  : os_mbx_mask_t;
       mbx_index : os_mbx_index_t;
    begin
-      mbx_mask  := 0;
-      mbx_index := os_mbx_get_mbx_head (task_id);
+      mbx_mask := 0;
 
-      for iterator in 0 .. (os_mbx_get_mbx_count (task_id) - 1) loop
-         mbx_mask :=
-           mbx_mask or
-           os_mbx_mask_t
-             (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)));
-         mbx_index := (mbx_index + 1) mod OS_MAX_MBX_CNT;
-      end loop;
+      if os_mbx_get_mbx_count (task_id) /= 0 then
+         mbx_index := os_mbx_get_mbx_head (task_id);
+
+         for iterator in 0 .. (os_mbx_get_mbx_count (task_id) - 1) loop
+            mbx_mask :=
+              mbx_mask or
+              os_mbx_mask_t
+                (2**
+                 Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)));
+
+            mbx_index := (mbx_index + 1) mod OS_MAX_MBX_CNT;
+         end loop;
+      end if;
 
       return mbx_mask;
    end os_mbx_get_posted_mask;
@@ -364,9 +371,8 @@ package body os is
 
    procedure os_mbx_send_one_task
      (status  : out os_status_t;
-      dest_id : os_task_id_param_t;
-      mbx_msg : os_mbx_msg_t)
-      with Pre => os_sched_get_current_task_id >= 0
+      dest_id :     os_task_id_param_t;
+      mbx_msg :     os_mbx_msg_t)
    is
       current        : os_task_id_param_t;
       mbx_permission : os_mbx_mask_t;
@@ -401,11 +407,10 @@ package body os is
    --------------------------
 
    procedure os_mbx_send_all_task
-     (status : out os_status_t;
-      mbx_msg : os_mbx_msg_t)
-      with Pre => os_sched_get_current_task_id >= 0
+     (status  : out os_status_t;
+      mbx_msg :     os_mbx_msg_t)
    is
-      ret    : os_status_t;
+      ret : os_status_t;
    begin
       status := OS_ERROR_DENIED;
 
@@ -491,7 +496,8 @@ package body os is
    -- os_sched_get_current_task_id --
    ----------------------------------
 
-   function os_sched_get_current_task_id return os_task_id_t is
+   function os_sched_get_current_task_id return os_task_id_param_t
+   is
    begin
       return os_task_current;
    end os_sched_get_current_task_id;
@@ -502,7 +508,7 @@ package body os is
 
    procedure os_sched_wait
      (task_id      : out os_task_id_param_t;
-      waiting_mask : os_mbx_mask_t)
+      waiting_mask :     os_mbx_mask_t)
    is
       tmp_mask : os_mbx_mask_t;
    begin
@@ -531,8 +537,7 @@ package body os is
    -- os_sched_yield --
    --------------------
 
-   procedure os_sched_yield
-     (task_id  : out os_task_id_param_t)
+   procedure os_sched_yield (task_id : out os_task_id_param_t)
    is
    begin
       task_id := os_sched_get_current_task_id;
@@ -548,8 +553,7 @@ package body os is
    -- os_sched_exit --
    -------------------
 
-   procedure os_sched_exit
-     (task_id  : out os_task_id_param_t)
+   procedure os_sched_exit (task_id : out os_task_id_param_t)
    is
    begin
       task_id := os_sched_get_current_task_id;
@@ -563,8 +567,7 @@ package body os is
    -- os_init --
    -------------
 
-   procedure os_init
-     (task_id  : out os_task_id_param_t)
+   procedure os_init (task_id : out os_task_id_param_t)
    is
       prev_id : os_task_id_t;
    begin
@@ -583,8 +586,9 @@ package body os is
 
          for mbx_iterator in 0 .. OS_MAX_MBX_ID loop
             os_task_rw (task_iterator).mbx.mbx_array (mbx_iterator)
-              .sender_id :=
-              OS_TASK_ID_NONE;
+              .sender_id := OS_TASK_ID_NONE;
+            os_task_rw (task_iterator).mbx.mbx_array (mbx_iterator)
+              .msg := 0;
          end loop;
 
          os_task_rw (task_iterator).next := OS_TASK_ID_NONE;
@@ -610,7 +614,7 @@ package body os is
      (status    : out os_status_t;
       mbx_entry : out os_mbx_entry_t)
    is
-      current        : os_task_id_t;
+      current        : os_task_id_param_t;
       mbx_index      : os_mbx_index_t;
       next_mbx_index : os_mbx_index_t;
    begin
@@ -622,7 +626,7 @@ package body os is
 
       if os_mbx_is_empty (current) then
          --  mbx queue is empty, so we return with error
-	 status := OS_ERROR_FIFO_EMPTY;
+         status := OS_ERROR_FIFO_EMPTY;
       else
          --  initialize status to error in case we don't find a mbx.
          status := OS_ERROR_RECEIVE;
@@ -644,9 +648,9 @@ package body os is
                   --  if this was the first mbx, we just increase the mbx head
                   os_mbx_inc_mbx_head (current);
                else
-                  --  in other case, for now we "compact" the rest of the
-                  --  mbx queue, so that there is no "hole" in it for the next
-                  --  mbx search.
+                  --  in other case, for now we "compact" the rest of the mbx
+                  --  queue, so that there is no "hole" in it for the next mbx
+                  --  search.
                   for iterator2 in
                     (iterator + 1) .. (os_mbx_get_mbx_count (current) - 1)
                   loop
@@ -667,7 +671,7 @@ package body os is
 
                --  We found a matching mbx
                status := OS_SUCCESS;
-	       exit;
+               exit;
             end if;
          end loop;
       end if;
@@ -679,8 +683,8 @@ package body os is
 
    procedure os_mbx_send
      (status  : out os_status_t;
-      dest_id : types.int8_t;
-      mbx_msg : os_mbx_msg_t)
+      dest_id :     types.int8_t;
+      mbx_msg :     os_mbx_msg_t)
    is
    begin
       if dest_id = OS_TASK_ID_ALL then

@@ -118,7 +118,7 @@ package os is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_rw_t);
 
-   function os_sched_get_current_task_id return os_task_id_t;
+   function os_sched_get_current_task_id return os_task_id_param_t;
    pragma Export (C, os_sched_get_current_task_id, "os_sched_get_current_task_id");
 
    procedure os_sched_wait (task_id      : out os_task_id_param_t;

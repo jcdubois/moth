@@ -39,16 +39,16 @@ package os_arch is
       with Global => null;
    pragma Import (C, os_arch_idle, "os_arch_idle");
 
-   procedure os_arch_context_create (task_id : os.os_task_id_t)
+   procedure os_arch_context_create (task_id : os.os_task_id_param_t)
       with Global => null;
    pragma Import (C, os_arch_context_create, "os_arch_context_create");
 
-   procedure os_arch_context_switch (prev_id : os.os_task_id_t;
-                                     next_id : os.os_task_id_t)
+   procedure os_arch_context_switch (prev_id : os.os_task_id_param_t;
+                                     next_id : os.os_task_id_param_t)
       with Global => null;
    pragma Import (C, os_arch_context_switch, "os_arch_context_switch");
 
-   procedure os_arch_context_set (task_id : os.os_task_id_t)
+   procedure os_arch_context_set (task_id : os.os_task_id_param_t)
       with Global => null;
    pragma Import (C, os_arch_context_set, "os_arch_context_set");
 
@@ -56,8 +56,8 @@ package os_arch is
       with Global => null;
    pragma Import (C, os_arch_space_init, "os_arch_space_init");
 
-   procedure os_arch_space_switch (old_context_id : os.os_task_id_t;
-                                   new_context_id : os.os_task_id_t)
+   procedure os_arch_space_switch (old_context_id : os.os_task_id_param_t;
+                                   new_context_id : os.os_task_id_param_t)
       with Global => null;
    pragma Import (C, os_arch_space_switch, "os_arch_space_switch");
 
