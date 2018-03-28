@@ -85,7 +85,7 @@ package os is
    pragma Convention (C_Pass_By_Copy, os_mbx_entry_t);
 
    type os_mbx_t_array is
-	   array (0 .. OS_MAX_MBX_ID) of aliased os_mbx_entry_t;
+           array (0 .. OS_MAX_MBX_ID) of aliased os_mbx_entry_t;
 
    type os_mbx_t is record
       head             : aliased os_mbx_index_t;
@@ -118,32 +118,68 @@ package os is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_rw_t);
 
+   os_ghost_initialized : Boolean := false
+   with
+      Ghost;
+
+   function os_ghost_task_list_is_well_formed return Boolean
+   with
+      Ghost;
+
+   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
+   with
+      Ghost,
+      Pre => os_ghost_task_list_is_well_formed;
+
+   function os_ghost_current_task_is_ready return Boolean
+   with
+      Ghost,
+      Pre => os_ghost_task_list_is_well_formed;
+
    function os_sched_get_current_task_id return os_task_id_param_t;
    pragma Export (C, os_sched_get_current_task_id, "os_sched_get_current_task_id");
 
    procedure os_sched_wait (task_id      : out os_task_id_param_t;
-	                    waiting_mask : os_mbx_mask_t);
+                            waiting_mask : os_mbx_mask_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_wait, "os_sched_wait");
 
-   procedure os_sched_yield (task_id : out os_task_id_param_t);
+   procedure os_sched_yield (task_id : out os_task_id_param_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_yield, "os_sched_yield");
 
-   procedure os_sched_exit (task_id : out os_task_id_param_t);
+   procedure os_sched_exit (task_id : out os_task_id_param_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_exit, "os_sched_exit");
 
-   procedure os_init (task_id : out os_task_id_param_t);
+   procedure os_init (task_id : out os_task_id_param_t)
+   with
+      Pre => os_ghost_initialized = false,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id);
    pragma Export (C, os_init, "os_init");
 
    procedure os_mbx_receive (status    : out os_status_t;
-	                     mbx_entry : out os_mbx_entry_t);
+                             mbx_entry : out os_mbx_entry_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
    procedure os_mbx_send (status  : out os_status_t;
-	                  dest_id : types.int8_t;
-			  mbx_msg : os_mbx_msg_t);
+                          dest_id : types.int8_t;
+                          mbx_msg : os_mbx_msg_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
-   os_task_ro : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
+   os_task_ro : aliased constant array (0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
    pragma Import (C, os_task_ro, "os_task_ro");
 
    os_task_rw : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;

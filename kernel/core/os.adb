@@ -119,6 +119,8 @@ package body os is
    --  Derement the mbx count of the given task.
 
    procedure os_mbx_dec_mbx_count (task_id : os_task_id_param_t)
+   with
+      Pre => os_task_rw (Natural (task_id)).mbx.count > 0
    is
    begin
       os_task_rw (Natural (task_id)).mbx.count :=
@@ -196,7 +198,7 @@ package body os is
 
    procedure os_sched_set_current_list_head (task_id : os_task_id_t)
    with
-      Pre => true
+      Post => os_ghost_task_list_is_well_formed
    is
    begin
       os_task_ready_list_head := task_id;
@@ -211,6 +213,9 @@ package body os is
    -------------------------------------
 
    procedure os_sched_add_task_to_ready_list (task_id : os_task_id_param_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed,
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id)
    is
       index_id : os_task_id_t;
       prev_id  : os_task_id_t;
@@ -261,6 +266,9 @@ package body os is
 
    procedure os_sched_remove_task_from_ready_list
      (task_id : os_task_id_param_t)
+   with
+      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id),
+      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id) = false
    is
       next : os_task_id_t;
       prev : os_task_id_t;
@@ -271,9 +279,10 @@ package body os is
          --  We are removing the current running task. So put the next task at
          --  list head. Note: there could be no next task (OS_TASK_ID_NONE)
          os_sched_set_current_list_head (next);
-      else
-         --  The task is not at the list head (it has a predecesor). Link
-         --  previous next to our next
+      elsif os_sched_get_current_list_head /= OS_TASK_ID_NONE then
+         --  The list is not empty and
+         --  The task is not at the list head (it has a predecesor).
+         --  Link previous next to our next
          prev := os_task_rw (Natural (task_id)).prev;
          os_task_rw (Natural (prev)).next := next;
 
@@ -329,6 +338,8 @@ package body os is
    function os_mbx_get_mbx_entry_sender
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return os_task_id_param_t
+     with
+      Pre => os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).sender_id >= 0
    is
    begin
       return os_task_id_param_t
@@ -479,6 +490,8 @@ package body os is
    function os_mbx_is_waiting_mbx_entry
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return Boolean
+   with
+      Pre => os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).sender_id >= 0
    is
    begin
       return
@@ -487,6 +500,83 @@ package body os is
            (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))) /=
         0;
    end os_mbx_is_waiting_mbx_entry;
+
+   function os_ghost_task_list_is_well_formed return Boolean
+   is
+      index_id : os_task_id_t;
+      next_id  : os_task_id_t;
+      prev_id  : os_task_id_t;
+   begin
+      --  Get the first task in the ready list
+      index_id := os_sched_get_current_list_head;
+
+      if index_id = OS_TASK_ID_NONE then
+         --  the list might be empty. This is legal.
+         return true;
+      elsif os_task_rw (Natural (index_id)).prev /= OS_TASK_ID_NONE then
+         --  the first task of the list should not have any prev.
+         return false;
+      else
+         --  go through the list
+         while index_id /= OS_TASK_ID_NONE loop
+            next_id := os_task_rw (Natural (index_id)).next;
+
+            --  a task cannot have itself as next.
+            if next_id = index_id then
+               return false;
+            end if;
+
+            if next_id /= OS_TASK_ID_NONE then
+               -- the next task need to have the actual one as prev.
+               if os_task_rw (Natural (next_id)).prev /= index_id then
+                  return false;
+               end if;
+            end if;
+
+            --  now we need to check the actual task is not already
+            --  somewhere in the beginning of this list.
+            prev_id := os_task_rw (Natural (index_id)).prev;
+
+            while prev_id /= OS_TASK_ID_NONE loop
+               if prev_id = index_id then
+                  return false;
+               end if;
+               prev_id := os_task_rw (Natural (prev_id)).prev;
+            end loop;
+
+            index_id := next_id;
+         end loop;
+      end if;
+
+      return true;
+   end os_ghost_task_list_is_well_formed;
+
+   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
+   is
+      index_id : os_task_id_t;
+   begin
+      --  Get the first task in the ready list
+      index_id := os_sched_get_current_list_head;
+
+      --  Go till the end of list
+      while index_id /= OS_TASK_ID_NONE loop
+         --  if task is in the list, all is well
+         if index_id = task_id then
+            return true;
+         end if;
+         --  go to next element of the list
+         index_id := os_task_rw (Natural (index_id)).next;
+      end loop;
+
+      --  task was no found in the list
+      return false;
+   end os_ghost_task_is_ready;
+
+   function os_ghost_current_task_is_ready return Boolean
+   is
+   begin
+      return os_ghost_task_is_ready(os_sched_get_current_task_id);
+   end os_ghost_current_task_is_ready;
 
    ----------------
    -- Public API --
@@ -569,7 +659,7 @@ package body os is
 
    procedure os_init (task_id : out os_task_id_param_t)
    is
-      prev_id : os_task_id_t;
+      prev_id : os_task_id_param_t;
    begin
       os_arch_cons_init;
 
@@ -604,6 +694,8 @@ package body os is
       os_arch_context_set (task_id);
 
       os_arch_space_switch (prev_id, task_id);
+
+      os_ghost_initialized := true;
    end os_init;
 
    --------------------
