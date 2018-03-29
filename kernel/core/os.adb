@@ -214,8 +214,8 @@ package body os is
 
    procedure os_sched_add_task_to_ready_list (task_id : os_task_id_param_t)
    with
-      Pre => os_ghost_initialized and then os_ghost_task_list_is_well_formed,
-      Post => os_ghost_initialized and then os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id)
+      Pre => os_ghost_task_list_is_well_formed,
+      Post => os_ghost_task_list_is_well_formed and then os_ghost_task_is_ready (task_id)
    is
       index_id : os_task_id_t;
       prev_id  : os_task_id_t;
@@ -514,10 +514,12 @@ package body os is
          --  the list might be empty. This is legal.
          return true;
       elsif os_task_rw (Natural (index_id)).prev /= OS_TASK_ID_NONE then
-         --  the first task of the list should not have any prev.
+         --  the first task of the list should not have any prev task.
+         --  If this is the case, this is a failure.
          return false;
       else
-         --  go through the list
+         --  First element is well formed.
+         --  Go through the list
          while index_id /= OS_TASK_ID_NONE loop
             next_id := os_task_rw (Natural (index_id)).next;
 
@@ -526,11 +528,11 @@ package body os is
                return false;
             end if;
 
-            if next_id /= OS_TASK_ID_NONE then
-               -- the next task need to have the actual one as prev.
-               if os_task_rw (Natural (next_id)).prev /= index_id then
-                  return false;
-               end if;
+	    --  If there is a next, it needs to have the actual task as
+	    --  prev.
+            if next_id /= OS_TASK_ID_NONE and then
+               os_task_rw (Natural (next_id)).prev /= index_id then
+               return false;
             end if;
 
             --  now we need to check the actual task is not already
@@ -546,9 +548,9 @@ package body os is
 
             index_id := next_id;
          end loop;
-      end if;
 
-      return true;
+         return true;
+      end if;
    end os_ghost_task_list_is_well_formed;
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
@@ -670,9 +672,9 @@ package body os is
       prev_id := 0;
 
       for task_iterator in 0 .. OS_MAX_TASK_ID loop
-         os_arch_space_switch (prev_id, os_task_id_t (task_iterator));
+         os_arch_space_switch (prev_id, os_task_id_param_t (task_iterator));
 
-         os_arch_context_create (os_task_id_t (task_iterator));
+         os_arch_context_create (os_task_id_param_t (task_iterator));
 
          for mbx_iterator in 0 .. OS_MAX_MBX_ID loop
             os_task_rw (task_iterator).mbx.mbx_array (mbx_iterator)
@@ -684,8 +686,8 @@ package body os is
          os_task_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_rw (task_iterator).prev := OS_TASK_ID_NONE;
 
-         os_sched_add_task_to_ready_list (os_task_id_t (task_iterator));
-         prev_id := os_task_id_t (task_iterator);
+         os_sched_add_task_to_ready_list (os_task_id_param_t (task_iterator));
+         prev_id := os_task_id_param_t (task_iterator);
 
       end loop;
 
