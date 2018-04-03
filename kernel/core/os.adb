@@ -63,7 +63,7 @@ is
       Global => (In_Out => os_task_rw),
       Post => (os_task_rw (Natural (task_id)).mbx.head =
                ((os_task_rw (Natural (task_id)).mbx.head'Old + 1)
-	         mod OS_MAX_MBX_CNT))
+                 mod OS_MAX_MBX_CNT))
    is
    begin
       os_task_rw (Natural (task_id)).mbx.head :=
@@ -157,11 +157,11 @@ is
    begin
       mbx_index :=
         Natural
-          (os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id)) mod
-        OS_MAX_MBX_CNT;
+           (os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id))
+        mod OS_MAX_MBX_CNT;
 
       os_task_rw (Natural (dest_id)).mbx.mbx_array (mbx_index).sender_id :=
-        src_id;
+         src_id;
       os_task_rw (Natural (dest_id)).mbx.mbx_array (mbx_index).msg := mbx_msg;
       os_mbx_inc_mbx_count (dest_id);
    end os_mbx_add_message;
@@ -343,15 +343,10 @@ is
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return os_task_id_param_t
    is (os_task_id_param_t (os_task_rw (Natural (task_id)).mbx.mbx_array
-	   (Natural (mbx_index)).sender_id))
+           (Natural (mbx_index)).sender_id))
    with
       Pre => (os_task_rw (Natural (task_id)).mbx.mbx_array
                  (Natural (mbx_index)).sender_id >= 0);
-   -- begin
-      -- return os_task_id_param_t
-          -- (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index))
-             -- .sender_id);
-   -- end os_mbx_get_mbx_entry_sender;
 
    ----------------------------
    -- os_mbx_get_posted_mask --
@@ -455,15 +450,18 @@ is
       mbx_index : os_mbx_index_t)
    with
       Global => (In_Out => os_task_rw),
-      pre => (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).sender_id /= OS_TASK_ID_NONE),
-      Post => ((os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).sender_id = OS_TASK_ID_NONE) and (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).msg = 0))
+      pre => (os_task_rw (Natural (task_id)).mbx.mbx_array
+              (Natural (mbx_index)).sender_id /= OS_TASK_ID_NONE),
+      Post => ((os_task_rw (Natural (task_id)).mbx.mbx_array
+                 (Natural (mbx_index)).sender_id = OS_TASK_ID_NONE) and
+              (os_task_rw (Natural (task_id)).mbx.mbx_array
+                 (Natural (mbx_index)).msg = 0))
    is
    begin
-      os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index))
-        .sender_id :=
-        OS_TASK_ID_NONE;
-      os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)).msg :=
-        0;
+      os_task_rw (Natural (task_id)).mbx.mbx_array
+              (Natural (mbx_index)) .sender_id := OS_TASK_ID_NONE;
+      os_task_rw (Natural (task_id)).mbx.mbx_array
+              (Natural (mbx_index)).msg := 0;
    end os_mbx_clear_mbx_entry;
 
    --------------------------
@@ -476,11 +474,12 @@ is
       mbx_entry : os_mbx_entry_t)
    with
       Global => (Output => os_task_rw),
-      Post => (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)) = mbx_entry)
+      Post => (os_task_rw (Natural (task_id)).mbx.mbx_array
+                 (Natural (mbx_index)) = mbx_entry)
    is
    begin
-      os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)) :=
-        mbx_entry;
+      os_task_rw (Natural (task_id)).mbx.mbx_array
+              (Natural (mbx_index)) := mbx_entry;
    end os_mbx_set_mbx_entry;
 
    --------------------------
@@ -490,12 +489,7 @@ is
    function os_mbx_get_mbx_entry
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return os_mbx_entry_t
-   is (os_task_rw (Natural (task_id)).mbx.mbx_array
-	             (Natural (mbx_index)));
-   -- begin
-      -- return os_task_rw (Natural (task_id)).mbx.mbx_array
-          -- (Natural (mbx_index));
-   -- end os_mbx_get_mbx_entry;
+   is (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (mbx_index)));
 
    ---------------------------------
    -- os_mbx_is_waiting_mbx_entry --
@@ -505,14 +499,7 @@ is
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return Boolean
    is ((os_mbx_get_waiting_mask (task_id) and
-	os_mbx_mask_t (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))) /= 0);
-   -- begin
-      -- return
-        -- (os_mbx_get_waiting_mask (task_id) and
-         -- os_mbx_mask_t
-           -- (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))) /=
-        -- 0;
-   -- end os_mbx_is_waiting_mbx_entry;
+        os_mbx_mask_t (2**Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))) /= 0);
 
    ----------------------
    --  Ghost functions --
@@ -617,9 +604,9 @@ is
       return os_ghost_task_is_ready(os_sched_get_current_task_id);
    end os_ghost_current_task_is_ready;
 
-   ------------------------------------
-   -- os_ghost_current_task_is_ready --
-   ------------------------------------
+   -----------------------------
+   -- os_ghost_mbx_is_present --
+   -----------------------------
 
    function os_ghost_mbx_is_present
      (task_id   : os_task_id_param_t;
@@ -658,10 +645,7 @@ is
    ----------------------------------
 
    function os_sched_get_current_task_id return os_task_id_param_t
-   is
-   begin
-      return os_task_current;
-   end os_sched_get_current_task_id;
+   is (os_task_current);
 
    -------------------
    -- os_sched_wait --

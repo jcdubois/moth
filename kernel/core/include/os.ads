@@ -170,8 +170,8 @@ is
    function os_ghost_task_link_is_bidirectionnal return boolean is
       (for all task_id in 0 .. OS_MAX_TASK_ID =>
          (case os_task_rw (task_id).next is
-	    when OS_TASK_ID_NONE => os_task_rw (task_id).next = OS_TASK_ID_NONE,
-	    when others => os_task_rw (Natural (os_task_rw (task_id).next)).prev = os_task_id_param_t (task_id)))
+            when OS_TASK_ID_NONE => os_task_rw (task_id).next = OS_TASK_ID_NONE,
+            when others => os_task_rw (Natural (os_task_rw (task_id).next)).prev = os_task_id_param_t (task_id)))
    with
       Ghost => true;
 
@@ -181,22 +181,22 @@ is
       Post =>
          --  task cannot have itself as next
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_next_is_not_self and then
+                 os_ghost_task_next_is_not_self and then
          --  task cannot have itself as prev
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_prev_is_not_self and then
+                 os_ghost_task_prev_is_not_self and then
          --  task cannot be twice as next
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_is_not_twice_in_next and then
+                 os_ghost_task_is_not_twice_in_next and then
          --  task cannot be twice as prev
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_is_not_twice_in_prev and then
+                 os_ghost_task_is_not_twice_in_prev and then
          --  task cannot have next and prev pointing to the same task
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_prev_and_next_different and then
-	 --  If a task has a next, then next task has the task as prev
+                 os_ghost_task_prev_and_next_different and then
+         --  If a task has a next, then next task has the task as prev
          os_ghost_task_list_is_well_formed'Result =
-		 os_ghost_task_link_is_bidirectionnal;
+                 os_ghost_task_link_is_bidirectionnal;
    pragma Annotate (GNATprove, Terminating, os_ghost_task_list_is_well_formed);
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
