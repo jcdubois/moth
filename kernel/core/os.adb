@@ -262,8 +262,10 @@ is
    procedure os_sched_remove_task_from_ready_list
      (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw)),
-      Pre => os_ghost_task_list_is_well_formed,
+      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+                 Input => (os_task_current, os_task_ro)),
+      Pre => os_ghost_task_list_is_well_formed and then
+             os_ghost_current_task_is_ready,
       Post => os_task_rw (Natural (task_id)).prev = OS_TASK_ID_NONE and then
               os_task_rw (Natural (task_id)).next = OS_TASK_ID_NONE and then
               os_ghost_task_list_is_well_formed and then

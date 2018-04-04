@@ -128,42 +128,58 @@ is
    os_task_rw : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
    pragma Export (C, os_task_rw, "os_task_rw");
 
+   ---------------------
+   -- os_task_current --
+   ---------------------
+   --  This variable holds the ID of the current elected task.
+
+   os_task_current : os_task_id_param_t;
+
+   -----------------------------
+   -- os_task_ready_list_head --
+   -----------------------------
+   --  This variable holds the ID of the first task in the ready list (the next
+   --  ne that will be elected). Note: Its value could be OS_TASK_ID_NONE if no
+   --  task is ready.
+
+   os_task_ready_list_head : os_task_id_t;
+
    os_ghost_initialized : Boolean := false
    with
       Ghost => true;
 
    function os_ghost_task_next_is_not_self return boolean is
       (not (for some task_id in 0 .. OS_MAX_TASK_ID =>
-                  os_task_rw (task_id).next = os_task_id_param_t (task_id)))
+               os_task_rw (task_id).next = os_task_id_param_t (task_id)))
    with
       Ghost => true;
 
    function os_ghost_task_prev_is_not_self return boolean is
       (not (for some task_id in 0 .. OS_MAX_TASK_ID =>
-                  os_task_rw (task_id).prev = os_task_id_param_t (task_id)))
+               os_task_rw (task_id).prev = os_task_id_param_t (task_id)))
    with
       Ghost => true;
 
    function os_ghost_task_prev_and_next_different return boolean is
       (not (for some task_id in 0 .. OS_MAX_TASK_ID =>
-         os_task_rw (task_id).prev /= OS_TASK_ID_NONE and then
-         os_task_rw (task_id).prev = os_task_rw (task_id).next))
+               (os_task_rw (task_id).prev >= 0 and then
+               os_task_rw (task_id).prev = os_task_rw (task_id).next)))
    with
       Ghost => true;
 
    function os_ghost_task_is_not_twice_in_next return boolean is
       (not (for some task_id in 0 .. (OS_MAX_TASK_ID - 1) =>
-         os_task_rw (task_id).next /= OS_TASK_ID_NONE and then
-         (for some next_id in (task_id + 1) .. OS_MAX_TASK_ID =>
-            os_task_rw (task_id).next = os_task_rw (next_id).next)))
+               (os_task_rw (task_id).next >= 0 and then
+               (for some next_id in (task_id + 1) .. OS_MAX_TASK_ID =>
+                   os_task_rw (task_id).next = os_task_rw (next_id).next))))
    with
       Ghost => true;
 
    function os_ghost_task_is_not_twice_in_prev return boolean is
       (not (for some task_id in 0 .. (OS_MAX_TASK_ID - 1) =>
-         os_task_rw (task_id).prev /= OS_TASK_ID_NONE and then
-         (for some prev_id in (task_id + 1) .. OS_MAX_TASK_ID =>
-            os_task_rw (task_id).prev = os_task_rw (prev_id).prev)))
+               (os_task_rw (task_id).prev >= 0 and then
+               (for some prev_id in (task_id + 1) .. OS_MAX_TASK_ID =>
+                   os_task_rw (task_id).prev = os_task_rw (prev_id).prev))))
    with
       Ghost => true;
 
@@ -178,25 +194,44 @@ is
    function os_ghost_task_list_is_well_formed return Boolean
    with
       Ghost => true,
-      Post =>
+      Global => (Input => (os_task_rw, os_task_ro, os_task_ready_list_head)),
+      Pre =>
          --  task cannot have itself as next
-         os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_next_is_not_self and then
+                 (os_ghost_task_next_is_not_self and then
          --  task cannot have itself as prev
-         os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_prev_is_not_self and then
+                  os_ghost_task_prev_is_not_self and then
          --  task cannot be twice as next
-         os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_is_not_twice_in_next and then
+                  os_ghost_task_is_not_twice_in_next and then
          --  task cannot be twice as prev
-         os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_is_not_twice_in_prev and then
+                  os_ghost_task_is_not_twice_in_prev and then
          --  task cannot have next and prev pointing to the same task
-         os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_prev_and_next_different and then
+                  os_ghost_task_prev_and_next_different and then
          --  If a task has a next, then next task has the task as prev
+                  os_ghost_task_link_is_bidirectionnal and then
+         --
+                  ((os_task_ready_list_head = OS_TASK_ID_NONE) or
+                   (os_task_ready_list_head >= 0 and then
+                      os_task_rw (Natural (os_task_ready_list_head)).prev
+                         = OS_TASK_ID_NONE))),
+      Post =>
          os_ghost_task_list_is_well_formed'Result =
-                 os_ghost_task_link_is_bidirectionnal;
+         --  task cannot have itself as next
+                 (os_ghost_task_next_is_not_self and then
+         --  task cannot have itself as prev
+                  os_ghost_task_prev_is_not_self and then
+         --  task cannot be twice as next
+                  os_ghost_task_is_not_twice_in_next and then
+         --  task cannot be twice as prev
+                  os_ghost_task_is_not_twice_in_prev and then
+         --  task cannot have next and prev pointing to the same task
+                  os_ghost_task_prev_and_next_different and then
+         --  If a task has a next, then next task has the task as prev
+                  os_ghost_task_link_is_bidirectionnal and then
+         --
+                  ((os_task_ready_list_head = OS_TASK_ID_NONE) or
+                   (os_task_ready_list_head >= 0 and then
+                      os_task_rw (Natural (os_task_ready_list_head)).prev
+                         = OS_TASK_ID_NONE)));
    pragma Annotate (GNATprove, Terminating, os_ghost_task_list_is_well_formed);
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
@@ -281,22 +316,6 @@ is
               os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
-   ---------------------
-   -- os_task_current --
-   ---------------------
-   --  This variable holds the ID of the current elected task.
-
-   os_task_current : os_task_id_param_t;
-
-   -----------------------------
-   -- os_task_ready_list_head --
-   -----------------------------
-   --  This variable holds the ID of the first task in the ready list (the next
-   --  ne that will be elected). Note: Its value could be OS_TASK_ID_NONE if no
-   --  task is ready.
-
-   os_task_ready_list_head : os_task_id_t;
-
 private
 
    procedure os_sched_schedule
@@ -319,8 +338,8 @@ private
                  dest_id :     os_task_id_param_t;
                  mbx_msg :     os_mbx_msg_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_task_current),
-                 Input => os_task_ro),
+      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+                 Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and then
@@ -331,8 +350,7 @@ private
                  mbx_msg :     os_mbx_msg_t)
    with
       Global => (In_Out => (os_task_ready_list_head, os_task_rw),
-                 Output => os_task_current,
-                 Input => os_task_ro),
+                 Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and then
