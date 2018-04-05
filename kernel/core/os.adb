@@ -88,7 +88,7 @@ is
    end os_mbx_inc_mbx_head;
 
    -------------------------
-   -- os_mbx_get:w:_mbx_head --
+   -- os_mbx_get_mbx_head --
    -------------------------
    --  Retrieve the mbx head index of the given task.
 
@@ -222,7 +222,7 @@ is
 
    procedure os_sched_add_task_to_ready_list (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+      Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
                  Input => os_task_ro),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed
@@ -270,6 +270,9 @@ is
             end if;
          end loop;
       end if;
+
+      os_ghost_task_ready (Natural (task_id)) := true;
+
    end os_sched_add_task_to_ready_list;
 
    ------------------------------------------
@@ -279,14 +282,17 @@ is
    procedure os_sched_remove_task_from_ready_list
      (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
-                 Input => (os_task_current, os_task_ro)),
+      Global => (In_Out => (os_task_ready_list_head,
+                            os_task_rw,
+                            os_ghost_task_ready),
+                 Input => (os_task_current,
+                           os_task_ro)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
       Post => os_task_rw (Natural (task_id)).prev = OS_TASK_ID_NONE and then
               os_task_rw (Natural (task_id)).next = OS_TASK_ID_NONE and then
               os_ghost_task_list_is_well_formed and then
-              os_ghost_task_is_ready (task_id) = false
+              not (os_ghost_task_is_ready (task_id))
    is
       next : os_task_id_t;
       prev : os_task_id_t;
@@ -318,6 +324,9 @@ is
       --  reset our next and previous
       os_task_rw (Natural (task_id)).next := OS_TASK_ID_NONE;
       os_task_rw (Natural (task_id)).prev := OS_TASK_ID_NONE;
+
+      os_ghost_task_ready (Natural (task_id)) := false;
+
    end os_sched_remove_task_from_ready_list;
 
    -----------------------
@@ -326,7 +335,7 @@ is
 
    procedure os_sched_schedule (task_id : out os_task_id_param_t)
    with
-   Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+   Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
               Output => os_task_current,
               Input => os_task_ro),
    Pre => os_ghost_task_list_is_well_formed,
@@ -386,13 +395,8 @@ is
    function os_mbx_get_posted_mask
      (task_id : os_task_id_param_t) return os_mbx_mask_t
    with
-      Global => (Input => os_task_rw),
-      Pre => os_mbx_get_mbx_count (task_id) = 0
-             or else
-                (for all index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
-                   os_task_rw (Natural (task_id)).mbx.mbx_array (Natural
-                           (((os_mbx_get_mbx_head (task_id) + index)
-                           mod OS_MAX_MBX_CNT))).sender_id >= 0)
+      Global => (Input => (os_task_rw, os_ghost_task_ready, os_task_ready_list_head, os_task_ro)),
+      Pre => os_ghost_task_list_is_well_formed
    is
       mbx_mask  : os_mbx_mask_t;
       mbx_index : os_mbx_index_t;
@@ -425,7 +429,7 @@ is
       dest_id :     os_task_id_param_t;
       mbx_msg :     os_mbx_msg_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+      Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
                 Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
@@ -468,7 +472,7 @@ is
      (status  : out os_status_t;
       mbx_msg :     os_mbx_msg_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_rw),
+      Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
                  Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
@@ -502,7 +506,7 @@ is
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t)
    with
-      Global => (Output => os_task_rw),
+      Global => (In_Out => os_task_rw),
       Post => ((os_task_rw (Natural (task_id)).mbx.mbx_array
                  (Natural (mbx_index)).sender_id = OS_TASK_ID_NONE) and
               (os_task_rw (Natural (task_id)).mbx.mbx_array
@@ -524,7 +528,7 @@ is
       mbx_index : os_mbx_index_t;
       mbx_entry : os_mbx_entry_t)
    with
-      Global => (Output => os_task_rw),
+      Global => (In_Out => os_task_rw),
       Post => (os_task_rw (Natural (task_id)).mbx.mbx_array
                  (Natural (mbx_index)) = mbx_entry)
    is
@@ -606,20 +610,68 @@ is
    with
       Ghost => true;
 
+   ----------------------------
+   -- os_ghost_task_is_ready --
+   ----------------------------
+
+   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
+   is (os_ghost_task_ready (Natural (task_id)));
+
+   ------------------------------------
+   -- os_ghost_current_task_is_ready --
+   ------------------------------------
+
+   function os_ghost_current_task_is_ready return Boolean
+   is (os_ghost_task_is_ready(os_sched_get_current_task_id));
+
+   ----------------------------------
+   -- os_ghost_mbx_are_well_formed --
+   ----------------------------------
+
+   function os_ghost_mbx_are_well_formed return Boolean is
+      (for all task_id in os_task_rw'Range => 
+         (os_mbx_get_mbx_count (os_task_id_t (task_id)) > 0 and then
+            (for all mbx_id in 0 ..
+                    (os_mbx_get_mbx_count (os_task_id_t (task_id)) - 1) =>
+               (os_task_rw (task_id).mbx.mbx_array (
+                       (Natural (os_mbx_get_mbx_head (os_task_id_t (task_id))
+                                 + mbx_id)) mod OS_MAX_MBX_CNT).sender_id
+                                    > OS_TASK_ID_NONE))) and then
+         (os_mbx_get_mbx_count (os_task_id_t (task_id))
+                                         < OS_MAX_MBX_CNT) and then
+             (for all mbx_id in os_mbx_get_mbx_count (os_task_id_t (task_id))
+                                             .. (OS_MAX_MBX_CNT - 1) =>
+                (os_task_rw (task_id).mbx.mbx_array (
+                        (Natural (os_mbx_get_mbx_head (os_task_id_t (task_id))
+                                  + mbx_id)) mod OS_MAX_MBX_CNT).sender_id
+                                     = OS_TASK_ID_NONE)));
+
    ---------------------------------------
    -- os_ghost_task_list_is_well_formed --
    ---------------------------------------
 
    function os_ghost_task_list_is_well_formed return Boolean is
-      (os_ghost_at_least_one_terminating_next
-      and then os_ghost_at_least_one_terminating_prev
-      and then
       --  the list might be empty. This is legal.
-      (os_sched_get_current_list_head = OS_TASK_ID_NONE
+      (os_ghost_mbx_are_well_formed and then
+       ((os_sched_get_current_list_head = OS_TASK_ID_NONE and 
+         -- then all element are diconnected (not in a list)
+         (for all task_id in os_task_rw'Range =>
+            -- no next
+            os_task_rw (task_id).next = OS_TASK_ID_NONE
+            -- no prev
+            and os_task_rw (task_id).prev = OS_TASK_ID_NONE
+            -- and all tasks are in not ready state
+            and not (os_ghost_task_is_ready (os_task_id_t (task_id)))
+         ))
       --  the first task of the list should not have any prev task.
       --  If this is the case, this is a failure.
-      or else (os_task_rw (Natural (os_sched_get_current_list_head)).prev
+      or else (os_sched_get_current_list_head /= OS_TASK_ID_NONE
+         and then os_task_rw (Natural (os_sched_get_current_list_head)).prev
                                    = OS_TASK_ID_NONE
+         -- the first task needs to be in ready state
+         and then os_ghost_task_is_ready (os_sched_get_current_list_head)
+         -- there need to ba at least one terminating next.
+         and then os_ghost_at_least_one_terminating_next
          --  First element is well formed.
          --  Go through the list
          and then
@@ -635,46 +687,18 @@ is
                --  If there is a next
                and then
                   (if os_task_rw (task_id).next /= OS_TASK_ID_NONE then
+                     os_ghost_task_is_ready (os_task_rw (task_id).next)
+                     and then os_ghost_task_is_ready (os_task_id_t (task_id))
                      -- It needs to have the actual task as prev
-                     os_task_rw (Natural (os_task_rw (task_id).next)).prev
-                                         = os_task_id_t (task_id)
+                     and then os_task_rw (Natural (os_task_rw
+                             (task_id).next)).prev = os_task_id_t (task_id)
                      --  prev and next need to be different
                      and then os_task_rw (task_id).next
                                          /= os_task_rw (task_id).prev
                      -- It needs to be ordered on priority
                      and then os_get_task_priority (os_task_rw (task_id).next)
-                        <= os_get_task_priority (os_task_id_t (task_id)))))));
-
-   --------------------------------------
-   -- os_ghost_task_is_ready_recursive --
-   --------------------------------------
-   --  Recursive function to determine if a task is in the ready list.
-
-   function os_ghost_task_is_ready_recursive
-           (task_id : os_task_id_param_t;
-            next_id : os_task_id_t) return Boolean
-   is
-      (task_id = next_id
-       or else (next_id /= OS_TASK_ID_NONE
-          and then os_ghost_task_is_ready_recursive(task_id,
-                                    os_task_rw (Natural (next_id)).next)))
-   with
-      Ghost => true;
-
-   ----------------------------
-   -- os_ghost_task_is_ready --
-   ----------------------------
-
-   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
-   is (os_ghost_task_is_ready_recursive (task_id,
-                                         os_sched_get_current_list_head));
-
-   ------------------------------------
-   -- os_ghost_current_task_is_ready --
-   ------------------------------------
-
-   function os_ghost_current_task_is_ready return Boolean
-   is (os_ghost_task_is_ready(os_sched_get_current_task_id));
+                        <= os_get_task_priority (os_task_id_t (task_id)))))
+      ));
 
    -----------------------------
    -- os_ghost_mbx_is_present --

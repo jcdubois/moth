@@ -124,20 +124,23 @@ is
    os_task_rw : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
    pragma Export (C, os_task_rw, "os_task_rw");
 
+   os_ghost_task_ready : aliased array (0 .. OS_MAX_TASK_ID) of Boolean with Ghost;
+
+   function os_ghost_mbx_are_well_formed return Boolean
+   with
+      Ghost => true;
+
    function os_ghost_task_list_is_well_formed return Boolean
    with
       Ghost => true;
-   pragma Annotate (GNATprove, Terminating, os_ghost_task_list_is_well_formed);
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
    with
-      Ghost => true,
-      Pre => os_ghost_task_list_is_well_formed;
+      Ghost => true;
 
    function os_ghost_current_task_is_ready return Boolean
    with
-      Ghost => true,
-      Pre => os_ghost_task_list_is_well_formed;
+      Ghost => true;
 
    function os_ghost_mbx_is_present
                 (task_id   : os_task_id_param_t;
@@ -175,6 +178,7 @@ is
 
    procedure os_init (task_id : out os_task_id_param_t)
    with
+      Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed and then
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_init, "os_init");
