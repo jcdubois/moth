@@ -225,8 +225,8 @@ is
       Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
                  Input => os_task_ro),
       Pre => os_ghost_task_list_is_well_formed,
-      Post => os_ghost_task_list_is_well_formed
-              and then os_ghost_task_is_ready (task_id)
+      Post => os_ghost_task_list_is_well_formed and
+              os_ghost_task_is_ready (task_id)
    is
       index_id : os_task_id_t;
       prev_id  : os_task_id_t;
@@ -287,11 +287,11 @@ is
                             os_ghost_task_ready),
                  Input => (os_task_current,
                            os_task_ro)),
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_task_rw (Natural (task_id)).prev = OS_TASK_ID_NONE and then
-              os_task_rw (Natural (task_id)).next = OS_TASK_ID_NONE and then
-              os_ghost_task_list_is_well_formed and then
+      Post => os_task_rw (Natural (task_id)).prev = OS_TASK_ID_NONE and
+              os_task_rw (Natural (task_id)).next = OS_TASK_ID_NONE and
+              os_ghost_task_list_is_well_formed and
               not (os_ghost_task_is_ready (task_id))
    is
       next : os_task_id_t;
@@ -848,8 +848,13 @@ is
          os_task_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_rw (task_iterator).prev := OS_TASK_ID_NONE;
 
-         os_sched_add_task_to_ready_list (os_task_id_param_t (task_iterator));
          prev_id := os_task_id_param_t (task_iterator);
+
+	 os_ghost_task_ready (task_iterator) := false;
+      end loop;
+
+      for task_iterator in os_task_rw'Range loop
+         os_sched_add_task_to_ready_list (os_task_id_param_t (task_iterator));
       end loop;
 
       os_sched_schedule (task_id);

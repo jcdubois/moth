@@ -178,7 +178,6 @@ is
 
    procedure os_init (task_id : out os_task_id_param_t)
    with
-      Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed and then
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_init, "os_init");
