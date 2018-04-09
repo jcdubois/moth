@@ -126,6 +126,10 @@ is
 
    os_ghost_task_ready : aliased array (0 .. OS_MAX_TASK_ID) of Boolean with Ghost;
 
+   function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean
+   with
+      Ghost => true;
+
    function os_ghost_mbx_are_well_formed return Boolean
    with
       Ghost => true;
@@ -139,12 +143,6 @@ is
       Ghost => true;
 
    function os_ghost_current_task_is_ready return Boolean
-   with
-      Ghost => true;
-
-   function os_ghost_mbx_is_present
-                (task_id   : os_task_id_param_t;
-                 mbx_index : os_mbx_index_t) return Boolean
    with
       Ghost => true;
 
