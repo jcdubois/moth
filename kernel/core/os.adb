@@ -374,13 +374,8 @@ is
    is (os_task_id_param_t (os_task_rw (Natural (task_id)).mbx.mbx_array
            (Natural (mbx_index)).sender_id))
    with
-      Pre => os_mbx_get_mbx_count (task_id) > 0
-             and then
-                (for some index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
-                          ((os_mbx_get_mbx_head (task_id) + index)
-                          mod OS_MAX_MBX_CNT) = mbx_index)
-             and then os_task_rw (Natural (task_id)).mbx.mbx_array
-                          (Natural (mbx_index)).sender_id > OS_TASK_ID_NONE;
+      Pre => os_task_rw (Natural (task_id)).mbx.mbx_array
+                  (Natural (mbx_index)).sender_id > OS_TASK_ID_NONE;
 
    ----------------------------
    -- os_mbx_get_posted_mask --
@@ -396,27 +391,20 @@ is
       mbx_index : os_mbx_index_t;
    begin
 
-      Pragma Assert ((os_ghost_task_mbx_are_well_formed (task_id)));
-
       mbx_mask := 0;
 
       if os_mbx_get_mbx_count (task_id) /= 0 then
 
-	  Pragma Assert (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (os_mbx_get_mbx_head (task_id))).sender_id > OS_TASK_ID_NONE);
-
-         mbx_index := os_mbx_get_mbx_head (task_id);
-
          for iterator in 0 .. (os_mbx_get_mbx_count (task_id) - 1) loop
 
-	    Pragma Assert (os_task_rw (Natural (task_id)).mbx.mbx_array (Natural (os_mbx_get_mbx_head (task_id) + iterator) mod OS_MAX_MBX_CNT).sender_id > OS_TASK_ID_NONE);
+            mbx_index := (os_mbx_get_mbx_head (task_id) + iterator)
+                         mod OS_MAX_MBX_CNT;
 
             mbx_mask :=
               mbx_mask or
               os_mbx_mask_t
                 (2**
                  Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)));
-
-            mbx_index := (mbx_index + 1) mod OS_MAX_MBX_CNT;
          end loop;
       end if;
 
@@ -643,15 +631,10 @@ is
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_task_rw (Natural (task_id)).mbx.mbx_array'Range =>
-         ((index >= Natural (os_mbx_get_mbx_count (task_id)))
-          and then (os_task_rw (Natural (task_id)).mbx.mbx_array
-                   ((Natural (os_mbx_get_mbx_head (task_id))
-                   + index) mod OS_MAX_MBX_CNT).sender_id = OS_TASK_ID_NONE))
-          or else
-         ((index < Natural (os_mbx_get_mbx_count (task_id)))
-          and then (os_task_rw (Natural (task_id)).mbx.mbx_array
-                   ((Natural (os_mbx_get_mbx_head (task_id))
-                   + index) mod OS_MAX_MBX_CNT).sender_id > 1)));
+         (if index in Natural (os_mbx_get_mbx_head (task_id)) .. Natural (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - 1)
+          or else index in 0 .. Natural (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - OS_MAX_MBX_CNT - 1)
+             then os_task_rw (Natural (task_id)).mbx.mbx_array (index).sender_id > OS_TASK_ID_NONE
+             else os_task_rw (Natural (task_id)).mbx.mbx_array (index).sender_id = OS_TASK_ID_NONE));
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --
@@ -706,11 +689,11 @@ is
                and then os_ghost_not_prev_twice (os_task_id_t (task_id))
                --  If there is a next
                and then
-	          -- If a task has a next then it is part of the ready list
+                  -- If a task has a next then it is part of the ready list
                   (if os_task_rw (task_id).next /= OS_TASK_ID_NONE then
-		     --  Its next needs to be in ready state
+                     --  Its next needs to be in ready state
                      os_ghost_task_is_ready (os_task_rw (task_id).next)
-		     --  It needs to be in ready state itself
+                     --  It needs to be in ready state itself
                      and then os_ghost_task_is_ready (os_task_id_t (task_id))
                      -- The next needs to have the actual task as prev
                      and then os_task_rw (Natural (os_task_rw
