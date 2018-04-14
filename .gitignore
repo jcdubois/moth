@@ -29,3 +29,4 @@ tools/openconf/zconf.hash.c
 
 tags
 .*.swp
+/obj/
