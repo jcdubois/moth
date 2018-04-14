@@ -85,7 +85,7 @@ is
    pragma Convention (C_Pass_By_Copy, os_mbx_entry_t);
 
    type os_mbx_t_array is
-           array (0 .. OS_MAX_MBX_ID) of aliased os_mbx_entry_t;
+           array (os_mbx_index_t range 0 .. OS_MAX_MBX_ID) of aliased os_mbx_entry_t;
 
    type os_mbx_t is record
       head             : aliased os_mbx_index_t;
@@ -118,13 +118,13 @@ is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_rw_t);
 
-   os_task_ro : aliased constant array (0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
+   os_task_ro : aliased constant array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
    pragma Import (C, os_task_ro, "os_task_ro");
 
-   os_task_rw : aliased array (0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
+   os_task_rw : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
    pragma Export (C, os_task_rw, "os_task_rw");
 
-   os_ghost_task_ready : aliased array (0 .. OS_MAX_TASK_ID) of Boolean with Ghost;
+   os_ghost_task_ready : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of Boolean with Ghost;
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean
    with
