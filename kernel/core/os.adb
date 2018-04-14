@@ -474,7 +474,7 @@ is
       status := OS_ERROR_DENIED;
 
       for iterator in os_task_rw'Range loop
-         os_mbx_send_one_task (ret, os_task_id_param_t (iterator), mbx_msg);
+         os_mbx_send_one_task (ret, iterator, mbx_msg);
 
          if ret = OS_ERROR_FIFO_FULL then
             status := ret;
@@ -642,7 +642,7 @@ is
 
    function os_ghost_mbx_are_well_formed return Boolean is
       (for all task_id in os_task_rw'Range =>
-         os_ghost_task_mbx_are_well_formed (os_task_id_t (task_id)));
+         os_ghost_task_mbx_are_well_formed (task_id));
 
    ---------------------------------------
    -- os_ghost_task_list_is_well_formed --
@@ -662,7 +662,7 @@ is
             -- no prev
             and os_task_rw (task_id).prev = OS_TASK_ID_NONE
             -- and all tasks are in not ready state
-            and not (os_ghost_task_is_ready (os_task_id_t (task_id)))
+            and not (os_ghost_task_is_ready (task_id))
          )
         )
        or else
@@ -680,13 +680,13 @@ is
          and then
             (for all task_id in os_task_rw'Range =>
                --  a task cannot have itself as next.
-               os_task_rw (task_id).next /= os_task_id_t (task_id)
+               os_task_rw (task_id).next /= task_id
                --  a task cannot have itself as prev.
-               and then os_task_rw (task_id).prev /= os_task_id_t (task_id)
+               and then os_task_rw (task_id).prev /= task_id
                --  a task could not be next more than once
-               and then os_ghost_not_next_twice (os_task_id_t (task_id))
+               and then os_ghost_not_next_twice (task_id)
                --  a task could not be prev more than once
-               and then os_ghost_not_prev_twice (os_task_id_t (task_id))
+               and then os_ghost_not_prev_twice (task_id)
                --  If there is a next
                and then
                   -- If a task has a next then it is part of the ready list
@@ -694,16 +694,16 @@ is
                      --  Its next needs to be in ready state
                      os_ghost_task_is_ready (os_task_rw (task_id).next)
                      --  It needs to be in ready state itself
-                     and then os_ghost_task_is_ready (os_task_id_t (task_id))
+                     and then os_ghost_task_is_ready (task_id)
                      -- The next needs to have the actual task as prev
                      and then os_task_rw (os_task_rw
-                             (task_id).next).prev = os_task_id_t (task_id)
+                             (task_id).next).prev = task_id
                      --  prev and next need to be different
                      and then os_task_rw (task_id).next
                                          /= os_task_rw (task_id).prev
                      -- It needs to be ordered on priority
                      and then os_get_task_priority (os_task_rw (task_id).next)
-                        <= os_get_task_priority (os_task_id_t (task_id)))))
+                        <= os_get_task_priority (task_id))))
       ));
 
    ----------------
@@ -806,13 +806,12 @@ is
       prev_id := 0;
 
       for task_iterator in os_task_rw'Range loop
-         os_arch_space_switch (prev_id, os_task_id_param_t (task_iterator));
+         os_arch_space_switch (prev_id, task_iterator);
 
-         os_arch_context_create (os_task_id_param_t (task_iterator));
+         os_arch_context_create (task_iterator);
 
          for mbx_iterator in os_task_rw (task_iterator).mbx.mbx_array'Range loop
-            os_mbx_clear_mbx_entry (os_task_id_param_t (task_iterator),
-                                    os_mbx_index_t (mbx_iterator));
+            os_mbx_clear_mbx_entry (task_iterator, mbx_iterator);
          end loop;
 
          os_task_rw (task_iterator).mbx.head := 0;
@@ -822,13 +821,13 @@ is
          os_task_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_rw (task_iterator).prev := OS_TASK_ID_NONE;
 
-         prev_id := os_task_id_param_t (task_iterator);
+         prev_id := task_iterator;
 
          os_ghost_task_ready (task_iterator) := false;
       end loop;
 
       for task_iterator in os_task_rw'Range loop
-         os_sched_add_task_to_ready_list (os_task_id_param_t (task_iterator));
+         os_sched_add_task_to_ready_list (task_iterator);
       end loop;
 
       os_sched_schedule (task_id);
@@ -922,7 +921,7 @@ is
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
       elsif ((dest_id >= 0) and (dest_id < OS_MAX_TASK_CNT)) then
-         os_mbx_send_one_task (status, os_task_id_param_t (dest_id), mbx_msg);
+         os_mbx_send_one_task (status, dest_id, mbx_msg);
       else
          status := OS_ERROR_PARAM;
       end if;
