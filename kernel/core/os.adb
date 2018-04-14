@@ -11,6 +11,9 @@ is
    -- Private API --
    -----------------
 
+   function "+" (Left : os_mbx_index_t; Right : os_mbx_count_t) return os_mbx_index_t is
+     (Left + os_mbx_index_t'Mod (Right));
+
   ---------------------
   -- os_task_current --
   ---------------------
@@ -78,7 +81,7 @@ is
    is
    begin
       os_task_rw (task_id).mbx.head :=
-        (os_task_rw (task_id).mbx.head + 1) mod OS_MAX_MBX_CNT;
+        (os_task_rw (task_id).mbx.head + os_mbx_count_t'(1)) ;
    end os_mbx_inc_mbx_head;
 
    -------------------------
@@ -165,14 +168,12 @@ is
                  os_task_rw (dest_id).mbx.count'Old + 1) and
               (os_task_rw (dest_id).mbx.mbx_array
                        ((os_mbx_get_mbx_head (dest_id)
-                       + os_task_rw (dest_id).mbx.count'Old)
-                       mod OS_MAX_MBX_CNT).sender_id = src_id))
+                       + os_task_rw (dest_id).mbx.count'Old)).sender_id = src_id))
    is
       mbx_index : os_mbx_index_t;
    begin
       mbx_index :=
-           (os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id))
-        mod OS_MAX_MBX_CNT;
+           (os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id));
 
       os_task_rw (dest_id).mbx.mbx_array (mbx_index).sender_id :=
          src_id;
@@ -396,8 +397,7 @@ is
 
          for iterator in 0 .. (os_mbx_get_mbx_count (task_id) - 1) loop
 
-            mbx_index := (os_mbx_get_mbx_head (task_id) + iterator)
-                         mod OS_MAX_MBX_CNT;
+            mbx_index := (os_mbx_get_mbx_head (task_id) + iterator);
 
             mbx_mask :=
               mbx_mask or
@@ -542,8 +542,7 @@ is
       Pre => os_mbx_get_mbx_count (task_id) > 0
              and then
                 (for some index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
-                          ((os_mbx_get_mbx_head (task_id) + index)
-                          mod OS_MAX_MBX_CNT) = mbx_index)
+                          ((os_mbx_get_mbx_head (task_id) + index)) = mbx_index)
              and then os_task_rw (task_id).mbx.mbx_array
                           (mbx_index).sender_id > OS_TASK_ID_NONE;
 
@@ -631,7 +630,7 @@ is
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_task_rw (task_id).mbx.mbx_array'Range =>
          (if index in os_mbx_get_mbx_head (task_id) .. (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - 1)
-          or else index in 0 .. (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - OS_MAX_MBX_CNT - 1)
+          or else index in 0 .. (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id))
              then os_task_rw (task_id).mbx.mbx_array (index).sender_id > OS_TASK_ID_NONE
              else os_task_rw (task_id).mbx.mbx_array (index).sender_id = OS_TASK_ID_NONE));
 
@@ -867,7 +866,7 @@ is
 
             --  Compute the mbx_index for the loop
             mbx_index :=
-              (os_mbx_get_mbx_head (current) + iterator) mod OS_MAX_MBX_CNT;
+              (os_mbx_get_mbx_head (current) + iterator);
 
             --  look into the mbx queue for a mbx that is waited for
             if os_mbx_is_waiting_mbx_entry (current, mbx_index) then
@@ -885,7 +884,7 @@ is
                   for iterator2 in
                     (iterator + 1) .. (os_mbx_get_mbx_count (current) - 1)
                   loop
-                     next_mbx_index := (mbx_index + 1) mod OS_MAX_MBX_CNT;
+                     next_mbx_index := (mbx_index + os_mbx_count_t'(1));
                      os_mbx_set_mbx_entry
                        (current,
                         mbx_index,
