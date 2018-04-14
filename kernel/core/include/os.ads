@@ -63,7 +63,8 @@ is
    subtype os_status_t is types.int32_t
                            range OS_ERROR_MAX .. OS_SUCCESS;
 
-   type os_mbx_index_t is mod OS_MAX_MBX_ID;
+   subtype os_mbx_index_t is types.uint8_t
+                           range 0 .. OS_MAX_MBX_ID;
 
    subtype os_mbx_count_t is types.uint8_t
                            range 0 .. OS_MAX_MBX_CNT;
@@ -84,7 +85,7 @@ is
    pragma Convention (C_Pass_By_Copy, os_mbx_entry_t);
 
    type os_mbx_t_array is
-           array (os_mbx_index_t) of aliased os_mbx_entry_t;
+           array (os_mbx_index_t range 0 .. OS_MAX_MBX_ID) of aliased os_mbx_entry_t;
 
    type os_mbx_t is record
       head             : aliased os_mbx_index_t;
