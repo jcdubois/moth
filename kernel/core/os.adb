@@ -401,9 +401,9 @@ is
 
             mbx_mask :=
               mbx_mask or
-              os_mbx_mask_t
-                (2**
-                 Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)));
+              os_mbx_mask_t (Shift_Left
+                (Unsigned_32'(1),
+                 Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index))));
          end loop;
       end if;
 
@@ -434,7 +434,7 @@ is
 
       mbx_permission :=
         os_mbx_get_mbx_permission (dest_id) and
-        os_mbx_mask_t (2**Natural (current));
+        os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
       if mbx_permission /= 0 then
          if os_mbx_is_full (dest_id) then
             status := OS_ERROR_FIFO_FULL;
@@ -442,7 +442,7 @@ is
             os_mbx_add_message (dest_id, current, mbx_msg);
             waiting_mask :=
               os_mbx_get_waiting_mask (dest_id) and
-              os_mbx_mask_t (2**Natural (current));
+              os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
             if waiting_mask /= 0 then
                os_sched_add_task_to_ready_list (dest_id);
             end if;
@@ -536,8 +536,9 @@ is
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t) return Boolean
    is ((os_mbx_get_waiting_mask (task_id) and
-        os_mbx_mask_t (2**Natural (os_mbx_get_mbx_entry_sender
-                (task_id, mbx_index)))) /= 0)
+        os_mbx_mask_t (Shift_Left
+                (Unsigned_32'(1), Natural (os_mbx_get_mbx_entry_sender
+                (task_id, mbx_index))))) /= 0)
    with
       Pre => os_mbx_get_mbx_count (task_id) > 0
              and then
