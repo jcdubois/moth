@@ -116,8 +116,7 @@ is
                os_task_rw (task_id).mbx.count'Old + 1)
    is
    begin
-      os_task_rw (task_id).mbx.count :=
-        os_task_rw (task_id).mbx.count + 1;
+      os_task_rw (task_id).mbx.count := os_mbx_get_mbx_count (task_id) + 1;
    end os_mbx_inc_mbx_count;
 
    --------------------------
@@ -128,13 +127,12 @@ is
    procedure os_mbx_dec_mbx_count (task_id : os_task_id_param_t)
    with
       Global => (In_Out => os_task_rw),
-      Pre => (os_task_rw (task_id).mbx.count > 0),
+      Pre => (os_mbx_get_mbx_count (task_id) > os_mbx_count_t'First),
       Post => (os_task_rw (task_id).mbx.count =
                os_task_rw (task_id).mbx.count'Old - 1)
    is
    begin
-      os_task_rw (task_id).mbx.count :=
-        os_task_rw (task_id).mbx.count - 1;
+      os_task_rw (task_id).mbx.count := os_mbx_get_mbx_count (task_id) - 1;
    end os_mbx_dec_mbx_count;
 
    ---------------------
@@ -175,7 +173,7 @@ is
       mbx_index : os_mbx_index_t;
    begin
       mbx_index :=
-           (os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id));
+         os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id);
 
       os_task_rw (dest_id).mbx.mbx_array (mbx_index).sender_id :=
          src_id;
@@ -395,7 +393,7 @@ is
 
       mbx_mask := 0;
 
-      if os_mbx_get_mbx_count (task_id) /= 0 then
+      if os_mbx_get_mbx_count (task_id) > os_mbx_count_t'First then
 
          for iterator in 0 .. (os_mbx_get_mbx_count (task_id) - 1) loop
 
@@ -442,8 +440,7 @@ is
             status := OS_ERROR_FIFO_FULL;
          else
             os_mbx_add_message (dest_id, current, mbx_msg);
-            waiting_mask :=
-              os_mbx_get_waiting_mask (dest_id) and
+            waiting_mask := os_mbx_get_waiting_mask (dest_id) and
               os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
             if waiting_mask /= 0 then
                os_sched_add_task_to_ready_list (dest_id);
@@ -500,10 +497,9 @@ is
       mbx_index : os_mbx_index_t)
    is
    begin
-      os_task_rw (task_id).mbx.mbx_array
-              (mbx_index) .sender_id := OS_TASK_ID_NONE;
-      os_task_rw (task_id).mbx.mbx_array
-              (mbx_index).msg := 0;
+      os_task_rw (task_id).mbx.mbx_array (mbx_index).sender_id :=
+                                                               OS_TASK_ID_NONE;
+      os_task_rw (task_id).mbx.mbx_array (mbx_index).msg := 0;
    end os_mbx_clear_mbx_entry;
 
    --------------------------
@@ -517,8 +513,7 @@ is
       mbx_entry : os_mbx_entry_t)
    is
    begin
-      os_task_rw (task_id).mbx.mbx_array
-              (mbx_index) := mbx_entry;
+      os_task_rw (task_id).mbx.mbx_array (mbx_index) := mbx_entry;
    end os_mbx_set_mbx_entry;
 
    --------------------------
@@ -882,8 +877,8 @@ is
                   --  in other case, for now we "compact" the rest of the mbx
                   --  queue, so that there is no "hole" in it for the next mbx
                   --  search.
-                  for iterator2 in
-                    (iterator + 1) .. (os_mbx_get_mbx_count (current) - 1)
+                  for iterator2 in (iterator + 1) ..
+                                   (os_mbx_get_mbx_count (current) - 1)
                   loop
                      next_mbx_index := mbx_index + os_mbx_count_t'(1);
                      os_mbx_set_mbx_entry
@@ -920,7 +915,8 @@ is
    begin
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
-      elsif ((dest_id >= 0) and (dest_id < OS_MAX_TASK_CNT)) then
+      elsif ((dest_id >= os_task_id_param_t'First) and
+             (dest_id <= os_task_id_param_t'Last)) then
          os_mbx_send_one_task (status, dest_id, mbx_msg);
       else
          status := OS_ERROR_PARAM;
