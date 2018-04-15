@@ -46,9 +46,9 @@ is
    OS_ERROR_MAX        : constant := OS_ERROR_PARAM;
 
    OS_MAX_TASK_CNT     : constant := OpenConf.CONFIG_MAX_TASK_COUNT;
-   OS_MAX_TASK_ID      : constant := OpenConf.CONFIG_MAX_TASK_COUNT - 1;
+   OS_MAX_TASK_ID      : constant := OS_MAX_TASK_CNT - 1;
    OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
-   OS_MAX_MBX_ID       : constant := OpenConf.CONFIG_TASK_MBX_COUNT - 1;
+   OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
 
    OS_MBX_MSG_SZ       : constant := OpenConf.CONFIG_MBX_SIZE;
 
@@ -112,7 +112,6 @@ is
    type os_task_rw_t is record
       next             : aliased os_task_id_t;
       prev             : aliased os_task_id_t;
-      stack_pointer    : aliased os_virtual_address_t;
       mbx_waiting_mask : aliased os_mbx_mask_t;
       mbx              : aliased os_mbx_t;
    end record;

@@ -76,7 +76,6 @@ typedef struct {
 typedef struct {
   os_task_id_t next;
   os_task_id_t prev;
-  os_virtual_address_t stack_pointer;
   os_mbx_mask_t mbx_waiting_mask;
   os_mbx_t mbx;
 } os_task_rw_t;

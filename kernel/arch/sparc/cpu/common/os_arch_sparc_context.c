@@ -38,6 +38,12 @@
 
 #include <os_arch.h>
 
+typedef struct {
+  os_virtual_address_t stack_pointer;
+} os_arch_task_rw_t;
+
+static os_arch_task_rw_t os_arch_task_rw[CONFIG_MAX_TASK_COUNT];
+
 /**
  *
  */
@@ -69,7 +75,7 @@ void os_arch_context_create(os_task_id_t task_id) {
   *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)task_id;
   ;
 
-  os_task_rw[task_id].stack_pointer = (uint32_t)ctx;
+  os_arch_task_rw[task_id].stack_pointer = (uint32_t)ctx;
 }
 
 /**
@@ -85,11 +91,11 @@ uint32_t os_arch_stack_pointer;
  */
 void os_arch_context_switch(os_task_id_t prev_id, os_task_id_t next_id) {
   syslog("%s( task_id = %d )\n", __func__, (int)next_id);
-  os_task_rw[prev_id].stack_pointer = os_arch_stack_pointer;
-  os_arch_stack_pointer = os_task_rw[next_id].stack_pointer;
+  os_arch_task_rw[prev_id].stack_pointer = os_arch_stack_pointer;
+  os_arch_stack_pointer = os_arch_task_rw[next_id].stack_pointer;
 }
 
 void os_arch_context_set(os_task_id_t task_id) {
   syslog("%s( task_id = %d )\n", __func__, (int)task_id);
-  os_arch_stack_pointer = os_task_rw[task_id].stack_pointer;
+  os_arch_stack_pointer = os_arch_task_rw[task_id].stack_pointer;
 }
