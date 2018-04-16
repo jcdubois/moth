@@ -11,9 +11,39 @@ is
    -- Private API --
    -----------------
 
-   function "+" (Left  : os_mbx_index_t;
-                 Right : os_mbx_count_t) return os_mbx_index_t
-   is (Left + os_mbx_index_t'Mod (Right));
+   -------------------
+   -- Private types --
+   -------------------
+
+   type os_mbx_index_t is mod OS_MAX_MBX_ID;
+
+   type os_mbx_count_t is mod OS_MAX_MBX_CNT;
+
+   type os_mbx_t_array is
+              array (os_mbx_index_t) of aliased os_mbx_entry_t;
+
+   type os_mbx_t is record
+      head             : aliased os_mbx_index_t;
+      count            : aliased os_mbx_count_t;
+      mbx_array        : aliased os_mbx_t_array;
+   end record;
+
+   type os_task_rw_t is record
+      next             : aliased os_task_id_t;
+      prev             : aliased os_task_id_t;
+      mbx_waiting_mask : aliased os_mbx_mask_t;
+      mbx              : aliased os_mbx_t;
+   end record;
+
+   -----------------------
+   -- Private variables --
+   -----------------------
+
+   ----------------
+   -- os_task_rw --
+   ----------------
+
+   os_task_rw : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
 
    ---------------------
    -- os_task_current --
@@ -30,6 +60,15 @@ is
    --  Note: Its value could be OS_TASK_ID_NONE if no task is ready.
 
    os_task_ready_list_head : os_task_id_t;
+
+   ----------------------
+   -- + os_mbx_index_t --
+   ----------------------
+   -- add operator overload for os_mbx_index_t
+
+   function "+" (Left  : os_mbx_index_t;
+                 Right : os_mbx_count_t) return os_mbx_index_t
+   is (Left + os_mbx_index_t'Mod (Right));
 
    -------------------------------
    -- os_mbx_get_mbx_permission --
@@ -581,6 +620,9 @@ is
    --------------------------------------------
    -- os_ghost_at_least_one_terminating_next --
    --------------------------------------------
+   --  There should be at leat one task that has no next.
+   --  The last element of the list has no next.
+   --  If there is no first element then all no element has any next
 
    function os_ghost_at_least_one_terminating_next return Boolean is
       (for some task_id in os_task_rw'Range =>
@@ -591,6 +633,9 @@ is
    --------------------------------------------
    -- os_ghost_at_least_one_terminating_prev --
    --------------------------------------------
+   --  There should be at leat one task that has no prev.
+   --  The first element of the list has no prev.
+   --  If there is no first element then all no element has any prev
 
    function os_ghost_at_least_one_terminating_prev return Boolean is
       (for some task_id in os_task_rw'Range =>
@@ -615,7 +660,7 @@ is
    ---------------------------------------
    -- os_ghost_task_mbx_are_well_formed --
    ---------------------------------------
-   --  MBX are circular FIFO (contained in an arrary) where head is the index
+   --  MBX are circular FIFO (contained in an array) where head is the index
    --  of the fisrt element of the FIFO and count is the number of element
    --  stored in the FIFO.
    --  When an element of the FIFO is filled its sender_id field needs to be
@@ -626,9 +671,9 @@ is
    --  = -1.
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
-      (for all index in os_task_rw (task_id).mbx.mbx_array'Range =>
-         (if index in os_mbx_get_mbx_head (task_id) .. (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - 1)
-          or else index in 0 .. (os_mbx_get_mbx_head (task_id) + os_mbx_get_mbx_count (task_id) - 1)
+      (for all index in os_mbx_t_array'Range =>
+         (if index in os_mbx_get_mbx_head (task_id) .. os_mbx_index_t (Natural (os_mbx_get_mbx_count (task_id)) + Natural (os_mbx_get_mbx_head (task_id)) - 1)
+          or else index in 0 .. os_mbx_index_t (Natural (os_mbx_get_mbx_count (task_id)) + Natural (os_mbx_get_mbx_head (task_id)) - OS_MAX_MBX_CNT - 1)
              then os_task_rw (task_id).mbx.mbx_array (index).sender_id > OS_TASK_ID_NONE
              else os_task_rw (task_id).mbx.mbx_array (index).sender_id = OS_TASK_ID_NONE));
 
@@ -639,6 +684,20 @@ is
    function os_ghost_mbx_are_well_formed return Boolean is
       (for all task_id in os_task_rw'Range =>
          os_ghost_task_mbx_are_well_formed (task_id));
+
+   -------------------------------------------------
+   -- os_ghost_head_list_task_has_higher_priority --
+   -------------------------------------------------
+
+   function os_ghost_head_list_task_has_higher_priority return Boolean is
+      (os_sched_get_current_list_head /= OS_TASK_ID_NONE and then
+       os_ghost_task_is_ready (os_sched_get_current_list_head) and then
+         (for some task_id in os_task_rw'Range =>
+            os_ghost_task_is_ready (task_id) and then
+            os_get_task_priority (task_id)
+               <= os_get_task_priority (os_sched_get_current_list_head)))
+   with
+      Ghost => true;
 
    ---------------------------------------
    -- os_ghost_task_list_is_well_formed --

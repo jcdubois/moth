@@ -63,11 +63,6 @@ is
    subtype os_status_t is types.int32_t
                            range OS_ERROR_MAX .. OS_SUCCESS;
 
-   type os_mbx_index_t is mod OS_MAX_MBX_ID;
-
-   subtype os_mbx_count_t is types.uint8_t
-                           range 0 .. OS_MAX_MBX_CNT;
-
    subtype os_size_t is types.uint32_t;
 
    subtype os_priority_t is types.uint8_t;
@@ -82,16 +77,6 @@ is
       msg              : aliased os_mbx_msg_t;
    end record;
    pragma Convention (C_Pass_By_Copy, os_mbx_entry_t);
-
-   type os_mbx_t_array is
-	   array (os_mbx_index_t) of aliased os_mbx_entry_t;
-
-   type os_mbx_t is record
-      head             : aliased os_mbx_index_t;
-      count            : aliased os_mbx_count_t;
-      mbx_array        : aliased os_mbx_t_array;
-   end record;
-   pragma Convention (C_Pass_By_Copy, os_mbx_t);
 
    type os_task_section_t is record
       virtual_address  : aliased os_virtual_address_t;
@@ -108,19 +93,8 @@ is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_ro_t);
 
-   type os_task_rw_t is record
-      next             : aliased os_task_id_t;
-      prev             : aliased os_task_id_t;
-      mbx_waiting_mask : aliased os_mbx_mask_t;
-      mbx              : aliased os_mbx_t;
-   end record;
-   pragma Convention (C_Pass_By_Copy, os_task_rw_t);
-
    os_task_ro : aliased constant array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_ro_t;
    pragma Import (C, os_task_ro, "os_task_ro");
-
-   os_task_rw : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
-   pragma Export (C, os_task_rw, "os_task_rw");
 
    os_ghost_task_ready : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of Boolean with Ghost;
 
