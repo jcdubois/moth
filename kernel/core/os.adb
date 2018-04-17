@@ -39,11 +39,18 @@ is
    -- Private variables --
    -----------------------
 
+   -------------------------------------
+   -- Ghost variable for task's state --
+   -------------------------------------
+
+   os_ghost_task_ready : aliased array (os_task_id_param_t)
+                                        of Boolean with Ghost;
+
    ----------------
    -- os_task_rw --
    ----------------
 
-   os_task_rw : aliased array (os_task_id_param_t range 0 .. OS_MAX_TASK_ID) of aliased os_task_rw_t;
+   os_task_rw : aliased array (os_task_id_param_t) of aliased os_task_rw_t;
 
    ---------------------
    -- os_task_current --
@@ -60,6 +67,10 @@ is
    --  Note: Its value could be OS_TASK_ID_NONE if no task is ready.
 
    os_task_ready_list_head : os_task_id_t;
+
+   ----------------------------------
+   -- Private functions/procedures --
+   ----------------------------------
 
    ----------------------
    -- + os_mbx_index_t --
@@ -177,7 +188,7 @@ is
    ---------------------
    -- os_mbx_is_empty --
    ---------------------
-   --  check if the mbx fifo of a given task is empty.
+   --  Check if the mbx fifo of a given task is empty.
 
    function os_mbx_is_empty (task_id : os_task_id_param_t) return Boolean
    is (os_task_rw (task_id).mbx.count = os_mbx_count_t'First);
@@ -185,7 +196,7 @@ is
    --------------------
    -- os_mbx_is_full --
    --------------------
-   --  check if the mbx fifo of a given task is full.
+   --  Check if the mbx fifo of a given task is full.
 
    function os_mbx_is_full (task_id : os_task_id_param_t) return Boolean
    is (os_task_rw (task_id).mbx.count = os_mbx_count_t'Last);
@@ -671,11 +682,10 @@ is
    --  = -1.
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
-      (for all index in os_mbx_t_array'Range =>
-         (if index in os_mbx_get_mbx_head (task_id) .. os_mbx_index_t (Natural (os_mbx_get_mbx_count (task_id)) + Natural (os_mbx_get_mbx_head (task_id)) - 1)
-          or else index in 0 .. os_mbx_index_t (Natural (os_mbx_get_mbx_count (task_id)) + Natural (os_mbx_get_mbx_head (task_id)) - OS_MAX_MBX_CNT - 1)
-             then os_task_rw (task_id).mbx.mbx_array (index).sender_id > OS_TASK_ID_NONE
-             else os_task_rw (task_id).mbx.mbx_array (index).sender_id = OS_TASK_ID_NONE));
+      (for all index in os_mbx_index_t'Range =>
+         (if os_mbx_count_t (index) < os_mbx_get_mbx_count (task_id)
+          then os_task_rw (task_id).mbx.mbx_array (os_mbx_get_mbx_head (task_id) + os_mbx_count_t (index)).sender_id > OS_TASK_ID_NONE
+	  else os_task_rw (task_id).mbx.mbx_array (os_mbx_get_mbx_head (task_id) + os_mbx_count_t (index)).sender_id = OS_TASK_ID_NONE));
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --
@@ -976,7 +986,7 @@ is
          os_mbx_send_all_task (status, mbx_msg);
       elsif ((dest_id >= os_task_id_param_t'First) and
              (dest_id <= os_task_id_param_t'Last)) then
-         os_mbx_send_one_task (status, dest_id, mbx_msg);
+         os_mbx_send_one_task (status, os_task_id_param_t (dest_id), mbx_msg);
       else
          status := OS_ERROR_PARAM;
       end if;
