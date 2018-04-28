@@ -8,6 +8,10 @@ project Moth is
    package Builder is
    end Builder;
 
+   package Compiler is
+      for Default_Switches ("ada") use ("-gnatw.eH.YD", "-gnatf", "-Wall");
+   end Compiler;
+
    package Prove is
       for Switches use ("--level=4", "--report=all");
    end Prove;
@@ -17,4 +21,3 @@ project Moth is
    end Pretty_Printer;
 
 end Moth;
-
