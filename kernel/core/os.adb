@@ -311,7 +311,7 @@ is
                   os_sched_set_current_list_head (task_id);
                else
                   os_task_rw (task_id).prev := prev_id;
-                  if prev_id /= OS_TASK_ID_NONE then
+                  if prev_id in os_task_id_param_t then
                      os_task_rw (prev_id).next := task_id;
                   end if;
                end if;

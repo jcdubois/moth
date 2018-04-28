@@ -47,6 +47,7 @@ is
 
    OS_MAX_TASK_CNT     : constant := OpenConf.CONFIG_MAX_TASK_COUNT;
    OS_MAX_TASK_ID      : constant := OS_MAX_TASK_CNT - 1;
+   OS_MIN_TASK_ID      : constant := OS_TASK_ID_NONE + 1;
    OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
    OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
 
@@ -58,7 +59,7 @@ is
                            range OS_TASK_ID_NONE .. OS_MAX_TASK_ID;
 
    subtype os_task_id_param_t is os_task_id_t
-                           range 0 .. OS_MAX_TASK_ID;
+                           range OS_MIN_TASK_ID .. OS_MAX_TASK_ID;
 
    subtype os_status_t is types.int32_t
                            range OS_ERROR_MAX .. OS_SUCCESS;
