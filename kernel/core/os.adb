@@ -17,7 +17,7 @@ is
 
    type os_mbx_index_t is mod OS_MAX_MBX_ID;
 
-   type os_mbx_count_t is mod OS_MAX_MBX_CNT;
+   subtype os_mbx_count_t is types.uint8_t range 0 .. OS_MAX_MBX_CNT;
 
    type os_mbx_t_array is
               array (os_mbx_index_t) of aliased os_mbx_entry_t;
@@ -158,7 +158,7 @@ is
    -------------------------
    --  Retrieve the mbx tail index of the given task.
 
-   function os_mbx_get_mbx_tail
+   function os_mbx_get_mbx_tail -- Q: should hava ghost in name?
      (task_id : os_task_id_param_t) return os_mbx_index_t
    is (os_mbx_get_mbx_head (task_id) +
        (os_mbx_get_mbx_count (task_id) - os_mbx_count_t'(1)))
@@ -232,11 +232,9 @@ is
                        (os_mbx_get_mbx_tail (dest_id))
                        .sender_id = src_id))
    is
-      mbx_index : os_mbx_index_t;
+      mbx_index : constant os_mbx_index_t := os_mbx_get_mbx_head (dest_id) +
+        os_mbx_get_mbx_count (dest_id);
    begin
-      mbx_index :=
-         os_mbx_get_mbx_head (dest_id) + os_mbx_get_mbx_count (dest_id);
-
       os_task_rw (dest_id).mbx.mbx_array (mbx_index).sender_id :=
          src_id;
       os_task_rw (dest_id).mbx.mbx_array (mbx_index).msg := mbx_msg;
@@ -284,10 +282,8 @@ is
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id)
    is
-      index_id : os_task_id_t;
-      prev_id  : os_task_id_t;
+      index_id : os_task_id_t := os_sched_get_current_list_head;
    begin
-      index_id := os_sched_get_current_list_head;
 
       if index_id = OS_TASK_ID_NONE then
          --  No task in the ready list. Add this task at list head
@@ -300,22 +296,25 @@ is
                --  Already in the ready list
                exit;
             elsif os_get_task_priority (task_id) >
-               os_get_task_priority (index_id)
+              os_get_task_priority (index_id)
             then
-               prev_id := os_task_rw (index_id).prev;
-               os_task_rw (task_id).next  := index_id;
-               os_task_rw (index_id).prev := task_id;
+               declare
+                  prev_id : constant os_task_id_t := os_task_rw (index_id).prev;
+               begin
+                  os_task_rw (task_id).next  := index_id;
+                  os_task_rw (index_id).prev := task_id;
 
-               if index_id = os_sched_get_current_list_head then
-                  os_task_rw (task_id).prev := OS_TASK_ID_NONE;
-                  os_sched_set_current_list_head (task_id);
-               else
-                  os_task_rw (task_id).prev := prev_id;
-                  if prev_id in os_task_id_param_t then
-                     os_task_rw (prev_id).next := task_id;
+                  if index_id = os_sched_get_current_list_head then
+                     os_task_rw (task_id).prev := OS_TASK_ID_NONE;
+                     os_sched_set_current_list_head (task_id);
+                  else
+                     os_task_rw (task_id).prev := prev_id;
+                     if prev_id in os_task_id_param_t then
+                        os_task_rw (prev_id).next := task_id;
+                     end if;
                   end if;
-               end if;
-               exit;
+                  exit;
+               end;
             elsif os_task_rw (index_id).next = OS_TASK_ID_NONE then
                os_task_rw (index_id).next := task_id;
                os_task_rw (task_id).prev  := index_id;
@@ -350,11 +349,8 @@ is
               os_ghost_task_list_is_well_formed and
               not os_ghost_task_is_ready (task_id)
    is
-      next : os_task_id_t;
-      prev : os_task_id_t;
+      next : constant os_task_id_t := os_task_rw (task_id).next;
    begin
-      next := os_task_rw (task_id).next;
-
       if task_id = os_sched_get_current_list_head then
          --  We are removing the current running task. So put the next task at
          --  list head. Note: there could be no next task (OS_TASK_ID_NONE)
@@ -366,15 +362,18 @@ is
          --  The list is not empty and
          --  The task is not at the list head (it has a predecesor).
          --  Link previous next to our next
-         prev := os_task_rw (task_id).prev;
-         if prev /= OS_TASK_ID_NONE then
-            os_task_rw (prev).next := next;
-         end if;
+         declare
+            prev : constant os_task_id_t := os_task_rw (task_id).prev;
+         begin
+            if prev /= OS_TASK_ID_NONE then
+               os_task_rw (prev).next := next;
+            end if;
 
-         if next /= OS_TASK_ID_NONE then
-            --  if we have a next, link next previous to our previous.
-            os_task_rw (next).prev := prev;
-         end if;
+            if next /= OS_TASK_ID_NONE then
+               --  if we have a next, link next previous to our previous.
+               os_task_rw (next).prev := prev;
+            end if;
+         end;
       end if;
 
       --  reset our next and previous
@@ -437,7 +436,7 @@ is
            (mbx_index).sender_id))
    with
       Pre => os_task_rw (task_id).mbx.mbx_array
-                  (mbx_index).sender_id > OS_TASK_ID_NONE;
+                  (mbx_index).sender_id in os_task_id_param_t;
 
    ----------------------------
    -- os_mbx_get_posted_mask --
@@ -449,24 +448,20 @@ is
       Global => (Input => (os_task_rw)),
       Pre => os_ghost_task_mbx_are_well_formed (task_id)
    is
-      mbx_mask  : os_mbx_mask_t;
+      mbx_mask  : os_mbx_mask_t := 0;
       mbx_index : os_mbx_index_t;
    begin
 
-      mbx_mask := 0;
-
-      if os_mbx_get_mbx_count (task_id) > os_mbx_count_t'First then
-
-         for iterator in os_mbx_count_t'First ..
-		         (os_mbx_get_mbx_count (task_id) - os_mbx_count_t'(1))
+      if not os_mbx_is_empty (task_id) then
+         mbx_index := os_mbx_get_mbx_head (task_id);
+         for iterator in 1 .. os_mbx_get_mbx_count (task_id)
 	 loop
-            mbx_index := os_mbx_get_mbx_head (task_id) + iterator;
-
-            mbx_mask :=
+             mbx_mask :=
               mbx_mask or
               os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1),
                  Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index))));
+            mbx_index := os_mbx_index_t'Succ(mbx_index);
          end loop;
       end if;
 
@@ -489,23 +484,18 @@ is
       Post => os_ghost_task_list_is_well_formed and then
               os_ghost_current_task_is_ready
    is
-      current        : os_task_id_param_t;
-      mbx_permission : os_mbx_mask_t;
-      waiting_mask   : os_mbx_mask_t;
-   begin
-      current := os_sched_get_current_task_id;
-
-      mbx_permission :=
+      current        : constant os_task_id_param_t := os_sched_get_current_task_id;
+      mbx_permission : constant os_mbx_mask_t :=
         os_mbx_get_mbx_permission (dest_id) and
         os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
+   begin
       if mbx_permission /= 0 then
          if os_mbx_is_full (dest_id) then
             status := OS_ERROR_FIFO_FULL;
          else
             os_mbx_add_message (dest_id, current, mbx_msg);
-            waiting_mask := os_mbx_get_waiting_mask (dest_id) and
-              os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
-            if waiting_mask /= 0 then
+            if (os_mbx_get_waiting_mask (dest_id) and
+              os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
                os_sched_add_task_to_ready_list (dest_id);
             end if;
 
@@ -605,7 +595,7 @@ is
                 (for some index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
                           (os_mbx_get_mbx_head (task_id) + index) = mbx_index)
              and then os_task_rw (task_id).mbx.mbx_array
-                          (mbx_index).sender_id > OS_TASK_ID_NONE;
+                          (mbx_index).sender_id in os_task_id_param_t;
 
    ----------------------
    --  Ghost functions --
@@ -673,6 +663,7 @@ is
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
    is (os_ghost_task_ready (task_id));
+     -- Q: with Ghost;?
 
    ------------------------------------
    -- os_ghost_current_task_is_ready --
@@ -680,6 +671,7 @@ is
 
    function os_ghost_current_task_is_ready return Boolean
    is (os_ghost_task_is_ready(os_sched_get_current_task_id));
+     -- Q: with Ghost;?
 
    ---------------------------------------
    -- os_ghost_task_mbx_are_well_formed --
@@ -706,9 +698,10 @@ is
 	      (index in os_mbx_get_mbx_head (task_id) ..
 		        os_mbx_get_mbx_tail (task_id))))
           then os_task_rw (task_id).mbx.mbx_array (index).sender_id
-		        > OS_TASK_ID_NONE
+		        in os_task_id_param_t
           else os_task_rw (task_id).mbx.mbx_array (index).sender_id
 		        = OS_TASK_ID_NONE));
+     -- Q: with Ghost;?
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --
@@ -717,6 +710,7 @@ is
    function os_ghost_mbx_are_well_formed return Boolean is
       (for all task_id in os_task_rw'Range =>
          os_ghost_task_mbx_are_well_formed (task_id));
+     -- Q: with Ghost;?
 
    -------------------------------------------------
    -- os_ghost_head_list_task_has_higher_priority --
@@ -793,6 +787,7 @@ is
                      and then os_get_task_priority (os_task_rw (task_id).next)
                         <= os_get_task_priority (task_id))))
       ));
+     -- Q: with Ghost;?
 
    ----------------
    -- Public API --
@@ -894,7 +889,7 @@ is
       prev_id := 0;
 
       for task_iterator in os_task_rw'Range loop
-         os_arch_space_switch (prev_id, task_iterator);
+         os_arch_space_switch (prev_id, task_iterator); -- Q: first iteration -> prev_id = task_iterator = os_task_rw'First?!
 
          os_arch_context_create (task_iterator);
 
@@ -922,7 +917,7 @@ is
 
       os_arch_context_set (task_id);
 
-      os_arch_space_switch (prev_id, task_id);
+      os_arch_space_switch (prev_id, task_id);  -- Q: prev_id = os_task_rw'Last ?!
    end os_init;
 
    --------------------
@@ -933,15 +928,13 @@ is
      (status    : out os_status_t;
       mbx_entry : out os_mbx_entry_t)
    is
-      current        : os_task_id_param_t;
+      --  retrieve current task id
+      current        : constant os_task_id_param_t := os_sched_get_current_task_id;
       mbx_index      : os_mbx_index_t;
       next_mbx_index : os_mbx_index_t;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
-
-      --  retrieve current task id
-      current := os_sched_get_current_task_id;
 
       if os_mbx_is_empty (current) then
          --  mbx queue is empty, so we return with error
@@ -950,11 +943,11 @@ is
          --  initialize status to error in case we don't find a mbx.
          status := OS_ERROR_RECEIVE;
 
-         --  go through received mbx for this task
-         for iterator in 0 .. (os_mbx_get_mbx_count (current) - 1) loop
+         --  Compute the first mbx_index for the loop
+         mbx_index := os_mbx_get_mbx_head (current);
 
-            --  Compute the mbx_index for the loop
-            mbx_index := os_mbx_get_mbx_head (current) + iterator;
+         --  go through received mbx for this task
+         for iterator in 1 .. os_mbx_get_mbx_count (current) loop
 
             --  look into the mbx queue for a mbx that is waited for
             if os_mbx_is_waiting_mbx_entry (current, mbx_index) then
@@ -962,15 +955,14 @@ is
                --  copy the mbx into the task mbx entry
                mbx_entry := os_mbx_get_mbx_entry (current, mbx_index);
 
-               if iterator = 0 then
+               if iterator = 1 then
                   --  if this was the first mbx, we just increase the mbx head
                   os_mbx_inc_mbx_head (current);
                else
                   --  in other case, for now we "compact" the rest of the mbx
                   --  queue, so that there is no "hole" in it for the next mbx
                   --  search.
-                  for iterator2 in (iterator + 1) ..
-                                   (os_mbx_get_mbx_count (current) - 1)
+                  for iterator2 in iterator .. os_mbx_get_mbx_count (current)
                   loop
                      next_mbx_index := mbx_index + os_mbx_count_t'(1);
                      os_mbx_set_mbx_entry
@@ -991,6 +983,8 @@ is
                status := OS_SUCCESS;
                exit;
             end if;
+            --  Compute the next mbx_index for the loop
+            mbx_index := os_mbx_index_t'Succ(mbx_index);
          end loop;
       end if;
    end os_mbx_receive;
