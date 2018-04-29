@@ -55,7 +55,10 @@ is
 
    subtype os_mbx_mask_t is types.uint32_t;
 
-   subtype os_task_id_t is types.int8_t
+   subtype os_task_dest_id_t is types.int8_t
+                           range OS_TASK_ID_ALL .. OS_MAX_TASK_ID;
+
+   subtype os_task_id_t is os_task_dest_id_t
                            range OS_TASK_ID_NONE .. OS_MAX_TASK_ID;
 
    subtype os_task_id_param_t is os_task_id_t
@@ -162,7 +165,7 @@ is
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
    procedure os_mbx_send (status  : out os_status_t;
-                          dest_id :     types.int8_t;
+                          dest_id :     os_task_dest_id_t;
                           mbx_msg :     os_mbx_msg_t)
    with
       Pre => os_ghost_task_list_is_well_formed and then
