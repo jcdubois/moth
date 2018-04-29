@@ -20,19 +20,19 @@ is
    subtype os_mbx_count_t is types.uint8_t range 0 .. OS_MAX_MBX_CNT;
 
    type os_mbx_t_array is
-              array (os_mbx_index_t) of aliased os_mbx_entry_t;
+              array (os_mbx_index_t) of os_mbx_entry_t;
 
    type os_mbx_t is record
-      head             : aliased os_mbx_index_t;
-      count            : aliased os_mbx_count_t;
-      mbx_array        : aliased os_mbx_t_array;
+      head             : os_mbx_index_t;
+      count            : os_mbx_count_t;
+      mbx_array        : os_mbx_t_array;
    end record;
 
    type os_task_rw_t is record
-      next             : aliased os_task_id_t;
-      prev             : aliased os_task_id_t;
-      mbx_waiting_mask : aliased os_mbx_mask_t;
-      mbx              : aliased os_mbx_t;
+      next             : os_task_id_t;
+      prev             : os_task_id_t;
+      mbx_waiting_mask : os_mbx_mask_t;
+      mbx              : os_mbx_t;
    end record;
 
    -----------------------
@@ -43,14 +43,14 @@ is
    -- Ghost variable for task's state --
    -------------------------------------
 
-   os_ghost_task_ready : aliased array (os_task_id_param_t)
+   os_ghost_task_ready : array (os_task_id_param_t)
                                         of Boolean with Ghost;
 
    ----------------
    -- os_task_rw --
    ----------------
 
-   os_task_rw : aliased array (os_task_id_param_t) of aliased os_task_rw_t;
+   os_task_rw : array (os_task_id_param_t) of os_task_rw_t;
 
    ---------------------
    -- os_task_current --
