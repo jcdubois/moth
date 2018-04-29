@@ -131,8 +131,7 @@ is
    procedure os_mbx_inc_mbx_head (task_id : os_task_id_param_t)
    is
    begin
-      os_task_rw (task_id).mbx.head :=
-        (os_task_rw (task_id).mbx.head + os_mbx_count_t'(1));
+      os_task_rw (task_id).mbx.head := os_mbx_index_t'Succ (os_task_rw (task_id).mbx.head);
    end os_mbx_inc_mbx_head;
 
    -------------------------
@@ -158,7 +157,7 @@ is
    -------------------------
    --  Retrieve the mbx tail index of the given task.
 
-   function os_mbx_get_mbx_tail -- Q: should hava ghost in name?
+   function os_mbx_get_mbx_tail -- Q: should have ghost in name?
      (task_id : os_task_id_param_t) return os_mbx_index_t
    is (os_mbx_get_mbx_head (task_id) +
        (os_mbx_get_mbx_count (task_id) - os_mbx_count_t'(1)))
@@ -590,7 +589,7 @@ is
                 (Unsigned_32'(1), Natural (os_mbx_get_mbx_entry_sender
                 (task_id, mbx_index))))) /= 0)
    with
-      Pre => os_mbx_get_mbx_count (task_id) > 0
+      Pre => not os_mbx_is_empty (task_id)
              and then
                 (for some index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
                           (os_mbx_get_mbx_head (task_id) + index) = mbx_index)
@@ -663,7 +662,6 @@ is
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
    is (os_ghost_task_ready (task_id));
-     -- Q: with Ghost;?
 
    ------------------------------------
    -- os_ghost_current_task_is_ready --
@@ -671,7 +669,6 @@ is
 
    function os_ghost_current_task_is_ready return Boolean
    is (os_ghost_task_is_ready(os_sched_get_current_task_id));
-     -- Q: with Ghost;?
 
    ---------------------------------------
    -- os_ghost_task_mbx_are_well_formed --
@@ -701,7 +698,6 @@ is
 		        in os_task_id_param_t
           else os_task_rw (task_id).mbx.mbx_array (index).sender_id
 		        = OS_TASK_ID_NONE));
-     -- Q: with Ghost;?
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --
@@ -710,7 +706,6 @@ is
    function os_ghost_mbx_are_well_formed return Boolean is
       (for all task_id in os_task_rw'Range =>
          os_ghost_task_mbx_are_well_formed (task_id));
-     -- Q: with Ghost;?
 
    -------------------------------------------------
    -- os_ghost_head_list_task_has_higher_priority --
@@ -787,7 +782,6 @@ is
                      and then os_get_task_priority (os_task_rw (task_id).next)
                         <= os_get_task_priority (task_id))))
       ));
-     -- Q: with Ghost;?
 
    ----------------
    -- Public API --
@@ -964,7 +958,7 @@ is
                   --  search.
                   for iterator2 in iterator .. os_mbx_get_mbx_count (current)
                   loop
-                     next_mbx_index := mbx_index + os_mbx_count_t'(1);
+                     next_mbx_index := os_mbx_index_t'Succ (mbx_index);
                      os_mbx_set_mbx_entry
                        (current,
                         mbx_index,
