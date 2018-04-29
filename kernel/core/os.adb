@@ -995,15 +995,14 @@ is
 
    procedure os_mbx_send
      (status  : out os_status_t;
-      dest_id :     types.int8_t;
+      dest_id :     os_task_dest_id_t;
       mbx_msg :     os_mbx_msg_t)
    is
    begin
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
-      elsif ((dest_id >= os_task_id_param_t'First) and
-             (dest_id <= os_task_id_param_t'Last)) then
-         os_mbx_send_one_task (status, os_task_id_param_t (dest_id), mbx_msg);
+      elsif dest_id in os_task_id_param_t then
+         os_mbx_send_one_task (status, dest_id, mbx_msg);
       else
          status := OS_ERROR_PARAM;
       end if;
