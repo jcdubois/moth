@@ -47,7 +47,7 @@ is
 
    OS_MAX_TASK_CNT     : constant := OpenConf.CONFIG_MAX_TASK_COUNT;
    OS_MAX_TASK_ID      : constant := OS_MAX_TASK_CNT - 1;
-   OS_MIN_TASK_ID      : constant := OS_TASK_ID_NONE + 1;
+   OS_MIN_TASK_ID      : constant := 0;
    OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
    OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
 
@@ -97,8 +97,7 @@ is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_ro_t);
 
-   os_task_ro : constant array (os_task_id_param_t)
-                                        of os_task_ro_t;
+   os_task_ro : constant array (os_task_id_param_t) of os_task_ro_t;
    pragma Import (C, os_task_ro, "os_task_ro");
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean
