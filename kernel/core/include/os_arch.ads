@@ -36,7 +36,8 @@ package os_arch is
    pragma Import (C, os_arch_interrupt_is_pending, "os_arch_interrupt_is_pending");
 
    procedure os_arch_idle
-      with Global => null;
+      with Global => null,
+           Post   => os.os_ghost_task_list_is_well_formed;
    pragma Import (C, os_arch_idle, "os_arch_idle");
 
    procedure os_arch_context_create (task_id : os.os_task_id_param_t)
