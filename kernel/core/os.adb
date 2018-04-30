@@ -166,12 +166,12 @@ is
      (task_id : os_task_id_param_t) return os_mbx_count_t
    is (os_task_rw (task_id).mbx.count);
 
-   -------------------------
-   -- os_mbx_get_mbx_tail --
-   -------------------------
+   ---------------------------
+   -- os_ghost_get_mbx_tail --
+   ---------------------------
    --  Retrieve the mbx tail index of the given task.
 
-   function os_mbx_get_mbx_tail -- Q: should have ghost in name?
+   function os_ghost_get_mbx_tail
      (task_id : os_task_id_param_t) return os_mbx_index_t
    is (os_mbx_get_mbx_head (task_id) +
        os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)))
@@ -229,7 +229,7 @@ is
       Post => ((os_mbx_get_mbx_count (dest_id) =
                  os_task_rw (dest_id).mbx.count'Old + 1) and then
               (os_task_rw (dest_id).mbx.mbx_array
-                       (os_mbx_get_mbx_tail (dest_id))
+                       (os_ghost_get_mbx_tail (dest_id))
                        .sender_id = src_id))
    is
       mbx_index : constant os_mbx_index_t := os_mbx_get_mbx_head (dest_id) +
@@ -687,14 +687,14 @@ is
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
          (if (((os_mbx_get_mbx_count (task_id) > 0) and then
-              (os_mbx_get_mbx_tail (task_id)
+              (os_ghost_get_mbx_tail (task_id)
                         < os_mbx_get_mbx_head (task_id)) and then
               ((index >= os_mbx_get_mbx_head (task_id)) or
-               (index <= os_mbx_get_mbx_tail (task_id))))
+               (index <= os_ghost_get_mbx_tail (task_id))))
           or else
              ((os_mbx_get_mbx_count (task_id) > 0) and then
               (index in os_mbx_get_mbx_head (task_id) ..
-                        os_mbx_get_mbx_tail (task_id))))
+                        os_ghost_get_mbx_tail (task_id))))
           then os_task_rw (task_id).mbx.mbx_array (index).sender_id
                         in os_task_id_param_t
           else os_task_rw (task_id).mbx.mbx_array (index).sender_id
@@ -873,7 +873,7 @@ is
 
    procedure os_init (task_id : out os_task_id_param_t)
    is
-      prev_id : os_task_id_param_t;
+      prev_id : os_task_id_param_t := os_task_rw'First;
    begin
       os_arch_cons_init;
 
@@ -881,10 +881,8 @@ is
 
       os_sched_set_current_list_head (OS_TASK_ID_NONE);
 
-      prev_id := 0;
-
       for task_iterator in os_task_rw'Range loop
-         os_arch_space_switch (prev_id, task_iterator); -- Q: first iteration -> prev_id = task_iterator = os_task_rw'First?!
+         os_arch_space_switch (prev_id, task_iterator);
 
          os_arch_context_create (task_iterator);
 
@@ -912,7 +910,7 @@ is
 
       os_arch_context_set (task_id);
 
-      os_arch_space_switch (prev_id, task_id);  -- Q: prev_id = os_task_rw'Last ?!
+      os_arch_space_switch (prev_id, task_id);
    end os_init;
 
    --------------------
