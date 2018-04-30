@@ -956,7 +956,7 @@ is
                   --  in other case, for now we "compact" the rest of the mbx
                   --  queue, so that there is no "hole" in it for the next mbx
                   --  search.
-                  for iterator2 in iterator .. os_mbx_get_mbx_count (current)
+                  for iterator2 in os_mbx_count_t'Succ (iterator) .. os_mbx_count_t'Pred (os_mbx_get_mbx_count (current))
                   loop
                      next_mbx_index := os_mbx_index_t'Succ (mbx_index);
                      os_mbx_set_mbx_entry
