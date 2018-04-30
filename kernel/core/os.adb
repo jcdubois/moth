@@ -989,9 +989,10 @@ is
 
    procedure os_mbx_send
      (status  : out os_status_t;
-      dest_id :     os_task_dest_id_t;
+      dest_id :     types.int8_t;
       mbx_msg :     os_mbx_msg_t)
    is
+      -- dest_id comes from uncontroled C calls
    begin
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
