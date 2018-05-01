@@ -88,9 +88,9 @@ is
    is (os_task_ro (task_id).mbx_permission);
 
    -------------------------------
-   -- os_mbx_get_mbx_permission --
+   -- os_get_task_priority --
    -------------------------------
-   --  Get the mbx permission for a given task
+   --  Get the mbx priority for a given task
 
    function os_get_task_priority
      (task_id : os_task_id_param_t) return os_priority_t
