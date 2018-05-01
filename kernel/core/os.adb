@@ -225,11 +225,11 @@ is
    with
       Global => (In_Out => os_task_rw),
       Pre => (os_ghost_task_mbx_are_well_formed (dest_id) and
-              os_mbx_get_mbx_count (dest_id) < os_mbx_count_t'Last),
+              not os_mbx_is_full (dest_id)),
       Post => ((os_mbx_get_mbx_count (dest_id) =
                  os_task_rw (dest_id).mbx.count'Old + 1) and
               (os_task_rw (dest_id).mbx.mbx_array
-                       (os_ghost_get_mbx_tail (dest_id))
+                       (os_ghost_get_mbx_tail (dest_id))  -- medium: postcondition might fail, cannot prove -> head + count is may be too hard to prove -> proposal: add a tail index in os_mbx_t
                        .sender_id = src_id))
    is
       mbx_index : constant os_mbx_index_t := os_mbx_get_mbx_head (dest_id) +
@@ -460,7 +460,7 @@ is
               mbx_mask or
               os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1),
-                 Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index))));
+                 Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index)))); -- medium: precondition might fail -> proposal: is sender_id valid should be a ghost function to help proof
             mbx_index := os_mbx_index_t'Succ(mbx_index);
          end loop;
       end if;
@@ -481,8 +481,9 @@ is
                 Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
+             os_ghost_task_mbx_are_well_formed (dest_id),
       Post => os_ghost_task_list_is_well_formed and
-              os_ghost_current_task_is_ready
+              os_ghost_current_task_is_ready -- medium: postcondition might fail, cannot prove os_ghost_current_task_is_ready -> is it true in every cases below?
    is
       current        : constant os_task_id_param_t := os_sched_get_current_task_id;
       mbx_permission : constant os_mbx_mask_t :=
