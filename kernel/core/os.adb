@@ -87,9 +87,9 @@ is
       (task_id : os_task_id_param_t) return os_mbx_mask_t
    is (os_task_ro (task_id).mbx_permission);
 
-   -------------------------------
+   --------------------------
    -- os_get_task_priority --
-   -------------------------------
+   --------------------------
    --  Get the mbx priority for a given task
 
    function os_get_task_priority
@@ -686,14 +686,14 @@ is
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
-         (if (((os_mbx_get_mbx_count (task_id) > 0) and then
-              (os_ghost_get_mbx_tail (task_id)
+         (if (((not os_mbx_is_empty (task_id)) and then
+               (os_ghost_get_mbx_tail (task_id)
                         < os_mbx_get_mbx_head (task_id)) and then
-              ((index >= os_mbx_get_mbx_head (task_id)) or
-               (index <= os_ghost_get_mbx_tail (task_id))))
-          or else
-             ((os_mbx_get_mbx_count (task_id) > 0) and then
-              (index in os_mbx_get_mbx_head (task_id) ..
+               ((index >= os_mbx_get_mbx_head (task_id)) or
+                (index <= os_ghost_get_mbx_tail (task_id))))
+              or else
+              ((not os_mbx_is_empty (task_id)) and then
+               (index in os_mbx_get_mbx_head (task_id) ..
                         os_ghost_get_mbx_tail (task_id))))
           then os_task_rw (task_id).mbx.mbx_array (index).sender_id
                         in os_task_id_param_t
