@@ -224,11 +224,15 @@ is
       mbx_msg : os_mbx_msg_t)
    with
       Global => (In_Out => os_task_rw),
-      Pre => (os_ghost_task_mbx_are_well_formed (dest_id) and then
-              os_mbx_get_mbx_count (dest_id) < os_mbx_count_t'Last),
-      Post => ((os_mbx_get_mbx_count (dest_id) =
-                 os_task_rw (dest_id).mbx.count'Old + 1) and then
-              (os_task_rw (dest_id).mbx.mbx_array
+      Pre  => ((not os_mbx_is_full (dest_id)) and
+               os_ghost_task_mbx_are_well_formed (dest_id)),
+      Post => ((not os_mbx_is_empty (dest_id)) and
+               (os_mbx_get_mbx_count (dest_id) =
+                 os_task_rw (dest_id).mbx.count'Old + 1) and
+               (os_mbx_get_mbx_head (dest_id) =
+                 os_task_rw (dest_id).mbx.head'Old) and
+               os_ghost_task_mbx_are_well_formed (dest_id) and
+               (os_task_rw (dest_id).mbx.mbx_array
                        (os_ghost_get_mbx_tail (dest_id))
                        .sender_id = src_id))
    is
