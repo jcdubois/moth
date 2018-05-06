@@ -286,8 +286,10 @@ is
 
    procedure os_sched_add_task_to_ready_list (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_list_rw, os_ghost_task_ready),
-                 Input => os_task_ro),
+      Global => (In_Out => (os_task_ready_list_head,
+                            os_task_list_rw,
+                            os_ghost_task_ready),
+                 Input  => os_task_ro),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id)
@@ -350,8 +352,8 @@ is
       Global => (In_Out => (os_task_ready_list_head,
                             os_task_list_rw,
                             os_ghost_task_ready),
-                 Input => (os_task_current,
-                           os_task_ro)),
+                 Input  => (os_task_current,
+                            os_task_ro)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
@@ -400,9 +402,11 @@ is
 
    procedure os_sched_schedule (task_id : out os_task_id_param_t)
    with
-   Global => (In_Out => (os_task_ready_list_head, os_task_list_rw, os_ghost_task_ready),
+   Global => (In_Out => (os_task_ready_list_head,
+                         os_task_list_rw,
+                         os_ghost_task_ready),
               Output => os_task_current,
-              Input => os_task_ro),
+              Input  => os_task_ro),
    Pre => os_ghost_task_list_is_well_formed,
    Post => os_ghost_task_list_is_well_formed and then
            os_ghost_task_is_ready (task_id)
@@ -487,8 +491,12 @@ is
       dest_id :     os_task_id_param_t;
       mbx_msg :     os_mbx_msg_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_list_rw, os_ghost_task_ready),
-                Input => (os_task_ro, os_task_current)),
+      Global => (In_Out => (os_task_ready_list_head,
+                            os_task_list_rw,
+                            os_ghost_task_ready,
+                            os_task_mbx_rw),
+                 Input  => (os_task_ro,
+                            os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and then
@@ -524,8 +532,12 @@ is
      (status  : out os_status_t;
       mbx_msg :     os_mbx_msg_t)
    with
-      Global => (In_Out => (os_task_ready_list_head, os_task_list_rw, os_ghost_task_ready),
-                 Input => (os_task_ro, os_task_current)),
+      Global => (In_Out => (os_task_ready_list_head,
+                            os_task_list_rw,
+                            os_ghost_task_ready,
+                            os_task_mbx_rw),
+                 Input  => (os_task_ro,
+                            os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and then
