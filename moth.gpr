@@ -2,7 +2,7 @@ project Moth is
 
    for Source_Dirs use ("kernel/core/**", "build/openconf");
    for Object_Dir use "obj";
-   for Main use ("os.adb");
+--     for Main use ("os.adb");
    for Languages use ("Ada", "C", "Asm");
 
    package Builder is

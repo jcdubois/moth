@@ -480,7 +480,7 @@ is
       Global => (In_Out => (os_task_ready_list_head, os_task_rw, os_ghost_task_ready),
                 Input => (os_task_ro, os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and
-             os_ghost_current_task_is_ready,
+             os_ghost_current_task_is_ready and
              os_ghost_task_mbx_are_well_formed (dest_id),
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_current_task_is_ready -- medium: postcondition might fail, cannot prove os_ghost_current_task_is_ready -> is it true in every cases below?

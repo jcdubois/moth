@@ -71,7 +71,7 @@ is
 
    subtype os_priority_t is types.uint8_t;
 
-   type os_mbx_msg_t is mod 2 ** OS_MBX_MSG_SZ; -- Q: why modular type?
+   type os_mbx_msg_t is range 0 .. 2 ** OS_MBX_MSG_SZ - 1;
    for os_mbx_msg_t'Size use OS_MBX_MSG_SZ;
 
    subtype os_virtual_address_t is types.uint32_t;
