@@ -193,8 +193,7 @@ is
    with
       Global => (In_Out => os_task_mbx_rw),
       Pre => (os_task_mbx_rw (task_id).count < os_mbx_count_t'Last),
-      Post => (os_task_mbx_rw (task_id).count =
-               os_task_mbx_rw'Old (task_id).count + 1)
+      Post => os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (count => os_task_mbx_rw'Old (task_id).count + 1))
    is
    begin
       os_task_mbx_rw (task_id).count :=
@@ -210,8 +209,7 @@ is
    with
       Global => (In_Out => os_task_mbx_rw),
       Pre => (os_mbx_get_mbx_count (task_id) > os_mbx_count_t'First),
-      Post => (os_task_mbx_rw (task_id).count =
-               os_task_mbx_rw'Old (task_id).count - 1)
+      Post => os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (count => os_task_mbx_rw'Old (task_id).count - 1))
    is
    begin
       os_task_mbx_rw (task_id).count :=
@@ -232,16 +230,7 @@ is
       Pre  => ((not os_mbx_is_full (dest_id)) and
                os_ghost_task_mbx_are_well_formed (dest_id)),
       Post => ((not os_mbx_is_empty (dest_id)) and
-               (for all J in os_task_mbx_rw'Range =>
-                  (if (J = dest_id)
-                   then ((os_task_mbx_rw (J).count = 
-                             os_task_mbx_rw'Old (J).count + 1) and
-                         (os_task_mbx_rw (J).head =
-                             os_task_mbx_rw'Old (J).head) and
-                         (os_task_mbx_rw (J).mbx_array
-                             (os_ghost_get_mbx_tail (dest_id)).sender_id
-                                                        = src_id))
-                   else (os_task_mbx_rw (J) = os_task_mbx_rw'Old (J)))))
+               (os_task_mbx_rw = os_task_mbx_rw'Old'Update (dest_id => os_task_mbx_rw'Old (dest_id)'Update (count => os_task_mbx_rw'Old (dest_id).count + 1, head => os_task_mbx_rw'Old (dest_id).head, mbx_array => os_task_mbx_rw'Old (dest_id).mbx_array'Update (os_ghost_get_mbx_tail (dest_id) => os_task_mbx_rw'Old (dest_id).mbx_array (os_ghost_get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))))
    is
       mbx_index : constant os_mbx_index_t := os_mbx_get_mbx_head (dest_id) +
         os_mbx_get_mbx_count (dest_id);
@@ -475,7 +464,7 @@ is
               os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1),
                  Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index))));
-            mbx_index := os_mbx_index_t'Succ(mbx_index);
+            mbx_index := os_mbx_index_t'Succ (mbx_index);
          end loop;
       end if;
 
@@ -998,7 +987,7 @@ is
                exit;
             end if;
             --  Compute the next mbx_index for the loop
-            mbx_index := os_mbx_index_t'Succ(mbx_index);
+            mbx_index := os_mbx_index_t'Succ (mbx_index);
          end loop;
       end if;
    end os_mbx_receive;
