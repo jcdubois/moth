@@ -14,6 +14,9 @@ is
    -- Private types --
    -------------------
 
+   OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
+   OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
+
    type os_mbx_index_t is mod OS_MAX_MBX_ID;
 
    subtype os_mbx_count_t is types.uint8_t range 0 .. OS_MAX_MBX_CNT;
@@ -181,7 +184,11 @@ is
    is (os_mbx_get_mbx_head (task_id) +
        os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)))
    with
+      Global => (Input => os_task_mbx_rw),
       Pre => not os_mbx_is_empty (task_id),
+      Post => (if (os_mbx_get_mbx_head (task_id) <= (os_mbx_index_t'Last - os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)))))
+               then (os_ghost_get_mbx_tail'Result = os_mbx_get_mbx_head(task_id) + os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))))
+               else (os_ghost_get_mbx_tail'Result = os_mbx_get_mbx_head(task_id) + os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))) - os_mbx_index_t'Last)),
       Ghost => true;
 
    --------------------------
@@ -281,7 +288,7 @@ is
                  Input  => os_task_ro),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed and
-              os_ghost_task_is_ready (task_id)
+              os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => true)
    is
       index_id : os_task_id_t := os_sched_get_current_list_head;
    begin
@@ -341,14 +348,10 @@ is
       Global => (In_Out => (os_task_ready_list_head,
                             os_task_list_rw,
                             os_ghost_task_ready),
-                 Input  => (os_task_current,
-                            os_task_ro)),
-      Pre => os_ghost_task_list_is_well_formed and
-             os_ghost_current_task_is_ready,
-      Post => os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
-              os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
-              os_ghost_task_list_is_well_formed and
-              not os_ghost_task_is_ready (task_id)
+                 Input  => (os_task_ro)),
+      Pre => os_ghost_task_list_is_well_formed,
+      Post => os_task_list_rw = os_task_list_rw'Old'Update (task_id => os_task_list_rw'Old (task_id)'Update (prev => OS_TASK_ID_NONE, next => OS_TASK_ID_NONE, mbx_waiting_mask => os_task_list_rw'Old (task_id).mbx_waiting_mask)) and
+              os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false)
    is
       next : constant os_task_id_t := os_task_list_rw (task_id).next;
    begin
@@ -438,6 +441,7 @@ is
    is (os_task_id_param_t (os_task_mbx_rw (task_id).mbx_array
            (mbx_index).sender_id))
    with
+      Global => (Input => (os_task_mbx_rw)),
       Pre => os_task_mbx_rw (task_id).mbx_array
                   (mbx_index).sender_id in os_task_id_param_t;
 
@@ -459,11 +463,15 @@ is
          mbx_index := os_mbx_get_mbx_head (task_id);
          for iterator in 1 .. os_mbx_get_mbx_count (task_id)
          loop
+             pragma assert (os_ghost_task_mbx_are_well_formed (task_id));
+             pragma assert (os_task_mbx_rw (task_id).mbx_array (mbx_index).sender_id in os_task_id_param_t);
+
              mbx_mask :=
               mbx_mask or
               os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1),
                  Natural (os_mbx_get_mbx_entry_sender (task_id, mbx_index))));
+
             mbx_index := os_mbx_index_t'Succ (mbx_index);
          end loop;
       end if;
@@ -488,8 +496,7 @@ is
                             os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
-              os_ghost_current_task_is_ready
+      Post => os_ghost_task_list_is_well_formed
    is
       current        : constant os_task_id_param_t := os_sched_get_current_task_id;
       mbx_permission : constant os_mbx_mask_t :=
@@ -529,8 +536,7 @@ is
                             os_task_current)),
       Pre => os_ghost_task_list_is_well_formed and then
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
-              os_ghost_current_task_is_ready
+      Post => os_ghost_task_list_is_well_formed
    is
       ret : os_status_t;
    begin
@@ -601,6 +607,7 @@ is
                 (Unsigned_32'(1), Natural (os_mbx_get_mbx_entry_sender
                 (task_id, mbx_index))))) /= 0)
    with
+      Global => (Input => (os_task_list_rw, os_task_mbx_rw)),
       Pre => not os_mbx_is_empty (task_id)
              and then
                 (for some index in 0 .. (os_mbx_get_mbx_count (task_id) - 1) =>
@@ -697,19 +704,19 @@ is
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
-         (if (((not os_mbx_is_empty (task_id)) and then
-               (os_ghost_get_mbx_tail (task_id)
-                        < os_mbx_get_mbx_head (task_id)) and then
-               ((index >= os_mbx_get_mbx_head (task_id)) or
-                (index <= os_ghost_get_mbx_tail (task_id))))
-              or else
-              ((not os_mbx_is_empty (task_id)) and then
-               (index in os_mbx_get_mbx_head (task_id) ..
-                        os_ghost_get_mbx_tail (task_id))))
-          then os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                        in os_task_id_param_t
-          else os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                        = OS_TASK_ID_NONE));
+         (if (os_mbx_is_empty (task_id))
+          then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                  = OS_TASK_ID_NONE)
+          else (if (((os_ghost_get_mbx_tail (task_id)
+                         < os_mbx_get_mbx_head (task_id)) and
+                     ((index >= os_mbx_get_mbx_head (task_id)) or
+                      (index <= os_ghost_get_mbx_tail (task_id)))) or else
+                    (index in os_mbx_get_mbx_head (task_id) ..
+                              os_ghost_get_mbx_tail (task_id)))
+                then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                        in os_task_id_param_t)
+                else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                        = OS_TASK_ID_NONE))));
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --

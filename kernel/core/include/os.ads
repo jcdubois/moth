@@ -32,26 +32,24 @@ is
 
    OS_INTERRUPT_TASK_ID : constant := 0;
 
-   OS_TASK_ID_NONE     : constant := -1;
-   OS_TASK_ID_ALL      : constant := -2;
+   OS_TASK_ID_NONE      : constant := -1;
+   OS_TASK_ID_ALL       : constant := -2;
 
-   OS_MBX_MASK_ALL     : constant := 16#ffffffff#;
+   OS_MBX_MASK_ALL      : constant := 16#ffffffff#;
 
-   OS_SUCCESS          : constant := 0;
-   OS_ERROR_FIFO_FULL  : constant := -1;
-   OS_ERROR_FIFO_EMPTY : constant := -2;
-   OS_ERROR_DENIED     : constant := -3;
-   OS_ERROR_RECEIVE    : constant := -4;
-   OS_ERROR_PARAM      : constant := -5;
-   OS_ERROR_MAX        : constant := OS_ERROR_PARAM;
+   OS_SUCCESS           : constant := 0;
+   OS_ERROR_FIFO_FULL   : constant := -1;
+   OS_ERROR_FIFO_EMPTY  : constant := -2;
+   OS_ERROR_DENIED      : constant := -3;
+   OS_ERROR_RECEIVE     : constant := -4;
+   OS_ERROR_PARAM       : constant := -5;
+   OS_ERROR_MAX         : constant := OS_ERROR_PARAM;
 
-   OS_MAX_TASK_CNT     : constant := OpenConf.CONFIG_MAX_TASK_COUNT;
-   OS_MAX_TASK_ID      : constant := OS_MAX_TASK_CNT - 1;
-   OS_MIN_TASK_ID      : constant := 0;
-   OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
-   OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
+   OS_MAX_TASK_CNT      : constant := OpenConf.CONFIG_MAX_TASK_COUNT;
+   OS_MAX_TASK_ID       : constant := OS_MAX_TASK_CNT - 1;
+   OS_MIN_TASK_ID       : constant := 0;
 
-   OS_MBX_MSG_SZ       : constant := OpenConf.CONFIG_MBX_SIZE;
+   OS_MBX_MSG_SZ        : constant := OpenConf.CONFIG_MBX_SIZE;
 
    subtype os_mbx_mask_t is types.uint32_t;
 
@@ -71,7 +69,7 @@ is
 
    subtype os_priority_t is types.uint8_t;
 
-   type os_mbx_msg_t is mod 2 ** OS_MBX_MSG_SZ;
+   type os_mbx_msg_t is range 0 .. 2 ** OS_MBX_MSG_SZ - 1;
    for os_mbx_msg_t'Size use OS_MBX_MSG_SZ;
 
    subtype os_virtual_address_t is types.uint32_t;
