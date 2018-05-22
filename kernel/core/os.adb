@@ -15,9 +15,8 @@ is
    -------------------
 
    OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
-   OS_MAX_MBX_ID       : constant := OS_MAX_MBX_CNT - 1;
 
-   type os_mbx_index_t is mod OS_MAX_MBX_ID;
+   type os_mbx_index_t is mod OS_MAX_MBX_CNT;
 
    subtype os_mbx_count_t is types.uint8_t range 0 .. OS_MAX_MBX_CNT;
 
