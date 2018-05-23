@@ -187,7 +187,7 @@ is
       Pre => not os_mbx_is_empty (task_id),
       Post => (if (os_mbx_get_mbx_head (task_id) <= (os_mbx_index_t'Last - os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)))))
                then (os_ghost_get_mbx_tail'Result = os_mbx_get_mbx_head(task_id) + os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))))
-               else (os_ghost_get_mbx_tail'Result = os_mbx_get_mbx_head(task_id) + os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))) - os_mbx_index_t'Last)),
+               else (os_ghost_get_mbx_tail'Result = os_mbx_get_mbx_head(task_id) + os_mbx_index_t (os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))) - os_mbx_index_t'Last - os_mbx_index_t'(1))),
       Ghost => true;
 
    --------------------------
@@ -349,8 +349,12 @@ is
                             os_ghost_task_ready),
                  Input  => (os_task_ro)),
       Pre => os_ghost_task_list_is_well_formed,
-      Post => os_task_list_rw = os_task_list_rw'Old'Update (task_id => os_task_list_rw'Old (task_id)'Update (prev => OS_TASK_ID_NONE, next => OS_TASK_ID_NONE, mbx_waiting_mask => os_task_list_rw'Old (task_id).mbx_waiting_mask)) and
-              os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false)
+      Post => (os_task_list_rw = os_task_list_rw'Old'Update (
+	         task_id => os_task_list_rw'Old (task_id)'Update (
+		    prev => OS_TASK_ID_NONE,
+		    next => OS_TASK_ID_NONE,
+		    mbx_waiting_mask => os_task_list_rw'Old (task_id).mbx_waiting_mask)) and
+               os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false)) and os_ghost_task_list_is_well_formed
    is
       next : constant os_task_id_t := os_task_list_rw (task_id).next;
    begin
