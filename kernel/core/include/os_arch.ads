@@ -2,7 +2,6 @@ pragma Ada_2012;
 pragma Style_Checks (Off);
 pragma SPARK_Mode;
 
-with Interfaces.C; use Interfaces.C;
 with types;
 with os;
 

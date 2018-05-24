@@ -124,40 +124,42 @@ is
    procedure os_sched_wait (task_id      : out os_task_id_param_t;
                             waiting_mask :     os_mbx_mask_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
+             os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_wait, "os_sched_wait");
 
    procedure os_sched_yield (task_id : out os_task_id_param_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_yield, "os_sched_yield");
 
    procedure os_sched_exit (task_id : out os_task_id_param_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_sched_exit, "os_sched_exit");
 
    procedure os_init (task_id : out os_task_id_param_t)
    with
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_init, "os_init");
 
    procedure os_mbx_receive (status    : out os_status_t;
                              mbx_entry : out os_mbx_entry_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
+             os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
@@ -165,9 +167,10 @@ is
                           dest_id :     types.int8_t;
                           mbx_msg :     os_mbx_msg_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and then
+      Pre => os_ghost_task_list_is_well_formed and
+             os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and then
+      Post => os_ghost_task_list_is_well_formed and
               os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
