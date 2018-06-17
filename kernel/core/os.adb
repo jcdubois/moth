@@ -173,19 +173,18 @@ is
      (task_id : os_task_id_param_t) return os_mbx_count_t
    is (os_task_mbx_rw (task_id).count);
 
-   ---------------------------
-   -- os_ghost_get_mbx_tail --
-   ---------------------------
+   -------------------------
+   -- os_mbx_get_mbx_tail --
+   -------------------------
    --  Retrieve the mbx tail index of the given task.
 
-   function os_ghost_get_mbx_tail
+   function os_mbx_get_mbx_tail
      (task_id : os_task_id_param_t) return os_mbx_index_t
    is (os_mbx_get_mbx_head (task_id) +
        os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)))
    with
       Global => (Input => os_task_mbx_rw),
-      Pre => not os_mbx_is_empty (task_id),
-      Ghost => true;
+      Pre => not os_mbx_is_empty (task_id);
 
    --------------------------
    -- os_mbx_inc_mbx_count --
@@ -233,14 +232,14 @@ is
       Pre  => ((not os_mbx_is_full (dest_id)) and
                os_ghost_task_mbx_are_well_formed (dest_id)),
       Post => ((not os_mbx_is_empty (dest_id)) and
-               (os_task_mbx_rw = os_task_mbx_rw'Old'Update (dest_id => os_task_mbx_rw'Old (dest_id)'Update (count => os_task_mbx_rw'Old (dest_id).count + 1, head => os_task_mbx_rw'Old (dest_id).head, mbx_array => os_task_mbx_rw'Old (dest_id).mbx_array'Update (os_ghost_get_mbx_tail (dest_id) => os_task_mbx_rw'Old (dest_id).mbx_array (os_ghost_get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))))
+               (os_task_mbx_rw = os_task_mbx_rw'Old'Update (dest_id => os_task_mbx_rw'Old (dest_id)'Update (count => os_task_mbx_rw'Old (dest_id).count + 1, head => os_task_mbx_rw'Old (dest_id).head, mbx_array => os_task_mbx_rw'Old (dest_id).mbx_array'Update (os_mbx_get_mbx_tail (dest_id) => os_task_mbx_rw'Old (dest_id).mbx_array (os_mbx_get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))))
    is
-      mbx_index : constant os_mbx_index_t := os_mbx_get_mbx_head (dest_id) +
-        os_mbx_get_mbx_count (dest_id);
+      mbx_index : os_mbx_index_t;
    begin
+      os_mbx_inc_mbx_count (dest_id);
+      mbx_index := os_mbx_get_mbx_tail (dest_id);
       os_task_mbx_rw (dest_id).mbx_array (mbx_index).sender_id := src_id;
       os_task_mbx_rw (dest_id).mbx_array (mbx_index).msg := mbx_msg;
-      os_mbx_inc_mbx_count (dest_id);
    end os_mbx_add_message;
 
    ----------------------------------
@@ -708,12 +707,12 @@ is
          (if (os_mbx_is_empty (task_id))
           then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
                   = OS_TASK_ID_NONE)
-          else (if (((os_ghost_get_mbx_tail (task_id)
+          else (if (((os_mbx_get_mbx_tail (task_id)
                          < os_mbx_get_mbx_head (task_id)) and
                      ((index >= os_mbx_get_mbx_head (task_id)) or
-                      (index <= os_ghost_get_mbx_tail (task_id)))) or else
+                      (index <= os_mbx_get_mbx_tail (task_id)))) or else
                     (index in os_mbx_get_mbx_head (task_id) ..
-                              os_ghost_get_mbx_tail (task_id)))
+                              os_mbx_get_mbx_tail (task_id)))
                 then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
                         in os_task_id_param_t)
                 else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
