@@ -150,6 +150,7 @@ is
    procedure os_init (task_id : out os_task_id_param_t)
    with
       Post => os_ghost_task_list_is_well_formed and
+              os_ghost_mbx_are_well_formed and
               os_ghost_task_is_ready (task_id);
    pragma Export (C, os_init, "os_init");
 
@@ -160,6 +161,7 @@ is
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
+              os_ghost_mbx_are_well_formed and
               os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_receive, "os_mbx_receive");
 
@@ -171,6 +173,7 @@ is
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
+              os_ghost_mbx_are_well_formed and
               os_ghost_current_task_is_ready;
    pragma Export (C, os_mbx_send, "os_mbx_send");
 
