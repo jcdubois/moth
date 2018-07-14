@@ -453,7 +453,7 @@ is
      (task_id : os_task_id_param_t) return os_mbx_mask_t
    with
       Global => (Input => (os_task_mbx_rw)),
-      Pre => os_ghost_task_mbx_are_well_formed (task_id)
+      Pre => os_ghost_mbx_are_well_formed
    is
       mbx_mask  : os_mbx_mask_t := 0;
    begin
@@ -568,9 +568,6 @@ is
    procedure os_mbx_clear_mbx_entry
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t)
-   with
-      Global => (In_Out => os_task_mbx_rw),
-      Post => os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (mbx_array => os_task_mbx_rw'Old (task_id).mbx_array'Update (mbx_index => os_task_mbx_rw'Old (task_id).mbx_array (mbx_index)'Update (sender_id => OS_TASK_ID_NONE, msg => 0))))
    is
    begin
       os_task_mbx_rw (task_id).mbx_array (mbx_index).sender_id :=
@@ -587,9 +584,6 @@ is
      (task_id   : os_task_id_param_t;
       mbx_index : os_mbx_index_t;
       mbx_entry : os_mbx_entry_t)
-   with
-      Global => (In_Out => os_task_mbx_rw),
-      Post => os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (mbx_array => os_task_mbx_rw'Old (task_id).mbx_array'Update (mbx_index => mbx_entry)))
    is
    begin
       os_task_mbx_rw (task_id).mbx_array (mbx_index) := mbx_entry;
@@ -711,6 +705,9 @@ is
    --  So this condition makes sure that all non empty element of the circular
    --  FIFO have sender_id >= 0 and empty elements of the FIFO have sender_id
    --  = -1.
+   --  Note: Here we have to duplicate the function code in the post condition
+   --  in order to be able to support the pragma Inline_For_Proof required
+   --  to help the prover in os_ghost_mbx_are_well_formed() function below.
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
@@ -726,32 +723,35 @@ is
                 then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
                         in os_task_id_param_t)
                 else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                        = OS_TASK_ID_NONE))));
+                        = OS_TASK_ID_NONE))))
+   with
+      Ghost => true,
+      Post => os_ghost_task_mbx_are_well_formed'Result =
+         (for all index in os_mbx_index_t'Range =>
+            (if (os_mbx_is_empty (task_id))
+             then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                     = OS_TASK_ID_NONE)
+             else (if (((os_mbx_get_mbx_tail (task_id)
+                            < os_mbx_get_mbx_head (task_id)) and
+                        ((index >= os_mbx_get_mbx_head (task_id)) or
+                         (index <= os_mbx_get_mbx_tail (task_id)))) or else
+                       (index in os_mbx_get_mbx_head (task_id) ..
+                                 os_mbx_get_mbx_tail (task_id)))
+                   then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                           in os_task_id_param_t)
+                   else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
+                           = OS_TASK_ID_NONE))));
+
+      pragma Annotate (GNATprove, Inline_For_Proof,
+                       os_ghost_task_mbx_are_well_formed);
 
    ----------------------------------
    -- os_ghost_mbx_are_well_formed --
    ----------------------------------
 
    function os_ghost_mbx_are_well_formed return Boolean is
-       (for all task_id in os_task_id_param_t'Range =>
-          (for all index in os_mbx_index_t'Range =>
-          (if (os_mbx_is_empty (task_id))
-           then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                   = OS_TASK_ID_NONE)
-           else (if (((os_mbx_get_mbx_tail (task_id)
-                          < os_mbx_get_mbx_head (task_id)) and
-                      ((index >= os_mbx_get_mbx_head (task_id)) or
-                       (index <= os_mbx_get_mbx_tail (task_id)))) or else
-                     (index in os_mbx_get_mbx_head (task_id) ..
-                               os_mbx_get_mbx_tail (task_id)))
-                 then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                         in os_task_id_param_t)
-                 else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                         = OS_TASK_ID_NONE)))));
-
-   -- function os_ghost_mbx_are_well_formed return Boolean is
-      -- (for all task_id in os_task_id_param_t'Range =>
-         -- os_ghost_task_mbx_are_well_formed (task_id));
+      (for all task_id in os_task_id_param_t'Range =>
+         os_ghost_task_mbx_are_well_formed (task_id));
 
    -------------------------------------------------
    -- os_ghost_head_list_task_has_higher_priority --
@@ -918,41 +918,52 @@ is
    is
       prev_id : os_task_id_param_t := os_task_list_rw'First;
    begin
+      --  Init the console if any
       os_arch_cons_init;
 
+      --  Init the MMU
       os_arch_space_init;
 
+      --  Init the task list head to NONE
       os_sched_set_current_list_head (OS_TASK_ID_NONE);
 
       for task_iterator in os_task_list_rw'Range loop
-         os_arch_space_switch (prev_id, task_iterator);
-
-         os_arch_context_create (task_iterator);
-
+         --  Init the MBX for one task
          for mbx_iterator in os_task_mbx_rw (task_iterator).mbx_array'Range loop
             os_mbx_clear_mbx_entry (task_iterator, mbx_iterator);
          end loop;
+         os_task_mbx_rw (task_iterator).head := os_mbx_index_t'First;
+         os_task_mbx_rw (task_iterator).count := os_mbx_count_t'First;
 
-         os_task_mbx_rw (task_iterator).head := 0;
-         os_task_mbx_rw (task_iterator).count := 0;
-         os_task_list_rw (task_iterator).mbx_waiting_mask := 0;
-
+         -- Init the task entry for one task
          os_task_list_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_list_rw (task_iterator).prev := OS_TASK_ID_NONE;
+         os_task_list_rw (task_iterator).mbx_waiting_mask := 0;
 
-         prev_id := task_iterator;
-
+         --  This task is not ready
          os_ghost_task_ready (task_iterator) := false;
       end loop;
 
       for task_iterator in os_task_list_rw'Range loop
+         --  Initialise the memory space for one task
+         os_arch_space_switch (prev_id, task_iterator);
+
+         --  create the run context (stak, ...) for this task
+         os_arch_context_create (task_iterator);
+
+         --  Add the task to the ready list
          os_sched_add_task_to_ready_list (task_iterator);
+
+         prev_id := task_iterator;
       end loop;
 
+      --  Select the task to run
       os_sched_schedule (task_id);
 
+      --  Set the selected task as the current one
       os_arch_context_set (task_id);
 
+      --  Switch to this task context
       os_arch_space_switch (prev_id, task_id);
    end os_init;
 
@@ -1006,8 +1017,11 @@ is
                if iterator = 1 then
                   --  This was the first MBX (aka MBX head )
 
+                  pragma assert (os_ghost_mbx_are_well_formed);
+                  pragma assert (not os_mbx_is_empty (current));
+
                   --  remove the received mbx from the mbx queue
-		  --  (by clearing the entry).
+                  --  (by clearing the entry).
                   os_mbx_clear_mbx_entry (current, mbx_index);
 
                   --  We just increase the mbx head
@@ -1043,7 +1057,7 @@ is
                   end loop;
 
                   --  remove the last mbx from the mbx queue
-		  --  (by clearing the last entry).
+                  --  (by clearing the last entry).
                   os_mbx_clear_mbx_entry (current, mbx_index);
 
                   --  decrement the mbx count
@@ -1058,7 +1072,7 @@ is
 
                pragma assert (os_ghost_mbx_are_well_formed);
 
-	       --  Exit the for loop as we found a waited MBX.
+               --  Exit the for loop as we found a waited MBX.
                exit;
             else
                --  Compute the next mbx_index for the loop

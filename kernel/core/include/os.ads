@@ -98,10 +98,6 @@ is
    os_task_ro : constant array (os_task_id_param_t) of os_task_ro_t;
    pragma Import (C, os_task_ro, "os_task_ro");
 
-   function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean
-   with
-      Ghost => true;
-
    function os_ghost_mbx_are_well_formed return Boolean
    with
       Ghost => true;
