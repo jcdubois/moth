@@ -711,19 +711,9 @@ is
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
-         (if (os_mbx_is_empty (task_id))
-          then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                  = OS_TASK_ID_NONE)
-          else (if (((os_mbx_get_mbx_tail (task_id)
-                         < os_mbx_get_mbx_head (task_id)) and
-                     ((index >= os_mbx_get_mbx_head (task_id)) or
-                      (index <= os_mbx_get_mbx_tail (task_id)))) or else
-                    (index in os_mbx_get_mbx_head (task_id) ..
-                              os_mbx_get_mbx_tail (task_id)))
-                then (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                        in os_task_id_param_t)
-                else (os_task_mbx_rw (task_id).mbx_array (index).sender_id
-                        = OS_TASK_ID_NONE))))
+         (if (os_mbx_count_t(index) >= os_mbx_get_mbx_count (task_id))
+          then (os_task_mbx_rw (task_id).mbx_array (os_mbx_get_mbx_head (task_id) + index).sender_id = OS_TASK_ID_NONE)
+          else (os_task_mbx_rw (task_id).mbx_array (os_mbx_get_mbx_head (task_id) + index).sender_id in os_task_id_param_t)))
    with
       Ghost => true,
       Post => os_ghost_task_mbx_are_well_formed'Result =
@@ -993,30 +983,35 @@ is
          --  Compute the first mbx_index for the loop
          mbx_index := os_mbx_get_mbx_head (current);
 
+         pragma assert (os_ghost_task_mbx_are_well_formed (current));
          pragma assert (os_ghost_mbx_are_well_formed);
          pragma assert (not os_mbx_is_empty (current));
 
          --  go through received mbx for this task
          for iterator in 1 .. os_mbx_get_mbx_count (current) loop
 
+            pragma assert (os_ghost_task_mbx_are_well_formed (current));
             pragma assert (os_ghost_mbx_are_well_formed);
             pragma assert (not os_mbx_is_empty (current));
 
             --  look into the mbx queue for a mbx that is waited for
             if os_mbx_is_waiting_mbx_entry (current, mbx_index) then
 
+               pragma assert (os_ghost_task_mbx_are_well_formed (current));
                pragma assert (os_ghost_mbx_are_well_formed);
                pragma assert (not os_mbx_is_empty (current));
 
                --  copy the mbx into the task mbx entry
                mbx_entry := os_mbx_get_mbx_entry (current, mbx_index);
 
+               pragma assert (os_ghost_task_mbx_are_well_formed (current));
                pragma assert (os_ghost_mbx_are_well_formed);
                pragma assert (not os_mbx_is_empty (current));
 
                if iterator = 1 then
                   --  This was the first MBX (aka MBX head )
 
+                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
                   pragma assert (os_ghost_mbx_are_well_formed);
                   pragma assert (not os_mbx_is_empty (current));
 
@@ -1030,6 +1025,7 @@ is
                   --  decrement the mbx count
                   os_mbx_dec_mbx_count (current);
 
+                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
                   pragma assert (os_ghost_mbx_are_well_formed);
 
                elsif iterator < os_mbx_get_mbx_count (current) then
@@ -1037,6 +1033,7 @@ is
                   --  queue, so that there is no "hole" in it for the next mbx
                   --  search.
 
+                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
                   pragma assert (os_ghost_mbx_are_well_formed);
                   pragma assert (not os_mbx_is_empty (current));
 
@@ -1063,6 +1060,7 @@ is
                   --  decrement the mbx count
                   os_mbx_dec_mbx_count (current);
 
+                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
                   pragma assert (os_ghost_mbx_are_well_formed);
 
                end if;
@@ -1070,6 +1068,7 @@ is
                --  We found a matching mbx
                status := OS_SUCCESS;
 
+               pragma assert (os_ghost_task_mbx_are_well_formed (current));
                pragma assert (os_ghost_mbx_are_well_formed);
 
                --  Exit the for loop as we found a waited MBX.
@@ -1078,6 +1077,7 @@ is
                --  Compute the next mbx_index for the loop
                mbx_index := os_mbx_index_t'Succ (mbx_index);
 
+               pragma assert (os_ghost_task_mbx_are_well_formed (current));
                pragma assert (os_ghost_mbx_are_well_formed);
                pragma assert (not os_mbx_is_empty (current));
             end if;
