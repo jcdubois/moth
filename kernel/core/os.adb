@@ -72,6 +72,11 @@ is
 
    os_task_ready_list_head : os_task_id_t;
 
+   -----------------------------
+   -- os_task_ready_list_tail --
+   -----------------------------
+   os_ghost_task_ready_list_tail : os_task_id_t with Ghost;
+
    ----------------------------------
    -- Private functions/procedures --
    ----------------------------------
@@ -345,13 +350,9 @@ is
                             os_task_list_rw,
                             os_ghost_task_ready),
                  Input  => (os_task_ro)),
-      Pre => os_ghost_task_list_is_well_formed,
-      Post => (os_task_list_rw = os_task_list_rw'Old'Update (
-                 task_id => os_task_list_rw'Old (task_id)'Update (
-                    prev => OS_TASK_ID_NONE,
-                    next => OS_TASK_ID_NONE))
-               and os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false))
-               and os_ghost_task_list_is_well_formed
+      Pre =>  os_ghost_task_list_is_well_formed,
+      Post => os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false)
+              and os_ghost_task_list_is_well_formed
    is
       next : constant os_task_id_t := os_task_list_rw (task_id).next;
    begin
@@ -437,13 +438,14 @@ is
 
    function os_mbx_get_mbx_entry_sender
      (task_id   : os_task_id_param_t;
-      mbx_index : os_mbx_index_t) return os_task_id_param_t
+      index : os_mbx_count_t) return os_task_id_param_t
    is (os_task_id_param_t (os_task_mbx_rw (task_id).mbx_array
-           (mbx_index).sender_id))
+           (os_mbx_get_mbx_head (task_id) + index).sender_id))
    with
       Global => (Input => (os_task_mbx_rw)),
       Pre => os_task_mbx_rw (task_id).mbx_array
-                  (mbx_index).sender_id in os_task_id_param_t;
+                  (os_mbx_get_mbx_head (task_id) + index).sender_id
+		  in os_task_id_param_t;
 
    ----------------------------
    -- os_mbx_get_posted_mask --
@@ -467,8 +469,7 @@ is
               mbx_mask or
               os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1),
-                 Natural (os_mbx_get_mbx_entry_sender (task_id,
-                                  os_mbx_get_mbx_head (task_id) + iterator))));
+                 Natural (os_mbx_get_mbx_entry_sender (task_id, iterator))));
 
          end loop;
       end if;
@@ -582,11 +583,11 @@ is
 
    procedure os_mbx_set_mbx_entry
      (task_id   : os_task_id_param_t;
-      mbx_index : os_mbx_index_t;
+      index : os_mbx_count_t;
       mbx_entry : os_mbx_entry_t)
    is
    begin
-      os_task_mbx_rw (task_id).mbx_array (mbx_index) := mbx_entry;
+      os_task_mbx_rw (task_id).mbx_array (os_mbx_get_mbx_head (task_id) + index) := mbx_entry;
    end os_mbx_set_mbx_entry;
 
    --------------------------
@@ -595,8 +596,8 @@ is
 
    function os_mbx_get_mbx_entry
      (task_id   : os_task_id_param_t;
-      mbx_index : os_mbx_index_t) return os_mbx_entry_t
-   is (os_task_mbx_rw (task_id).mbx_array (mbx_index));
+      index : os_mbx_count_t) return os_mbx_entry_t
+   is (os_task_mbx_rw (task_id).mbx_array (os_mbx_get_mbx_head (task_id) + index));
 
    ---------------------------------
    -- os_mbx_is_waiting_mbx_entry --
@@ -604,20 +605,17 @@ is
 
    function os_mbx_is_waiting_mbx_entry
      (task_id   : os_task_id_param_t;
-      mbx_index : os_mbx_index_t) return Boolean
+      index : os_mbx_count_t) return Boolean
    is ((os_mbx_get_waiting_mask (task_id) and
         os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1), Natural (os_mbx_get_mbx_entry_sender
-                (task_id, mbx_index))))) /= 0)
+                (task_id, index))))) /= 0)
    with
       Global => (Input => (os_task_list_rw, os_task_mbx_rw)),
-      Pre => not os_mbx_is_empty (task_id)
-             and then
-                (for some index in 0 ..
-                        os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)) =>
-                          (os_mbx_get_mbx_head (task_id) + index) = mbx_index)
-             and then os_task_mbx_rw (task_id).mbx_array
-                          (mbx_index).sender_id in os_task_id_param_t;
+      Pre => not os_mbx_is_empty (task_id) and then
+             os_ghost_mbx_are_well_formed and then
+             index < os_mbx_get_mbx_count (task_id) and then
+	     os_mbx_get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
 
    ----------------------
    --  Ghost functions --
@@ -631,9 +629,11 @@ is
    function os_ghost_not_next_twice (task_id : os_task_id_t) return Boolean is
       (not
          (for some next_id in os_task_list_rw'Range =>
-            os_task_list_rw (next_id).next = task_id
-            and then
-               (for some next_id2 in next_id .. os_task_list_rw'Last =>
+            os_ghost_task_is_ready (next_id) and
+            os_task_list_rw (next_id).next = task_id and
+               (for some next_id2 in os_task_list_rw'Range =>
+                  next_id2 /= next_id and
+                  os_ghost_task_is_ready (next_id2) and
                   os_task_list_rw (next_id2).next = task_id)))
    with
       Ghost => true;
@@ -646,12 +646,21 @@ is
    function os_ghost_not_prev_twice (task_id : os_task_id_t) return Boolean is
       (not
          (for some prev_id in os_task_list_rw'Range =>
-            os_task_list_rw (prev_id).prev = task_id
-            and then
-               (for some prev_id2 in prev_id .. os_task_list_rw'Last =>
+            os_ghost_task_is_ready (prev_id) and
+            os_task_list_rw (prev_id).prev = task_id and
+               (for some prev_id2 in os_task_list_rw'Range =>
+                  prev_id2 /= prev_id and
+                  os_ghost_task_is_ready (prev_id2) and
                   os_task_list_rw (prev_id2).prev = task_id)))
    with
       Ghost => true;
+
+   ----------------------------
+   -- os_ghost_task_is_ready --
+   ----------------------------
+
+   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
+   is (os_ghost_task_ready (task_id));
 
    --------------------------------------------
    -- os_ghost_at_least_one_terminating_next --
@@ -660,8 +669,21 @@ is
    --  The last element of the list has no next.
    --  If there is no first element then all no element has any next
 
+   function os_ghost_only_one_ready_terminating_next return Boolean is
+      (not
+         (for some task_id in os_task_list_rw'Range =>
+            os_ghost_task_is_ready (task_id) and
+            os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
+               (for some task_id2 in os_task_list_rw'Range =>
+                  task_id2 /= task_id and
+                  os_ghost_task_is_ready (task_id2) and
+                  os_task_list_rw (task_id2).next = OS_TASK_ID_NONE)))
+   with
+      Ghost => true;
+
    function os_ghost_at_least_one_terminating_next return Boolean is
       (for some task_id in os_task_list_rw'Range =>
+         os_ghost_task_is_ready (task_id) and
          os_task_list_rw (task_id).next = OS_TASK_ID_NONE)
    with
       Ghost => true;
@@ -675,16 +697,10 @@ is
 
    function os_ghost_at_least_one_terminating_prev return Boolean is
       (for some task_id in os_task_list_rw'Range =>
+         os_ghost_task_is_ready (task_id) and
          os_task_list_rw (task_id).prev = OS_TASK_ID_NONE)
    with
       Ghost => true;
-
-   ----------------------------
-   -- os_ghost_task_is_ready --
-   ----------------------------
-
-   function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
-   is (os_ghost_task_ready (task_id));
 
    ------------------------------------
    -- os_ghost_current_task_is_ready --
@@ -757,65 +773,66 @@ is
    with
       Ghost => true;
 
+
+   -------------------------------------
+   -- os_ghost_task_is_linked_to_head --
+   -------------------------------------
+
+   function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t) return Boolean is
+      (os_ghost_task_is_ready (task_id) and
+       (if os_sched_get_current_list_head = task_id then
+          (true)
+        else
+          (os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and then
+           (os_task_list_rw (os_task_list_rw (task_id).prev).next = task_id and
+            os_ghost_task_is_linked_to_head (os_task_list_rw (task_id).prev)))))
+   with
+      Ghost => true;
+   pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_head);
+
    ---------------------------------------
    -- os_ghost_task_list_is_well_formed --
    ---------------------------------------
 
    function os_ghost_task_list_is_well_formed return Boolean is
       --  The mbx fifo of all tasks need to be well formed.
-      (
-        --  The list might be empty. This is legal.
-        (os_sched_get_current_list_head = OS_TASK_ID_NONE and
-         -- then all element are diconnected (not in a list)
-         (for all task_id in os_task_list_rw'Range =>
-            -- no next
-            os_task_list_rw (task_id).next = OS_TASK_ID_NONE
-            -- no prev
-            and os_task_list_rw (task_id).prev = OS_TASK_ID_NONE
-            -- and all tasks are in not ready state
-            and not (os_ghost_task_is_ready (task_id))
-         )
-        )
-       or else
-        --  If there is at least one task in the list.
-        (os_sched_get_current_list_head /= OS_TASK_ID_NONE
-        --  the first task of the list should not have any prev task.
-         and then os_task_list_rw (os_sched_get_current_list_head).prev
-                                   = OS_TASK_ID_NONE
-         -- the first task needs to be in ready state
-         and then os_ghost_task_is_ready (os_sched_get_current_list_head)
-         -- there need to ba at least one terminating next.
-         and then os_ghost_at_least_one_terminating_next
-         --  First element is well formed.
-         --  Go through the list
-         and then
-            (for all task_id in os_task_list_rw'Range =>
-               --  a task cannot have itself as next.
-               os_task_list_rw (task_id).next /= task_id
-               --  a task cannot have itself as prev.
-               and then os_task_list_rw (task_id).prev /= task_id
-               --  a task could not be next more than once
-               and then os_ghost_not_next_twice (task_id)
-               --  a task could not be prev more than once
-               and then os_ghost_not_prev_twice (task_id)
-               --  If there is a next
-               and then
-                  -- If a task has a next then it is part of the ready list
-                  (if os_task_list_rw (task_id).next /= OS_TASK_ID_NONE then
-                     --  Its next needs to be in ready state
-                     os_ghost_task_is_ready (os_task_list_rw (task_id).next)
-                     --  It needs to be in ready state itself
-                     and then os_ghost_task_is_ready (task_id)
-                     -- The next needs to have the actual task as prev
-                     and then os_task_list_rw (os_task_list_rw
-                             (task_id).next).prev = task_id
-                     --  prev and next need to be different
-                     and then os_task_list_rw (task_id).next
-                                         /= os_task_list_rw (task_id).prev
-                     -- It needs to be ordered on priority
-                     and then os_get_task_priority (os_task_list_rw (task_id).next)
-                        <= os_get_task_priority (task_id))))
-      );
+      (if os_sched_get_current_list_head = OS_TASK_ID_NONE then
+         (-- there is no ready task
+          for all task_id in os_task_list_rw'Range =>
+             (-- no next for all task
+              os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
+              -- no prev for all task
+              os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
+              -- and all tasks are not in ready state
+              not (os_ghost_task_is_ready (task_id))))
+       else -- There is at least one task in the ready list
+         (-- there need to be one and only one ready task without next
+          os_ghost_only_one_ready_terminating_next and
+          (for all task_id in os_task_list_rw'Range =>
+             (if task_id = os_sched_get_current_list_head then
+                (-- No prev for list head
+                 os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
+                 -- It has to be ready
+                 os_ghost_task_is_ready (task_id) and
+                 -- The list head has the highest priority of all ready tasks
+                 os_ghost_head_list_task_has_higher_priority)
+              elsif os_ghost_task_is_ready (task_id) then
+                  (-- only list head has no pred
+                   os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and then
+                   (-- a ready task should not be twice as next in the list
+                    os_ghost_not_next_twice (task_id) and
+                    -- a ready task should not be twice as prev in the list
+                    os_ghost_not_prev_twice (task_id) and
+                    -- the ready task need to be connected to head
+                    os_ghost_task_is_linked_to_head (task_id) and
+                    -- ready tasks are ordered by priority
+                    os_get_task_priority (task_id) <=
+                       os_get_task_priority (os_task_list_rw (task_id).prev)))
+              else -- this task is not in the ready list
+                  (-- no next
+                   os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
+                   -- no prev
+                   os_task_list_rw (task_id).prev = OS_TASK_ID_NONE)))));
 
    ----------------
    -- Public API --
@@ -957,6 +974,76 @@ is
       os_arch_space_switch (prev_id, task_id);
    end os_init;
 
+   -----------------------------
+   -- os_mbx_remove_first_mbx --
+   -----------------------------
+
+   procedure os_mbx_remove_first_mbx
+      (task_id    : in os_task_id_param_t)
+   with
+      Global => (In_Out => os_task_mbx_rw),
+      Pre => (not os_mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
+      Post => os_ghost_mbx_are_well_formed
+   is
+      mbx_index   : constant os_mbx_index_t := os_mbx_get_mbx_head (task_id);
+   begin
+      --  remove the first mbx from the mbx queue
+      --  (by clearing the entry).
+      os_mbx_clear_mbx_entry (task_id, mbx_index);
+
+      --  We just increase the mbx head
+      os_mbx_inc_mbx_head (task_id);
+
+      --  decrement the mbx count
+      os_mbx_dec_mbx_count (task_id);
+   end os_mbx_remove_first_mbx;
+
+   ----------------------------
+   -- os_mbx_remove_last_mbx --
+   ----------------------------
+
+   procedure os_mbx_remove_last_mbx
+      (task_id    : in os_task_id_param_t)
+   with
+      Global => (In_Out => os_task_mbx_rw),
+      Pre => (not os_mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
+      Post => os_ghost_mbx_are_well_formed
+   is
+      mbx_index   : constant os_mbx_index_t := os_mbx_get_mbx_tail (task_id);
+   begin
+      --  remove the last mbx from the mbx queue
+      --  (by clearing the entry).
+      os_mbx_clear_mbx_entry (task_id, mbx_index);
+
+      --  decrement the mbx count
+      os_mbx_dec_mbx_count (task_id);
+   end os_mbx_remove_last_mbx;
+
+   -----------------------
+   -- os_mbx_shift_down --
+   -----------------------
+
+   procedure os_mbx_shift_down
+      (task_id    : in os_task_id_param_t;
+       index      : in os_mbx_count_t)
+   with
+      Global => (In_Out => os_task_mbx_rw),
+      Pre => (not os_mbx_is_empty (task_id)) and
+             os_ghost_mbx_are_well_formed and
+             (index > 0) and
+             (index < os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))),
+      Post => (not os_mbx_is_empty (task_id)) and
+              os_ghost_mbx_are_well_formed
+   is begin
+      for iterator in index ..
+                      os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)) loop
+         pragma Loop_Invariant (os_ghost_mbx_are_well_formed);
+         os_mbx_set_mbx_entry (task_id, iterator,
+                               os_mbx_get_mbx_entry (task_id,
+                                                     os_mbx_count_t'Succ (iterator)));
+      end loop;
+   end os_mbx_shift_down;
+
    --------------------
    -- os_mbx_receive --
    --------------------
@@ -967,8 +1054,6 @@ is
    is
       --  retrieve current task id
       current        : constant os_task_id_param_t := os_sched_get_current_task_id;
-      mbx_index      : os_mbx_index_t;
-      next_mbx_index : os_mbx_index_t;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
@@ -980,106 +1065,50 @@ is
          --  initialize status to error in case we don't find a mbx.
          status := OS_ERROR_RECEIVE;
 
-         --  Compute the first mbx_index for the loop
-         mbx_index := os_mbx_get_mbx_head (current);
-
-         pragma assert (os_ghost_task_mbx_are_well_formed (current));
-         pragma assert (os_ghost_mbx_are_well_formed);
-         pragma assert (not os_mbx_is_empty (current));
-
          --  go through received mbx for this task
-         for iterator in 1 .. os_mbx_get_mbx_count (current) loop
+         for iterator in 0 ..
+		         os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) loop
 
-            pragma assert (os_ghost_task_mbx_are_well_formed (current));
-            pragma assert (os_ghost_mbx_are_well_formed);
-            pragma assert (not os_mbx_is_empty (current));
+            pragma Loop_Invariant (os_ghost_mbx_are_well_formed and
+                                   (not os_mbx_is_empty (current)));
 
-            --  look into the mbx queue for a mbx that is waited for
-            if os_mbx_is_waiting_mbx_entry (current, mbx_index) then
+            pragma Loop_Invariant (iterator < os_mbx_get_mbx_count (current));
+	    pragma Loop_Invariant (os_mbx_get_mbx_entry_sender (current, iterator) in os_task_id_param_t);
 
-               pragma assert (os_ghost_task_mbx_are_well_formed (current));
-               pragma assert (os_ghost_mbx_are_well_formed);
-               pragma assert (not os_mbx_is_empty (current));
+            --  look into the mbx queue for a mbx we are waiting for
+            if os_mbx_is_waiting_mbx_entry (current, iterator) then
 
                --  copy the mbx into the task mbx entry
-               mbx_entry := os_mbx_get_mbx_entry (current, mbx_index);
+               mbx_entry := os_mbx_get_mbx_entry (current, iterator);
 
-               pragma assert (os_ghost_task_mbx_are_well_formed (current));
-               pragma assert (os_ghost_mbx_are_well_formed);
-               pragma assert (not os_mbx_is_empty (current));
-
-               if iterator = 1 then
+               if iterator = 0 then
                   --  This was the first MBX (aka MBX head )
 
-                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
-                  pragma assert (os_ghost_mbx_are_well_formed);
-                  pragma assert (not os_mbx_is_empty (current));
+                  os_mbx_remove_first_mbx (current);
+               else
+                  -- This was not the first MBX
 
-                  --  remove the received mbx from the mbx queue
-                  --  (by clearing the entry).
-                  os_mbx_clear_mbx_entry (current, mbx_index);
+                  if iterator <
+	             os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) then
+                     --  This is not the last MBX
+                     --  For now we "compact" the rest of the mbx queue,
+                     --  so that there is no "hole" in it for the next mbx
+                     --  search.
 
-                  --  We just increase the mbx head
-                  os_mbx_inc_mbx_head (current);
-
-                  --  decrement the mbx count
-                  os_mbx_dec_mbx_count (current);
-
-                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
-                  pragma assert (os_ghost_mbx_are_well_formed);
-
-               elsif iterator < os_mbx_get_mbx_count (current) then
-                  --  in other case, for now we "compact" the rest of the mbx
-                  --  queue, so that there is no "hole" in it for the next mbx
-                  --  search.
-
-                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
-                  pragma assert (os_ghost_mbx_are_well_formed);
-                  pragma assert (not os_mbx_is_empty (current));
-
-                  for iterator2 in os_mbx_count_t'Succ (iterator) ..
-                          os_mbx_get_mbx_count (current)
-                  loop
-                     pragma assert (not os_mbx_is_empty (current));
-
-                     next_mbx_index := os_mbx_index_t'Succ (mbx_index);
-                     os_mbx_set_mbx_entry
-                       (current,
-                        mbx_index,
-                        os_mbx_get_mbx_entry (current, next_mbx_index));
-                     mbx_index := next_mbx_index;
-
-                     pragma assert (not os_mbx_is_empty (current));
-
-                  end loop;
+                     os_mbx_shift_down (current, iterator);
+                  end if;
 
                   --  remove the last mbx from the mbx queue
                   --  (by clearing the last entry).
-                  os_mbx_clear_mbx_entry (current, mbx_index);
-
-                  --  decrement the mbx count
-                  os_mbx_dec_mbx_count (current);
-
-                  pragma assert (os_ghost_task_mbx_are_well_formed (current));
-                  pragma assert (os_ghost_mbx_are_well_formed);
-
+                  os_mbx_remove_last_mbx (current);
                end if;
 
                --  We found a matching mbx
                status := OS_SUCCESS;
 
-               pragma assert (os_ghost_task_mbx_are_well_formed (current));
-               pragma assert (os_ghost_mbx_are_well_formed);
-
-               --  Exit the for loop as we found a waited MBX.
+               --  Exit the for loop as we found a MBX we were
+               --  waiting for.
                exit;
-            else
-               --  Compute the next mbx_index for the loop
-               mbx_index := os_mbx_index_t'Succ (mbx_index);
-
-               pragma assert (os_ghost_task_mbx_are_well_formed (current));
-               pragma assert (os_ghost_mbx_are_well_formed);
-               pragma assert (not os_mbx_is_empty (current));
             end if;
          end loop;
       end if;
