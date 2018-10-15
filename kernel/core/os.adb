@@ -445,7 +445,7 @@ is
       Global => (Input => (os_task_mbx_rw)),
       Pre => os_task_mbx_rw (task_id).mbx_array
                   (os_mbx_get_mbx_head (task_id) + index).sender_id
-		  in os_task_id_param_t;
+                  in os_task_id_param_t;
 
    ----------------------------
    -- os_mbx_get_posted_mask --
@@ -615,7 +615,7 @@ is
       Pre => not os_mbx_is_empty (task_id) and then
              os_ghost_mbx_are_well_formed and then
              index < os_mbx_get_mbx_count (task_id) and then
-	     os_mbx_get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
+             os_mbx_get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
 
    ----------------------
    --  Ghost functions --
@@ -712,7 +712,7 @@ is
    ---------------------------------------
    -- os_ghost_task_mbx_are_well_formed --
    ---------------------------------------
-   --  MBX are circular FIFO (contained in an array) where head is the index
+   --  mbx are circular FIFO (contained in an array) where head is the index
    --  of the fisrt element of the FIFO and count is the number of element
    --  stored in the FIFO.
    --  When an element of the FIFO is filled its sender_id field needs to be
@@ -935,14 +935,14 @@ is
       os_sched_set_current_list_head (OS_TASK_ID_NONE);
 
       for task_iterator in os_task_list_rw'Range loop
-         --  Init the MBX for one task
+         --  Init the mbx for one task
          for mbx_iterator in os_task_mbx_rw (task_iterator).mbx_array'Range loop
             os_mbx_clear_mbx_entry (task_iterator, mbx_iterator);
          end loop;
          os_task_mbx_rw (task_iterator).head := os_mbx_index_t'First;
          os_task_mbx_rw (task_iterator).count := os_mbx_count_t'First;
 
-         -- Init the task entry for one task
+         --  Init the task entry for one task
          os_task_list_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_list_rw (task_iterator).prev := OS_TASK_ID_NONE;
          os_task_list_rw (task_iterator).mbx_waiting_mask := 0;
@@ -983,7 +983,7 @@ is
    with
       Global => (In_Out => os_task_mbx_rw),
       Pre => (not os_mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
-      Post => os_ghost_mbx_are_well_formed
+      Post => (os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (count => os_mbx_count_t'Pred (os_task_mbx_rw'Old (task_id).count), head => os_mbx_index_t'Succ (os_task_mbx_rw'Old (task_id).head), mbx_array => os_task_mbx_rw'Old (task_id).mbx_array'Update (os_mbx_index_t'Pred (os_mbx_get_mbx_head (task_id)) => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
    is
       mbx_index   : constant os_mbx_index_t := os_mbx_get_mbx_head (task_id);
    begin
@@ -1007,7 +1007,7 @@ is
    with
       Global => (In_Out => os_task_mbx_rw),
       Pre => (not os_mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
-      Post => os_ghost_mbx_are_well_formed
+      Post => (os_task_mbx_rw = os_task_mbx_rw'Old'Update (task_id => os_task_mbx_rw'Old (task_id)'Update (count => os_mbx_count_t'Pred (os_task_mbx_rw'Old (task_id).count), head => os_task_mbx_rw'Old (task_id).head, mbx_array => os_task_mbx_rw'Old (task_id).mbx_array'Update (os_task_mbx_rw (task_id).head + os_task_mbx_rw (task_id).count => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
    is
       mbx_index   : constant os_mbx_index_t := os_mbx_get_mbx_tail (task_id);
    begin
@@ -1032,8 +1032,9 @@ is
              os_ghost_mbx_are_well_formed and
              (index > 0) and
              (index < os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id))),
-      Post => (not os_mbx_is_empty (task_id)) and
-              os_ghost_mbx_are_well_formed
+      Post => os_ghost_mbx_are_well_formed and
+              os_task_mbx_rw (task_id).count = os_task_mbx_rw'Old (task_id).count and
+              os_task_mbx_rw (task_id).head = os_task_mbx_rw'Old (task_id).head
    is begin
       for iterator in index ..
                       os_mbx_count_t'Pred (os_mbx_get_mbx_count (task_id)) loop
@@ -1053,7 +1054,7 @@ is
       mbx_entry : out os_mbx_entry_t)
    is
       --  retrieve current task id
-      current        : constant os_task_id_param_t := os_sched_get_current_task_id;
+      current   : constant os_task_id_param_t := os_sched_get_current_task_id;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
@@ -1065,31 +1066,38 @@ is
          --  initialize status to error in case we don't find a mbx.
          status := OS_ERROR_RECEIVE;
 
-         --  go through received mbx for this task
+         --  go through received mbx for the current task
          for iterator in 0 ..
-		         os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) loop
+                         os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) loop
 
             pragma Loop_Invariant (os_ghost_mbx_are_well_formed and
                                    (not os_mbx_is_empty (current)));
 
-            pragma Loop_Invariant (iterator < os_mbx_get_mbx_count (current));
-	    pragma Loop_Invariant (os_mbx_get_mbx_entry_sender (current, iterator) in os_task_id_param_t);
+	    -- This Loop Invariant is a work arround. The prover is unable
+	    -- to see that the code under the os_mbx_is_waiting_mbx_entry()
+	    -- branch has no impact on the loop as the branch exits
+	    -- unconditionnaly in all cases. This loop invariant allows the
+	    -- prover to work but it should be removed later when the prover
+	    -- supports branches with exit path.
+            pragma Loop_Invariant (os_task_mbx_rw = os_task_mbx_rw'Loop_Entry);
 
-            --  look into the mbx queue for a mbx we are waiting for
+            --  is this a mbx we are waiting for
             if os_mbx_is_waiting_mbx_entry (current, iterator) then
 
                --  copy the mbx into the task mbx entry
                mbx_entry := os_mbx_get_mbx_entry (current, iterator);
 
                if iterator = 0 then
-                  --  This was the first MBX (aka MBX head )
+                  --  This was the first mbx (aka mbx head )
 
+                  --  Clear the first entry and increment the mbx head
                   os_mbx_remove_first_mbx (current);
                else
-                  -- This was not the first MBX
+                  --  This was not the first MBX
 
+                  --  Compact the mbx if necessary
                   if iterator <
-	             os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) then
+                     os_mbx_count_t'Pred (os_mbx_get_mbx_count (current)) then
                      --  This is not the last MBX
                      --  For now we "compact" the rest of the mbx queue,
                      --  so that there is no "hole" in it for the next mbx
@@ -1099,14 +1107,15 @@ is
                   end if;
 
                   --  remove the last mbx from the mbx queue
-                  --  (by clearing the last entry).
+                  --  (by clearing the last entry and decreasing the
+                  --  mbx count).
                   os_mbx_remove_last_mbx (current);
                end if;
 
                --  We found a matching mbx
                status := OS_SUCCESS;
 
-               --  Exit the for loop as we found a MBX we were
+               --  Exit the for loop as we found a mbx we were
                --  waiting for.
                exit;
             end if;
@@ -1123,7 +1132,9 @@ is
       dest_id :     types.int8_t;
       mbx_msg :     os_mbx_msg_t)
    is
-      -- dest_id comes from uncontroled C calls
+      --  dest_id comes from uncontroled C calls (user space)
+      --  We don't make assumptions on its value, so we are testing
+      --  all cases.
    begin
       if dest_id = OS_TASK_ID_ALL then
          os_mbx_send_all_task (status, mbx_msg);
