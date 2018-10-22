@@ -34,6 +34,9 @@ is
       mbx_waiting_mask : os_mbx_mask_t;
    end record;
 
+   subtype os_recurs_cnt_t is types.int8_t
+                         range OS_MIN_TASK_ID .. OS_MAX_TASK_CNT;
+
    -----------------------
    -- Private variables --
    -----------------------
@@ -739,17 +742,20 @@ is
    -- os_ghost_task_is_linked_to_head --
    -------------------------------------
 
-   function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t) return Boolean is
-      (os_ghost_task_is_ready (task_id) and
-       (if os_task_list_rw (task_id).prev = OS_TASK_ID_NONE then
-          (os_sched_get_current_list_head = task_id)
-	else
-          (os_task_list_rw (task_id).prev /= task_id and
-	   os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
-	   os_task_list_rw (os_task_list_rw (task_id).prev).next = task_id and
-	   os_ghost_not_prev_twice (task_id) and
-	   os_get_task_priority (task_id) <= os_get_task_priority (os_task_list_rw (task_id).prev) and
-	   os_ghost_task_is_linked_to_head (os_task_list_rw (task_id).prev))))
+   function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t; recursive_count : os_recurs_cnt_t) return Boolean is
+      (if (recursive_count = OS_MAX_TASK_CNT) then
+         (false)
+       else
+         (os_ghost_task_is_ready (task_id) and
+          (if os_task_list_rw (task_id).prev = OS_TASK_ID_NONE then
+             (os_sched_get_current_list_head = task_id)
+           else
+             (os_task_list_rw (task_id).prev /= task_id and
+	      os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
+	      os_task_list_rw (os_task_list_rw (task_id).prev).next = task_id and
+	      os_ghost_not_prev_twice (task_id) and
+	      os_get_task_priority (task_id) <= os_get_task_priority (os_task_list_rw (task_id).prev) and
+	      os_ghost_task_is_linked_to_head (os_task_list_rw (task_id).prev, recursive_count + 1)))))
    with
       Ghost => true;
    pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_head);
@@ -758,17 +764,20 @@ is
    -- os_ghost_task_list_is_terminated --
    --------------------------------------
 
-   function os_ghost_task_list_is_terminated (task_id : os_task_id_param_t) return Boolean is
-      (os_ghost_task_is_ready (task_id) and
-       (if os_task_list_rw (task_id).next = OS_TASK_ID_NONE then
-          (true)
-	else
-	  (os_task_list_rw (task_id).next /= task_id and
-	   os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
-	   os_task_list_rw (os_task_list_rw (task_id).next).prev = task_id and
-	   os_ghost_not_next_twice(task_id) and
-	   os_get_task_priority (task_id) >= os_get_task_priority (os_task_list_rw (task_id).next) and
-	   os_ghost_task_list_is_terminated (os_task_list_rw (task_id).next))))
+   function os_ghost_task_list_is_terminated (task_id : os_task_id_param_t; recursive_count : os_recurs_cnt_t) return Boolean is
+      (if (recursive_count = OS_MAX_TASK_CNT) then
+         (false)
+       else
+         (os_ghost_task_is_ready (task_id) and
+          (if os_task_list_rw (task_id).next = OS_TASK_ID_NONE then
+             (true)
+	   else
+	     (os_task_list_rw (task_id).next /= task_id and
+	      os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
+	      os_task_list_rw (os_task_list_rw (task_id).next).prev = task_id and
+	      os_ghost_not_next_twice(task_id) and
+	      os_get_task_priority (task_id) >= os_get_task_priority (os_task_list_rw (task_id).next) and
+	      os_ghost_task_list_is_terminated (os_task_list_rw (task_id).next, recursive_count + 1)))))
    with
       Ghost => true;
    pragma Annotate (GNATprove, Terminating, os_ghost_task_list_is_terminated);
@@ -798,14 +807,14 @@ is
                  -- It has to be ready
                  os_ghost_task_is_ready (task_id) and
                  -- The list head has the highest priority of all ready tasks
-		 os_ghost_task_list_is_terminated (task_id))
+		 os_ghost_task_list_is_terminated (task_id, OS_MIN_TASK_ID))
               elsif os_ghost_task_is_ready (task_id) then
                   (-- only list head has no pred
                    os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and then
                    (-- the list needs to be terminated
-	            os_ghost_task_list_is_terminated(task_id) and
+	            os_ghost_task_list_is_terminated(task_id, OS_MIN_TASK_ID) and
                     -- the ready task need to be connected to head
-                    os_ghost_task_is_linked_to_head (task_id)))
+                    os_ghost_task_is_linked_to_head (task_id, OS_MIN_TASK_ID)))
               else -- this task is not in the ready list
                   (-- no next
                    os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
