@@ -14,26 +14,37 @@ is
    -- Private types --
    -------------------
 
+   -- Max mbx count is provided through configuration
    OS_MAX_MBX_CNT      : constant := OpenConf.CONFIG_TASK_MBX_COUNT;
 
+   -- Type to define a mbx index
    type os_mbx_index_t is mod OS_MAX_MBX_CNT;
 
+   -- Type to define the number of mbx in the task FIFO
    subtype os_mbx_count_t is types.uint8_t range 0 .. OS_MAX_MBX_CNT;
 
+   -- Type to define the task FIFO
    type os_mbx_t_array is array (os_mbx_index_t) of os_mbx_entry_t;
 
+   -- This structure allows to manage mbx for one task
    type os_mbx_t is record
       head             : os_mbx_index_t;
       count            : os_mbx_count_t;
       mbx_array        : os_mbx_t_array;
    end record;
 
+   -- This structure allows to create a link list of tasks.
    type os_task_rw_t is record
       next             : os_task_id_t;
       prev             : os_task_id_t;
+   end record;
+
+   type os_task_mask_rw_t is record
       mbx_waiting_mask : os_mbx_mask_t;
    end record;
 
+   -- This specific type is used to make sure we exit from recursive
+   -- loop in functions used for proof (Ghost)
    subtype os_recurs_cnt_t is types.int8_t
                          range OS_MIN_TASK_ID .. OS_MAX_TASK_CNT;
 
@@ -52,6 +63,12 @@ is
    ---------------------
 
    os_task_list_rw : array (os_task_id_param_t) of os_task_rw_t;
+
+   --------------------------
+   -- os_task_mask_list_rw --
+   --------------------------
+
+   os_task_mask_list_rw : array (os_task_id_param_t) of os_task_mask_rw_t;
 
    ---------------------
    -- os_task_mbx_rw --
@@ -113,7 +130,7 @@ is
 
    function os_mbx_get_waiting_mask
      (task_id : os_task_id_param_t) return os_mbx_mask_t
-   is (os_task_list_rw (task_id).mbx_waiting_mask);
+   is (os_task_mask_list_rw (task_id).mbx_waiting_mask);
 
    ---------------------
    -- os_mbx_is_empty --
@@ -142,7 +159,7 @@ is
       mask    : os_mbx_mask_t)
    is
    begin
-      os_task_list_rw (task_id).mbx_waiting_mask := mask;
+      os_task_mask_list_rw (task_id).mbx_waiting_mask := mask;
    end os_mbx_set_waiting_mask;
 
    -------------------------
@@ -286,8 +303,8 @@ is
                             os_ghost_task_ready),
                  Input  => os_task_ro),
       Pre => os_ghost_task_list_is_well_formed,
-      Post => os_ghost_task_list_is_well_formed and
-              os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => true)
+      Post => os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => true) and then
+              os_ghost_task_list_is_well_formed
    is
       index_id : os_task_id_t := os_sched_get_current_list_head;
    begin
@@ -348,8 +365,8 @@ is
                             os_ghost_task_ready),
                  Input  => (os_task_ro)),
       Pre =>  os_ghost_task_list_is_well_formed,
-      Post => os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false)
-              and os_ghost_task_list_is_well_formed
+      Post => os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false) and then
+              os_ghost_task_list_is_well_formed
    is
       next : constant os_task_id_t := os_task_list_rw (task_id).next;
    begin
@@ -360,6 +377,7 @@ is
             os_task_list_rw (next).prev := OS_TASK_ID_NONE;
          end if;
          os_sched_set_current_list_head (next);
+
       elsif os_sched_get_current_list_head /= OS_TASK_ID_NONE then
          --  The list is not empty and
          --  The task is not at the list head (it has a predecesor).
@@ -491,7 +509,8 @@ is
                             os_ghost_task_ready,
                             os_task_mbx_rw),
                  Input  => (os_task_ro,
-                            os_task_current)),
+                            os_task_current,
+                            os_task_mask_list_rw)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
@@ -534,7 +553,8 @@ is
                             os_ghost_task_ready,
                             os_task_mbx_rw),
                  Input  => (os_task_ro,
-                            os_task_current)),
+                            os_task_current,
+                            os_task_mask_list_rw)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
@@ -611,7 +631,7 @@ is
                 (Unsigned_32'(1), Natural (os_mbx_get_mbx_entry_sender
                 (task_id, index))))) /= 0)
    with
-      Global => (Input => (os_task_list_rw, os_task_mbx_rw)),
+      Global => (Input => (os_task_mask_list_rw, os_task_mbx_rw)),
       Pre => not os_mbx_is_empty (task_id) and then
              os_ghost_mbx_are_well_formed and then
              index < os_mbx_get_mbx_count (task_id) and then
@@ -928,7 +948,8 @@ is
          --  Init the task entry for one task
          os_task_list_rw (task_iterator).next := OS_TASK_ID_NONE;
          os_task_list_rw (task_iterator).prev := OS_TASK_ID_NONE;
-         os_task_list_rw (task_iterator).mbx_waiting_mask := 0;
+
+         os_mbx_set_waiting_mask (task_iterator, 0);
 
          --  This task is not ready
          os_ghost_task_ready (task_iterator) := false;
