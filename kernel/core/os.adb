@@ -309,48 +309,72 @@ is
       index_id : os_task_id_t := os_sched_get_current_list_head;
    begin
 
+      pragma assert (os_ghost_task_list_is_well_formed);
+
       if index_id = OS_TASK_ID_NONE then
+         pragma assert (not os_ghost_task_is_ready (task_id));
          --  No task in the ready list. Add this task at list head
          os_task_list_rw (task_id).next := OS_TASK_ID_NONE;
          os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
          os_sched_set_current_list_head (task_id);
+         os_ghost_task_ready (task_id) := true;
+         pragma assert (os_ghost_task_list_is_well_formed);
       else
+         pragma assert (os_task_list_rw (index_id).prev = OS_TASK_ID_NONE);
+
          while index_id /= OS_TASK_ID_NONE loop
+            pragma Loop_Invariant (os_ghost_task_list_is_well_formed);
+            pragma assert (os_ghost_task_is_ready (index_id));
             if index_id = task_id then
                --  Already in the ready list
                exit;
             elsif os_get_task_priority (task_id) >
-               os_get_task_priority (index_id)
-            then
+                  os_get_task_priority (index_id) then
                declare
-                  prev_id : constant os_task_id_t := os_task_list_rw (index_id).prev;
+                  prev_id : constant os_task_id_t :=
+                                            os_task_list_rw (index_id).prev;
                begin
-                  os_task_list_rw (task_id).next  := index_id;
-                  os_task_list_rw (index_id).prev := task_id;
+                  pragma assert (os_ghost_task_list_is_well_formed);
 
-                  if index_id = os_sched_get_current_list_head then
-                     os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
+                  os_task_list_rw (index_id).prev := task_id;
+                  os_task_list_rw (task_id).prev := prev_id;
+                  os_task_list_rw (task_id).next  := index_id;
+                  os_ghost_task_ready (task_id) := true;
+                  pragma assert (os_get_task_priority (task_id) > os_get_task_priority (index_id));
+
+                  if prev_id = OS_TASK_ID_NONE then
+                     pragma assert (index_id = os_sched_get_current_list_head);
                      os_sched_set_current_list_head (task_id);
                   else
-                     os_task_list_rw (task_id).prev := prev_id;
-                     if prev_id in os_task_id_param_t then
-                        os_task_list_rw (prev_id).next := task_id;
-                     end if;
+                     pragma assert (index_id /= os_sched_get_current_list_head);
+                     pragma assert (os_get_task_priority (prev_id) >= os_get_task_priority (task_id));
+                     os_task_list_rw (prev_id).next := task_id;
                   end if;
+
+                  pragma assert (os_ghost_task_list_is_well_formed);
                   exit;
                end;
             elsif os_task_list_rw (index_id).next = OS_TASK_ID_NONE then
+               pragma assert (os_ghost_task_list_is_well_formed);
+               pragma assert (os_get_task_priority (task_id) <= os_get_task_priority (index_id));
+
                os_task_list_rw (index_id).next := task_id;
                os_task_list_rw (task_id).prev  := index_id;
                os_task_list_rw (task_id).next  := OS_TASK_ID_NONE;
+               os_ghost_task_ready (task_id) := true;
+
+               pragma assert (os_ghost_task_list_is_well_formed);
                exit;
             else
+               pragma assert (os_ghost_task_list_is_well_formed);
                index_id := os_task_list_rw (index_id).next;
             end if;
          end loop;
       end if;
 
-      os_ghost_task_ready (task_id) := true;
+      -- os_ghost_task_ready (task_id) := true;
+
+      pragma assert (os_ghost_task_list_is_well_formed);
    end os_sched_add_task_to_ready_list;
 
    ------------------------------------------
@@ -364,43 +388,90 @@ is
                             os_task_list_rw,
                             os_ghost_task_ready),
                  Input  => (os_task_ro)),
-      Pre =>  os_ghost_task_list_is_well_formed,
+      Pre =>  (os_ghost_task_list_is_well_formed and
+               os_ghost_task_is_ready (task_id)),
       Post => os_ghost_task_ready = os_ghost_task_ready'Old'Update (task_id => false) and then
               os_ghost_task_list_is_well_formed
    is
       next : constant os_task_id_t := os_task_list_rw (task_id).next;
    begin
+      pragma assert (os_ghost_task_list_is_well_formed);
+      pragma assert (os_ghost_task_is_ready (task_id));
+
+      -- As there is a ready task, the list head cannot be empty
+      pragma assert (os_sched_get_current_list_head /= OS_TASK_ID_NONE);
+
       if task_id = os_sched_get_current_list_head then
+
+         pragma assert (os_ghost_task_list_is_well_formed);
+         pragma assert (os_task_list_rw (task_id).prev = OS_TASK_ID_NONE);
+
+         os_task_list_rw (task_id).next := OS_TASK_ID_NONE;
+         os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
+
+         os_ghost_task_ready (task_id) := false;
+
+         os_sched_set_current_list_head (next);
+
          --  We are removing the current running task. So put the next task at
          --  list head. Note: there could be no next task (OS_TASK_ID_NONE)
          if next /= OS_TASK_ID_NONE then
-            os_task_list_rw (next).prev := OS_TASK_ID_NONE;
-         end if;
-         os_sched_set_current_list_head (next);
+            pragma assert (os_ghost_task_is_ready (next));
 
-      elsif os_sched_get_current_list_head /= OS_TASK_ID_NONE then
-         --  The list is not empty and
-         --  The task is not at the list head (it has a predecesor).
+            os_task_list_rw (next).prev := OS_TASK_ID_NONE;
+
+            pragma assert (os_ghost_task_list_is_well_formed);
+         else
+            pragma assert (for all id in os_task_list_rw'Range =>
+               os_task_list_rw (id).next = OS_TASK_ID_NONE);
+            pragma assert (for all id in os_task_list_rw'Range =>
+               os_task_list_rw (id).prev = OS_TASK_ID_NONE);
+            pragma assert (for all id in os_task_list_rw'Range =>
+               not (os_ghost_task_is_ready (id)));
+            pragma assert (os_ghost_task_list_is_well_formed);
+         end if;
+
+         pragma assert (os_ghost_task_list_is_well_formed);
+
+      else
+         --  The list is not empty and the task is not at the list head.
          --  Link previous next to our next
+
+         pragma assert (os_ghost_task_list_is_well_formed);
+         pragma assert (os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE);
+         pragma assert (os_sched_get_current_list_head /= task_id);
+
          declare
             prev : constant os_task_id_t := os_task_list_rw (task_id).prev;
          begin
-            if prev /= OS_TASK_ID_NONE then
-               os_task_list_rw (prev).next := next;
-            end if;
+            pragma assert (os_ghost_task_is_ready (prev));
+
+            os_task_list_rw (prev).next := next;
 
             if next /= OS_TASK_ID_NONE then
+               pragma assert (os_ghost_task_is_ready (next));
+
                --  if we have a next, link next previous to our previous.
                os_task_list_rw (next).prev := prev;
             end if;
          end;
+
+         os_task_list_rw (task_id).next := OS_TASK_ID_NONE;
+         os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
+
+         os_ghost_task_ready (task_id) := false;
+
+         pragma assert (os_ghost_task_list_is_well_formed);
+
       end if;
 
       --  reset our next and previous
-      os_task_list_rw (task_id).next := OS_TASK_ID_NONE;
-      os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
+      -- os_task_list_rw (task_id).next := OS_TASK_ID_NONE;
+      -- os_task_list_rw (task_id).prev := OS_TASK_ID_NONE;
 
-      os_ghost_task_ready (task_id) := false;
+      -- os_ghost_task_ready (task_id) := false;
+
+      pragma assert (os_ghost_task_list_is_well_formed);
 
    end os_sched_remove_task_from_ready_list;
 
@@ -687,7 +758,7 @@ is
    --------------------------------------------
    --  There should be at leat one task that has no next.
    --  The last element of the list has no next.
-   --  If there is no first element then all no element has any next
+   --  If there is no first element then no element has a next
 
    function os_ghost_only_one_ready_terminating_next return Boolean is
       (not
@@ -769,6 +840,7 @@ is
              (os_sched_get_current_list_head = task_id)
            else
              (os_task_list_rw (task_id).prev /= task_id and
+              os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and
               os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
               os_task_list_rw (os_task_list_rw (task_id).prev).next = task_id and
               os_ghost_not_prev_twice (task_id) and
@@ -789,6 +861,7 @@ is
              (true)
            else
              (os_task_list_rw (task_id).next /= task_id and
+              os_task_list_rw (task_id).next /= OS_TASK_ID_NONE and
               os_task_list_rw (task_id).prev /= os_task_list_rw (task_id).next and
               os_task_list_rw (os_task_list_rw (task_id).next).prev = task_id and
               os_ghost_not_next_twice(task_id) and
@@ -812,30 +885,33 @@ is
               -- no prev for all task
               os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
               -- and all tasks are not in ready state
-              not (os_ghost_task_is_ready (task_id))))
+              os_ghost_task_ready (task_id) = false))
        else -- There is at least one task in the ready list
          (-- there need to be one and only one ready task without next
           os_ghost_only_one_ready_terminating_next and
           (for all task_id in os_task_list_rw'Range =>
              (if task_id = os_sched_get_current_list_head then
-                (-- No prev for list head
+                -- this is the task list head.
+                (os_ghost_task_ready (task_id) and
+                 -- No prev for list head
                  os_task_list_rw (task_id).prev = OS_TASK_ID_NONE and
-                 -- It has to be ready
-                 os_ghost_task_is_ready (task_id) and
                  -- The list head has the highest priority of all ready tasks
                  os_ghost_task_list_is_terminated (task_id, OS_MIN_TASK_ID))
-              elsif os_ghost_task_is_ready (task_id) then
-                  (-- only list head has no pred
-                   os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and then
-                   (-- the list needs to be terminated
-                    os_ghost_task_list_is_terminated(task_id, OS_MIN_TASK_ID) and
-                    -- the ready task need to be connected to head
-                    os_ghost_task_is_linked_to_head (task_id, OS_MIN_TASK_ID)))
-              else -- this task is not in the ready list
-                  (-- no next
-                   os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
-                   -- no prev
-                   os_task_list_rw (task_id).prev = OS_TASK_ID_NONE)))));
+              elsif os_ghost_task_ready (task_id) then
+                -- This is a member of the ready task list
+                (-- it needs to have a pred as only list head has no pred
+                 os_task_list_rw (task_id).prev /= OS_TASK_ID_NONE and
+                 -- the ready task need to be connected to head
+                 os_ghost_task_is_linked_to_head (task_id, OS_MIN_TASK_ID) and
+                 -- the list needs to be terminated
+                 os_ghost_task_list_is_terminated (task_id, OS_MIN_TASK_ID))
+              else
+                -- This task is not part of the ready list
+                (os_ghost_task_ready (task_id) = false and
+                 -- no next
+                 os_task_list_rw (task_id).next = OS_TASK_ID_NONE and
+                 -- no prev
+                 os_task_list_rw (task_id).prev = OS_TASK_ID_NONE)))));
 
    ----------------
    -- Public API --
