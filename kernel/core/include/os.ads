@@ -102,6 +102,16 @@ is
    with
       Ghost => true;
 
+   function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t)
+	                                     return Boolean
+   with
+      Ghost => true;
+
+   function os_ghost_task_is_linked_to_tail (task_id : os_task_id_param_t)
+	                                     return Boolean
+   with
+      Ghost => true;
+
    function os_ghost_task_list_is_well_formed return Boolean
    with
       Ghost => true;
