@@ -59,8 +59,9 @@ is
 
    procedure add_task_to_ready_list (task_id : in os_task_id_param_t)
    with
-      Global => (In_Out => State,
-                 Input  => Moth.Config.State),
+      Global => (In_Out => (State,
+                            os_ghost_task_list_ready),
+                 Input  => (Moth.Config.State)),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_ready =
                  os_ghost_task_list_ready'Old'Update (task_id => true) and then

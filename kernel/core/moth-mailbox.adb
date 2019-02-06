@@ -248,7 +248,7 @@ is
       mbx_msg : in  os_mbx_msg_t)
    with
       Global => (In_Out => (Moth.Scheduler.State,
-                            Moth.Scheduler.os_ghost_task_list_ready,
+			    Moth.Scheduler.os_ghost_task_list_ready,
                             -- os_task_ready_list_head,
                             -- os_task_ready_list_tail,
                             -- os_task_list_next,
