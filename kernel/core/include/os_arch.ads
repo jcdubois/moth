@@ -3,7 +3,7 @@ pragma Style_Checks (Off);
 pragma SPARK_Mode;
 
 with types;
-with os;
+with Moth;
 
 package os_arch is
 
@@ -30,38 +30,38 @@ package os_arch is
   --  @brief
   --
 
-   function os_arch_interrupt_is_pending return types.uint8_t
+   function interrupt_is_pending return types.uint8_t
       with Global => null;
-   pragma Import (C, os_arch_interrupt_is_pending, "os_arch_interrupt_is_pending");
+   pragma Import (C, interrupt_is_pending, "os_arch_interrupt_is_pending");
 
-   procedure os_arch_idle
+   procedure idle
       with Global => null;
-   pragma Import (C, os_arch_idle, "os_arch_idle");
+   pragma Import (C, idle, "os_arch_idle");
 
-   procedure os_arch_context_create (task_id : os.os_task_id_param_t)
+   procedure context_create (task_id : Moth.os_task_id_param_t)
       with Global => null;
-   pragma Import (C, os_arch_context_create, "os_arch_context_create");
+   pragma Import (C, context_create, "os_arch_context_create");
 
-   procedure os_arch_context_switch (prev_id : os.os_task_id_param_t;
-                                     next_id : os.os_task_id_param_t)
+   procedure context_switch (prev_id : Moth.os_task_id_param_t;
+                             next_id : Moth.os_task_id_param_t)
       with Global => null;
-   pragma Import (C, os_arch_context_switch, "os_arch_context_switch");
+   pragma Import (C, context_switch, "os_arch_context_switch");
 
-   procedure os_arch_context_set (task_id : os.os_task_id_param_t)
+   procedure context_set (task_id : Moth.os_task_id_param_t)
       with Global => null;
-   pragma Import (C, os_arch_context_set, "os_arch_context_set");
+   pragma Import (C, context_set, "os_arch_context_set");
 
-   procedure os_arch_space_init
+   procedure space_init
       with Global => null;
-   pragma Import (C, os_arch_space_init, "os_arch_space_init");
+   pragma Import (C, space_init, "os_arch_space_init");
 
-   procedure os_arch_space_switch (old_context_id : os.os_task_id_param_t;
-                                   new_context_id : os.os_task_id_param_t)
+   procedure space_switch (old_context_id : Moth.os_task_id_param_t;
+                           new_context_id : Moth.os_task_id_param_t)
       with Global => null;
-   pragma Import (C, os_arch_space_switch, "os_arch_space_switch");
+   pragma Import (C, space_switch, "os_arch_space_switch");
 
-   procedure os_arch_cons_init
+   procedure cons_init
       with Global => null;
-   pragma Import (C, os_arch_cons_init, "os_arch_cons_init");
+   pragma Import (C, cons_init, "os_arch_cons_init");
 
 end os_arch;
