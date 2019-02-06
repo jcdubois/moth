@@ -37,7 +37,7 @@ is
    -- Public types --
    ------------------
 
-   OS_MBX_MSG_SZ        : constant := OpenConf.CONFIG_MBX_SIZE;
+   OS_MBX_MSG_SZ       : constant := OpenConf.CONFIG_MBX_SIZE;
 
    type os_mbx_msg_t is range 0 .. 2 ** OS_MBX_MSG_SZ - 1;
    for os_mbx_msg_t'Size use OS_MBX_MSG_SZ;
