@@ -32,8 +32,8 @@ package body Moth.Scheduler with
    SPARK_mode => on,
    Refined_State => (State => (os_task_ready_list_head,
                                os_task_ready_list_tail,
-			       os_task_list_next,
-			       os_task_list_prev))
+                               os_task_list_next,
+                               os_task_list_prev))
 is
 
    OS_INTERRUPT_TASK_ID : constant := 0;
@@ -603,6 +603,9 @@ is
       prev_id : os_task_id_param_t := os_task_id_param_t'First;
    begin
 
+      --  Init the MMU
+      os_arch.space_init;
+
       --  Init the task list head to NONE
       os_task_ready_list_head := OS_TASK_ID_NONE;
       os_task_ready_list_tail := OS_TASK_ID_NONE;
@@ -611,8 +614,6 @@ is
          --  Init the task entry for one task
          os_task_list_next (task_iterator) := OS_TASK_ID_NONE;
          os_task_list_prev (task_iterator) := OS_TASK_ID_NONE;
-
-         Moth.Mailbox.os_task_list_mbx_mask (task_iterator) := 0;
 
          --  This task is not ready
          os_ghost_task_list_ready (task_iterator) := false;

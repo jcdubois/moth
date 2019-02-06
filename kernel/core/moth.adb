@@ -43,9 +43,6 @@ is
       --  Init the console if any
       os_arch.cons_init;
 
-      --  Init the MMU
-      os_arch.space_init;
-
       --  Init all mailboxes
       Moth.Mailbox.init;
 

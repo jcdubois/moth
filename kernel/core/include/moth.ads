@@ -94,7 +94,7 @@ is
    with
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_mbx_are_well_formed and
-	      os_ghost_current_task_is_ready;
+              os_ghost_current_task_is_ready;
    pragma Export (C, init, "os_init");
 
 end Moth;

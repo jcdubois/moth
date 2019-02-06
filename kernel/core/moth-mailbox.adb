@@ -643,18 +643,4 @@ is
       end loop;
    end init;
 
-begin
-   for task_iterator in os_task_id_param_t'Range loop
-
-      for mbx_iterator in os_mbx_index_t'Range loop
-         os_task_list_mbx_fifo (task_iterator).mbx_array (mbx_iterator).sender_id := OS_TASK_ID_NONE;
-         os_task_list_mbx_fifo (task_iterator).mbx_array (mbx_iterator).msg := 0;
-      end loop;
-
-      os_task_list_mbx_fifo (task_iterator).head := os_mbx_index_t'First;
-      os_task_list_mbx_fifo (task_iterator).count := os_mbx_count_t'First;
-
-      -- os_task_list_mbx_mask (task_iterator) := 0;
-
-   end loop;
 end Moth.Mailbox;

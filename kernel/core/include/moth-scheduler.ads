@@ -49,7 +49,7 @@ is
       Ghost => true;
 
    function os_ghost_task_is_ready
-	             (task_id : in os_task_id_param_t) return Boolean
+                     (task_id : in os_task_id_param_t) return Boolean
    with
       Ghost => true;
 
@@ -63,7 +63,7 @@ is
                  Input  => Moth.Config.State),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_ready =
-	         os_ghost_task_list_ready'Old'Update (task_id => true) and then
+                 os_ghost_task_list_ready'Old'Update (task_id => true) and then
               os_ghost_task_list_is_well_formed;
 
    -----------------------------------

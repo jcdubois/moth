@@ -25,8 +25,7 @@ pragma Style_Checks (Off);
 
 package Moth.Mailbox with
    SPARK_mode     => on,
-   Abstract_State => State,
-   Initializes    => State
+   Abstract_State => State
 is
 
    ----------------
