@@ -16,30 +16,37 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
---  @file
+--  @file moth-current.adb
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth current task id
 --
 
-package Moth.Current_Task with
+package body Moth.Current with
    Spark_Mode     => On,
-   Abstract_State => State
+   Refined_State => (State  => (os_task_current))
 is
+   ---------------------
+   -- os_task_current --
+   ---------------------
+
+   os_task_current : os_task_id_param_t;
 
    ----------------------------------------------------
    -- Set the id of the current running/elected task --
    ----------------------------------------------------
 
-   procedure set_current_task_id
-      (task_id : os_task_id_param_t) with
-       Global => (Output => State);
+   procedure set_current_task_id (task_id : os_task_id_param_t) is
+   begin
+      os_task_current := task_id;
+   end set_current_task_id;
 
-   ----------------------------------------------------
-   -- Get the id of the current running/elected task --
-   ----------------------------------------------------
+   -------------------------
+   -- get_Current_id --
+   -------------------------
 
-   function get_current_task_id return os_task_id_param_t with
-       Global => (Input => State);
-   pragma Export (C, get_current_task_id, "os_sched_get_current_task_id");
+   function get_current_task_id return os_task_id_param_t is
+      (os_task_current);
 
-end Moth.Current_Task;
+begin
+   os_task_current := OS_TASK_ID_MIN;
+end Moth.Current;

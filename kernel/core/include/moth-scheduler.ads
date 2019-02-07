@@ -15,9 +15,10 @@
 --  You should have received a copy of the GNU General Public License
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  --
---  @file
+--
+--  @file moth-scheduler.ads
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth Scheduler subsystem
 --
 
 pragma Ada_2012;

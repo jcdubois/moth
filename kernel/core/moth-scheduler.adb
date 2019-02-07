@@ -16,16 +16,16 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
---  @file
+--  @file moth-scheduler.adb
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth Scheduler subsystem
 --
 
 with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 
 with os_arch;
-with Moth.Current_task;
+with Moth.Current;
 with Moth.Mailbox;
 
 package body Moth.Scheduler with
@@ -132,7 +132,7 @@ is
    ------------------------------------
 
    function os_ghost_current_task_is_ready return Boolean
-   is (os_ghost_task_is_ready (Moth.Current_task.get_current_task_id));
+   is (os_ghost_task_is_ready (Moth.Current.get_current_task_id));
 
    -------------------------------------
    -- os_ghost_task_is_linked_to_head --
@@ -479,7 +479,7 @@ is
                          os_task_list_next,
                          os_task_list_prev,
                          os_ghost_task_list_ready),
-              Output => Moth.Current_task.State,
+              Output => Moth.Current.State,
               Input  => Moth.Config.State),
    Pre => os_ghost_task_list_is_well_formed,
    Post => os_ghost_task_list_ready (task_id) and then
@@ -511,8 +511,7 @@ is
       task_id := os_task_ready_list_head;
 
       --  Select the elected task as current task.
-      Moth.Current_task.set_current_task_id (task_id);
-      -- Moth.Current_task.State := task_id;
+      Moth.Current.set_current_task_id (task_id);
 
       --  Return the ID of the elected task to allow context switch at low
       --  (arch) level
@@ -532,7 +531,7 @@ is
    is
       tmp_mask : os_mbx_mask_t;
    begin
-      task_id := Moth.Current_task.get_current_task_id;
+      task_id := Moth.Current.get_current_task_id;
 
       tmp_mask := waiting_mask and Moth.Config.get_mbx_permission (task_id);
 
@@ -566,7 +565,7 @@ is
    procedure yield (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := Moth.Current_task.get_current_task_id;
+      task_id := Moth.Current.get_current_task_id;
 
       --  We remove the current task from the ready list.
       remove_task_from_ready_list (task_id);
@@ -585,7 +584,7 @@ is
    procedure fin (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := Moth.Current_task.get_current_task_id;
+      task_id := Moth.Current.get_current_task_id;
 
       --  Remove the current task from the ready list.
       remove_task_from_ready_list (task_id);

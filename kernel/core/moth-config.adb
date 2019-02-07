@@ -16,14 +16,14 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
---  @file
+--  @file moth-config.adb
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth static configuration
 --
 
 package body Moth.Config with
    Spark_Mode     => On,
-   Refined_State => (State => (os_task_ro))
+   Refined_State => (State => (read_only_conf))
 is
    subtype os_virtual_address_t is types.uint32_t;
 
@@ -44,12 +44,12 @@ is
    end record;
    pragma Convention (C_Pass_By_Copy, os_task_ro_t);
 
-   ----------------
-   -- os_task_ro --
-   ----------------
+   --------------------
+   -- read_only_conf --
+   --------------------
 
-   os_task_ro : constant array (os_task_id_param_t) of os_task_ro_t;
-   pragma Import (C, os_task_ro, "os_task_ro");
+   read_only_conf : constant array (os_task_id_param_t) of os_task_ro_t;
+   pragma Import (C, read_only_conf, "os_task_ro");
 
    ------------------------
    -- get_mbx_permission --
@@ -57,7 +57,7 @@ is
 
    function get_mbx_permission
       (task_id : os_task_id_param_t) return os_mbx_mask_t is
-      (os_task_ro (task_id).mbx_permission);
+      (read_only_conf (task_id).mbx_permission);
 
    -----------------------
    -- get_task_priority --
@@ -65,6 +65,6 @@ is
 
    function get_task_priority
      (task_id : os_task_id_param_t) return os_priority_t is
-     (os_task_ro (task_id).priority);
+     (read_only_conf (task_id).priority);
 
 end Moth.Config;

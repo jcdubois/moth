@@ -16,9 +16,9 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
---  @file
+--  @file moth-config.ads
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth static configuration accessors
 --
 
 package Moth.Config with

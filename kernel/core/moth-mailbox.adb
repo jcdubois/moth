@@ -16,16 +16,16 @@
 --  along with this program; if not, write to the Free Software
 --  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 --
---  @file
+--  @file moth-mailbox.adb
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief
+--  @brief Moth Mailbos subsytem
 --
 
 with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 
 with Moth.Config;
-with Moth.Current_task;
+with Moth.Current;
 with Moth.Scheduler;
 
 package body Moth.Mailbox with
@@ -256,7 +256,7 @@ is
                             -- os_ghost_task_list_ready,
                             os_task_list_mbx_fifo),
                  Input  => (Moth.Config.State,
-                            Moth.Current_task.State,
+                            Moth.Current.State,
                             os_task_list_mbx_mask)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
@@ -266,7 +266,7 @@ is
               os_ghost_current_task_is_ready
    is
       current        : constant os_task_id_param_t :=
-                                           Moth.Current_task.get_current_task_id;
+                                           Moth.Current.get_current_task_id;
       mbx_permission : constant os_mbx_mask_t :=
         Moth.Config.get_mbx_permission (dest_id) and
         os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
@@ -305,7 +305,7 @@ is
                             -- os_ghost_task_list_ready,
                             os_task_list_mbx_fifo),
                  Input  => (Moth.Config.State,
-                            Moth.Current_task.State,
+                            Moth.Current.State,
                             os_task_list_mbx_mask)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
@@ -529,7 +529,8 @@ is
       mbx_entry : out os_mbx_entry_t)
    is
       --  retrieve current task id
-      current   : constant os_task_id_param_t := Moth.Current_task.get_current_task_id;
+      current   : constant os_task_id_param_t :=
+	                                      Moth.Current.get_current_task_id;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
