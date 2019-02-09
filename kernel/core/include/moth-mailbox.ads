@@ -108,10 +108,11 @@ is
    -- Init function for Mailbox --
    -------------------------------
 
+   procedure Init_State
+     with Global => (Output => State);
+
    procedure init
    with
-      Global => (Output => os_task_list_mbx_mask,
-                 In_Out => State),
       Post => os_ghost_mbx_are_well_formed;
 
 end Moth.Mailbox;
