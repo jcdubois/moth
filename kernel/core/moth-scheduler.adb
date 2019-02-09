@@ -581,7 +581,7 @@ is
    -- fin --
    ---------
 
-   procedure fin (task_id : out os_task_id_param_t)
+   procedure task_exit (task_id : out os_task_id_param_t)
    is
    begin
       task_id := Moth.Current.get_current_task_id;
@@ -591,7 +591,7 @@ is
 
       --  We determine the new task.
       schedule (task_id);
-   end fin;
+   end task_exit;
 
    ----------
    -- init --
