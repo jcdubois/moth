@@ -30,10 +30,10 @@ with Moth.Mailbox;
 
 package body Moth.Scheduler with
    SPARK_mode => on,
-   Refined_State => (State => (os_task_ready_list_head,
-                               os_task_ready_list_tail,
-                               os_task_list_next,
-                               os_task_list_prev))
+   Refined_State => (State => (task_list_head,
+                               task_list_tail,
+                               next_task,
+                               prev_task))
 is
 
    OS_INTERRUPT_TASK_ID : constant := 0;
@@ -56,31 +56,31 @@ is
    -----------------------
 
    -----------------------
-   -- os_task_list_next --
+   -- next_task --
    -----------------------
 
-   os_task_list_next : array (os_task_id_param_t) of os_task_id_t;
+   next_task : array (os_task_id_param_t) of os_task_id_t;
 
    -----------------------
-   -- os_task_list_prev --
+   -- prev_task --
    -----------------------
 
-   os_task_list_prev : array (os_task_id_param_t) of os_task_id_t;
+   prev_task : array (os_task_id_param_t) of os_task_id_t;
 
    -----------------------------
-   -- os_task_ready_list_head --
+   -- task_list_head --
    -----------------------------
    --  This variable holds the ID of the first task in the ready list (the
    --  next one that will be elected).
    --  Note: Its value could be OS_TASK_ID_NONE if no task is ready.
 
-   os_task_ready_list_head : os_task_id_t;
+   task_list_head : os_task_id_t;
 
    -----------------------------
-   -- os_task_ready_list_tail --
+   -- task_list_tail --
    -----------------------------
 
-   os_task_ready_list_tail : os_task_id_t;
+   task_list_tail : os_task_id_t;
 
    ----------------------
    --  Ghost functions --
@@ -95,11 +95,11 @@ is
       (not
          (for some next_id in os_task_id_param_t'Range =>
             os_ghost_task_list_ready (next_id) and
-            os_task_list_next (next_id) = task_id and
+            next_task (next_id) = task_id and
                (for some next_id2 in os_task_id_param_t'Range =>
                   next_id2 /= next_id and
                   os_ghost_task_list_ready (next_id2) and
-                  os_task_list_next (next_id2) = task_id)))
+                  next_task (next_id2) = task_id)))
    with
       Ghost => true;
 
@@ -112,11 +112,11 @@ is
       (not
          (for some prev_id in os_task_id_param_t'Range =>
             os_ghost_task_list_ready (prev_id) and
-            os_task_list_prev (prev_id) = task_id and
+            prev_task (prev_id) = task_id and
                (for some prev_id2 in os_task_id_param_t'Range =>
                   prev_id2 /= prev_id and
                   os_ghost_task_list_ready (prev_id2) and
-                  os_task_list_prev (prev_id2) = task_id)))
+                  prev_task (prev_id2) = task_id)))
    with
       Ghost => true;
 
@@ -142,15 +142,15 @@ is
       (recursive_count < OS_MAX_TASK_CNT and then
        os_ghost_task_list_ready (task_id) and then
        os_ghost_not_prev_twice (task_id) and then
-          (if os_task_list_prev (task_id) = OS_TASK_ID_NONE then
-              (os_task_ready_list_head = task_id)
+          (if prev_task (task_id) = OS_TASK_ID_NONE then
+              (task_list_head = task_id)
            else
-              (os_task_list_next (task_id) /= task_id and
-               os_task_list_prev (task_id) /= task_id and
-               os_task_list_prev (task_id) /= os_task_list_next (task_id) and
-               os_task_list_next (os_task_list_prev (task_id)) = task_id and
-               Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (os_task_list_prev (task_id)) and
-               os_ghost_task_is_linked_to_head_recurs (os_task_list_prev (task_id), recursive_count + 1))))
+              (next_task (task_id) /= task_id and
+               prev_task (task_id) /= task_id and
+               prev_task (task_id) /= next_task (task_id) and
+               next_task (prev_task (task_id)) = task_id and
+               Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (prev_task (task_id)) and
+               os_ghost_task_is_linked_to_head_recurs (prev_task (task_id), recursive_count + 1))))
    with
       Ghost => true;
    pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_head_recurs);
@@ -168,15 +168,15 @@ is
       (recursive_count < OS_MAX_TASK_CNT and then
        os_ghost_task_list_ready (task_id) and then
        os_ghost_not_next_twice (task_id) and then
-          (if os_task_list_next (task_id) = OS_TASK_ID_NONE then
-              (os_task_ready_list_tail = task_id)
+          (if next_task (task_id) = OS_TASK_ID_NONE then
+              (task_list_tail = task_id)
            else
-              (os_task_list_next (task_id) /= task_id and
-               os_task_list_prev (task_id) /= task_id and
-               os_task_list_prev (task_id) /= os_task_list_next (task_id) and
-               os_task_list_prev (os_task_list_next (task_id)) = task_id and
-               Moth.Config.get_task_priority (task_id) >= Moth.Config.get_task_priority (os_task_list_next (task_id)) and
-               os_ghost_task_is_linked_to_tail_recurs (os_task_list_next (task_id), recursive_count + 1))))
+              (next_task (task_id) /= task_id and
+               prev_task (task_id) /= task_id and
+               prev_task (task_id) /= next_task (task_id) and
+               prev_task (next_task (task_id)) = task_id and
+               Moth.Config.get_task_priority (task_id) >= Moth.Config.get_task_priority (next_task (task_id)) and
+               os_ghost_task_is_linked_to_tail_recurs (next_task (task_id), recursive_count + 1))))
    with
       Ghost => true;
    pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_tail_recurs);
@@ -192,15 +192,15 @@ is
 
    function os_ghost_task_list_is_well_formed return Boolean is
       --  The mbx fifo of all tasks need to be well formed.
-      (if os_task_ready_list_head = OS_TASK_ID_NONE then
+      (if task_list_head = OS_TASK_ID_NONE then
          (-- tail is empty like head
-          os_task_ready_list_tail = OS_TASK_ID_NONE and
+          task_list_tail = OS_TASK_ID_NONE and
           (-- there is no ready task
           for all task_id in os_task_id_param_t'Range =>
              (-- no next for all task
-              os_task_list_next (task_id) = OS_TASK_ID_NONE and
+              next_task (task_id) = OS_TASK_ID_NONE and
               -- no prev for all task
-              os_task_list_prev (task_id) = OS_TASK_ID_NONE and
+              prev_task (task_id) = OS_TASK_ID_NONE and
               -- and all tasks are not in ready state
               os_ghost_task_list_ready (task_id) = false)))
        else -- There is at least one task in the ready list
@@ -218,9 +218,9 @@ is
                 -- This task is not part of the ready list
                 (os_ghost_task_list_ready (task_id) = false and
                  -- no next
-                 os_task_list_next (task_id) = OS_TASK_ID_NONE and
+                 next_task (task_id) = OS_TASK_ID_NONE and
                  -- no prev
-                 os_task_list_prev (task_id) = OS_TASK_ID_NONE)))));
+                 prev_task (task_id) = OS_TASK_ID_NONE)))));
 
    ----------------------------------
    -- Private functions/procedures --
@@ -232,7 +232,7 @@ is
 
    procedure add_task_to_ready_list (task_id : os_task_id_param_t)
    is
-      index_id : os_task_id_t := os_task_ready_list_head;
+      index_id : os_task_id_t := task_list_head;
    begin
 
       pragma assert (os_ghost_task_list_is_well_formed);
@@ -240,19 +240,19 @@ is
       if index_id = OS_TASK_ID_NONE then
          -- list head is empty, so the added task needs not to be ready.
          pragma assert (not os_ghost_task_list_ready (task_id));
-         pragma assert (os_task_ready_list_tail = OS_TASK_ID_NONE);
+         pragma assert (task_list_tail = OS_TASK_ID_NONE);
 
          --  No task in the ready list. Add this task at list head
-         os_task_list_next (task_id) := OS_TASK_ID_NONE;
-         os_task_list_prev (task_id) := OS_TASK_ID_NONE;
-         os_task_ready_list_head := task_id;
-         os_task_ready_list_tail := task_id;
+         next_task (task_id) := OS_TASK_ID_NONE;
+         prev_task (task_id) := OS_TASK_ID_NONE;
+         task_list_head := task_id;
+         task_list_tail := task_id;
          os_ghost_task_list_ready (task_id) := true;
 
          pragma assert (os_ghost_task_list_is_well_formed);
       else
          -- index_id is list head, so its prec needs to be empty
-         pragma assert (os_task_list_prev (index_id) = OS_TASK_ID_NONE);
+         pragma assert (prev_task (index_id) = OS_TASK_ID_NONE);
 
          while index_id /= OS_TASK_ID_NONE loop
             pragma Loop_Invariant (os_ghost_task_list_is_well_formed);
@@ -270,46 +270,46 @@ is
                -- index_id
                declare
                   prev_id : constant os_task_id_t :=
-                                            os_task_list_prev (index_id);
+                                            prev_task (index_id);
                begin
                   pragma assert (os_ghost_task_list_is_well_formed);
 
-                  os_task_list_prev (index_id) := task_id;
-                  os_task_list_prev (task_id) := prev_id;
-                  os_task_list_next (task_id) := index_id;
+                  prev_task (index_id) := task_id;
+                  prev_task (task_id) := prev_id;
+                  next_task (task_id) := index_id;
                   os_ghost_task_list_ready (task_id) := true;
                   pragma assert (Moth.Config.get_task_priority (task_id) > Moth.Config.get_task_priority (index_id));
 
                   if prev_id = OS_TASK_ID_NONE then
-                     pragma assert (index_id = os_task_ready_list_head);
-                     os_task_ready_list_head := task_id;
+                     pragma assert (index_id = task_list_head);
+                     task_list_head := task_id;
                   else
-                     pragma assert (index_id /= os_task_ready_list_head);
+                     pragma assert (index_id /= task_list_head);
                      pragma assert (Moth.Config.get_task_priority (prev_id) >= Moth.Config.get_task_priority (index_id));
                      pragma assert (Moth.Config.get_task_priority (task_id) >= Moth.Config.get_task_priority (index_id));
                      pragma assert (Moth.Config.get_task_priority (prev_id) >= Moth.Config.get_task_priority (task_id));
-                     os_task_list_next (prev_id) := task_id;
+                     next_task (prev_id) := task_id;
                   end if;
 
                   pragma assert (os_ghost_task_list_is_well_formed);
                   exit;
                end;
-            elsif os_task_list_next (index_id) = OS_TASK_ID_NONE then
+            elsif next_task (index_id) = OS_TASK_ID_NONE then
                pragma assert (os_ghost_task_list_is_well_formed);
-               pragma assert (os_task_ready_list_tail = index_id);
+               pragma assert (task_list_tail = index_id);
                pragma assert (Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (index_id));
 
-               os_task_list_next (index_id) := task_id;
-               os_task_list_prev (task_id)  := index_id;
-               os_task_list_next (task_id)  := OS_TASK_ID_NONE;
-               os_task_ready_list_tail      := task_id;
+               next_task (index_id) := task_id;
+               prev_task (task_id)  := index_id;
+               next_task (task_id)  := OS_TASK_ID_NONE;
+               task_list_tail      := task_id;
                os_ghost_task_list_ready (task_id) := true;
 
                pragma assert (os_ghost_task_list_is_well_formed);
                exit;
             else
                pragma assert (os_ghost_task_list_is_well_formed);
-               index_id := os_task_list_next (index_id);
+               index_id := next_task (index_id);
             end if;
          end loop;
       end if;
@@ -326,10 +326,10 @@ is
    procedure remove_task_from_ready_list
      (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => (os_task_ready_list_head,
-                            os_task_ready_list_tail,
-                            os_task_list_prev,
-                            os_task_list_next,
+      Global => (In_Out => (task_list_head,
+                            task_list_tail,
+                            prev_task,
+                            next_task,
                             os_ghost_task_list_ready),
                  Input  => (Moth.Config.State)),
       Pre =>  (os_ghost_task_list_ready (task_id) and then
@@ -338,12 +338,12 @@ is
                      os_ghost_task_list_ready'Old'Update (task_id => false) and then
               os_ghost_task_list_is_well_formed
    is
-      next_id : constant os_task_id_t := os_task_list_next (task_id);
-      prev_id : constant os_task_id_t := os_task_list_prev (task_id);
+      next_id : constant os_task_id_t := next_task (task_id);
+      prev_id : constant os_task_id_t := prev_task (task_id);
    begin
       -- As there is a ready task, the list head cannot be empty
-      -- pragma assert (os_task_ready_list_head /= OS_TASK_ID_NONE);
-      -- pragma assert (os_task_ready_list_tail /= OS_TASK_ID_NONE);
+      -- pragma assert (task_list_head /= OS_TASK_ID_NONE);
+      -- pragma assert (task_list_tail /= OS_TASK_ID_NONE);
       -- pragma assert (os_ghost_task_is_linked_to_tail (task_id));
       -- pragma assert (os_ghost_task_is_linked_to_head (task_id));
       if next_id /= OS_TASK_ID_NONE then
@@ -355,40 +355,40 @@ is
          -- pragma assert (os_ghost_task_is_linked_to_head (prev_id));
       -- end if;
       -- pragma assert (os_ghost_task_list_is_well_formed);
-      -- pragma assert (os_ghost_task_list_ready (os_task_ready_list_head));
+      -- pragma assert (os_ghost_task_list_ready (task_list_head));
       -- pragma assert (os_ghost_task_list_is_well_formed);
-      -- pragma assert (os_ghost_task_list_ready (os_task_ready_list_head));
-      -- pragma assert (os_ghost_task_list_ready (os_task_ready_list_tail));
-      -- pragma assert (os_ghost_task_is_linked_to_tail (os_task_ready_list_head));
-      -- pragma assert (os_ghost_task_is_linked_to_head (os_task_ready_list_tail));
+      -- pragma assert (os_ghost_task_list_ready (task_list_head));
+      -- pragma assert (os_ghost_task_list_ready (task_list_tail));
+      -- pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
+      -- pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
       -- pragma assert (os_ghost_task_list_is_well_formed);
 
-      os_task_list_next (task_id) := OS_TASK_ID_NONE;
-      os_task_list_prev (task_id) := OS_TASK_ID_NONE;
+      next_task (task_id) := OS_TASK_ID_NONE;
+      prev_task (task_id) := OS_TASK_ID_NONE;
 
       os_ghost_task_list_ready (task_id) := false;
 
-      if task_id = os_task_ready_list_tail then
+      if task_id = task_list_tail then
          -- As task_id is the list tail, its next needs to be empty.
          pragma assert (next_id = OS_TASK_ID_NONE);
 
          -- Set the new list tail (the prev from the removed task)
          -- Note: prev could be set to OS_TASK_ID_NONE
-         os_task_ready_list_tail := prev_id;
+         task_list_tail := prev_id;
 
          if prev_id /= OS_TASK_ID_NONE then
             -- prev is a valid task and needs to be ready
             pragma assert (os_ghost_task_list_ready (prev_id));
 
             -- The new list tail [prev] has no next
-            os_task_list_next (prev_id) := OS_TASK_ID_NONE;
+            next_task (prev_id) := OS_TASK_ID_NONE;
 
             -- pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
          -- else
             -- pragma assert (for all id in os_task_id_param_t'Range =>
-                           -- os_task_list_next (id) = OS_TASK_ID_NONE);
+                           -- next_task (id) = OS_TASK_ID_NONE);
             -- pragma assert (for all id in os_task_id_param_t'Range =>
-                           -- os_task_list_prev (id) = OS_TASK_ID_NONE);
+                           -- prev_task (id) = OS_TASK_ID_NONE);
             -- pragma assert (for all id in os_task_id_param_t'Range =>
                            -- os_ghost_task_list_ready (id) = false);
          end if;
@@ -402,45 +402,45 @@ is
          pragma assert (os_ghost_task_list_ready (next_id));
 
          --  for now the prev of next is task_id
-         pragma assert (os_task_list_prev (next_id) = task_id);
+         pragma assert (prev_task (next_id) = task_id);
 
          -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
          --  link prev from next task to our prev
-         os_task_list_prev (next_id) := prev_id;
+         prev_task (next_id) := prev_id;
 
          -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
       end if;
 
-      if task_id = os_task_ready_list_head then
+      if task_id = task_list_head then
          -- As task_id is the list head, its prev needs to be empty.
          pragma assert (prev_id = OS_TASK_ID_NONE);
 
          -- Set the new list head (the next from the removed task)
          -- Note: next could be set to OS_TASK_ID_NONE
-         os_task_ready_list_head := next_id;
+         task_list_head := next_id;
 
          if next_id /= OS_TASK_ID_NONE then
             -- next is a valid task and needs to be ready
             pragma assert (os_ghost_task_list_ready (next_id));
-            pragma assert (os_task_ready_list_tail /= OS_TASK_ID_NONE);
+            pragma assert (task_list_tail /= OS_TASK_ID_NONE);
 
             -- The new list head [next] has no prev
-            os_task_list_prev (next_id) := OS_TASK_ID_NONE;
+            prev_task (next_id) := OS_TASK_ID_NONE;
 
             pragma assert (os_ghost_task_is_linked_to_tail (next_id));
             pragma assert (os_ghost_task_is_linked_to_head (next_id));
-            pragma assert (os_ghost_task_is_linked_to_tail (os_task_ready_list_head));
-            pragma assert (os_ghost_task_is_linked_to_head (os_task_ready_list_tail));
+            pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
+            pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
             pragma assert (os_ghost_task_list_is_well_formed);
          else
             -- The list is now empty. We can check all tasks are not ready
             -- and that they are not part of any ready list.
-            pragma assert (os_task_ready_list_head = OS_TASK_ID_NONE);
-            pragma assert (os_task_ready_list_tail = OS_TASK_ID_NONE);
+            pragma assert (task_list_head = OS_TASK_ID_NONE);
+            pragma assert (task_list_tail = OS_TASK_ID_NONE);
             pragma assert (for all id in os_task_id_param_t'Range =>
-                           os_task_list_next (id) = OS_TASK_ID_NONE);
+                           next_task (id) = OS_TASK_ID_NONE);
             pragma assert (for all id in os_task_id_param_t'Range =>
-                           os_task_list_prev (id) = OS_TASK_ID_NONE);
+                           prev_task (id) = OS_TASK_ID_NONE);
             pragma assert (for all id in os_task_id_param_t'Range =>
                            os_ghost_task_list_ready (id) = false);
             pragma assert (os_ghost_task_list_is_well_formed);
@@ -457,7 +457,7 @@ is
          pragma assert (os_ghost_task_list_ready (prev_id));
 
          --  link next from prev task to our next
-         os_task_list_next (prev_id) := next_id;
+         next_task (prev_id) := next_id;
 
          -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
          pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
@@ -474,16 +474,16 @@ is
 
    procedure schedule (task_id : out os_task_id_param_t)
    with
-   Global => (In_Out => (os_task_ready_list_head,
-                         os_task_ready_list_tail,
-                         os_task_list_next,
-                         os_task_list_prev,
+   Global => (In_Out => (task_list_head,
+                         task_list_tail,
+                         next_task,
+                         prev_task,
                          os_ghost_task_list_ready),
               Output => Moth.Current.State,
               Input  => Moth.Config.State),
    Pre => os_ghost_task_list_is_well_formed,
    Post => os_ghost_task_list_ready (task_id) and then
-           os_task_ready_list_head = task_id and then
+           task_list_head = task_id and then
            os_ghost_task_list_is_well_formed
    is
    begin
@@ -493,7 +493,7 @@ is
          add_task_to_ready_list (OS_INTERRUPT_TASK_ID);
       end if;
 
-      while os_task_ready_list_head = OS_TASK_ID_NONE loop
+      while task_list_head = OS_TASK_ID_NONE loop
 
          pragma Loop_Invariant (os_ghost_task_list_is_well_formed);
 
@@ -508,7 +508,7 @@ is
          end if;
       end loop;
 
-      task_id := os_task_ready_list_head;
+      task_id := task_list_head;
 
       --  Select the elected task as current task.
       Moth.Current.set_current_task_id (task_id);
@@ -606,13 +606,13 @@ is
       os_arch.space_init;
 
       --  Init the task list head to NONE
-      os_task_ready_list_head := OS_TASK_ID_NONE;
-      os_task_ready_list_tail := OS_TASK_ID_NONE;
+      task_list_head := OS_TASK_ID_NONE;
+      task_list_tail := OS_TASK_ID_NONE;
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Init the task entry for one task
-         os_task_list_next (task_iterator) := OS_TASK_ID_NONE;
-         os_task_list_prev (task_iterator) := OS_TASK_ID_NONE;
+         next_task (task_iterator) := OS_TASK_ID_NONE;
+         prev_task (task_iterator) := OS_TASK_ID_NONE;
 
          --  This task is not ready
          os_ghost_task_list_ready (task_iterator) := false;
