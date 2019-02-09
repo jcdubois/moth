@@ -30,7 +30,7 @@ with Moth.Scheduler;
 
 package body Moth.Mailbox with
    SPARK_mode => On,
-   Refined_State => (State => (mbx_fifo))
+   Refined_State => (State => (mbx_fifo, os_task_list_mbx_mask))
 is
 
    -----------------
@@ -65,6 +65,8 @@ is
    -----------------------
 
    mbx_fifo : array (os_task_id_param_t) of os_mbx_t;
+
+   os_task_list_mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
 
    ----------------------------------
    -- Private functions/procedures --
@@ -446,6 +448,12 @@ is
    ----------------
    -- Public API --
    ----------------
+
+   procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
+	                        mask    : in os_mbx_mask_t) is
+   begin
+      os_task_list_mbx_mask (task_id) := mask;
+   end set_task_mbx_mask;
 
    ----------------------
    -- remove_first_mbx --

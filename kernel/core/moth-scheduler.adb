@@ -539,7 +539,7 @@ is
       remove_task_from_ready_list (task_id);
 
       if tmp_mask /= 0 then
-         Moth.Mailbox.os_task_list_mbx_mask (task_id) := tmp_mask;
+         Moth.Mailbox.set_task_mbx_mask (task_id, tmp_mask);
 
          tmp_mask := tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 

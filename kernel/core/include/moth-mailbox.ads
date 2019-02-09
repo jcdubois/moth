@@ -48,16 +48,6 @@ is
    end record;
    pragma Convention (C_Pass_By_Copy, os_mbx_entry_t);
 
-   ----------------------
-   -- Public variables --
-   ----------------------
-
-   ---------------------------
-   -- os_task_list_mbx_mask --
-   ---------------------------
-
-   os_task_list_mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
-
    ---------------------
    -- Ghost functions --
    ---------------------
@@ -74,6 +64,13 @@ is
    ---------------------------------
    -- Moth public API for Mailbox --
    ---------------------------------
+
+   -----------------------
+   -- set_task_mbx_mask --
+   ------------------------
+
+   procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
+	                        mask    : in os_mbx_mask_t);
 
    -----------------
    -- mbx_receive --
@@ -110,8 +107,7 @@ is
 
    procedure init
    with
-      Global => (Output => os_task_list_mbx_mask,
-                 In_Out => State),
+      Global => (In_Out => State),
       Post => os_ghost_mbx_are_well_formed;
 
 end Moth.Mailbox;
