@@ -597,6 +597,17 @@ is
    -- init --
    ----------
 
+   procedure Init_State is
+   begin
+      --  Init the task list head to NONE
+      os_task_ready_list_head := OS_TASK_ID_NONE;
+      os_task_ready_list_tail := OS_TASK_ID_NONE;
+
+      --  Init the task entry for one task
+      os_task_list_next := (others => OS_TASK_ID_NONE);
+      os_task_list_prev := (others => OS_TASK_ID_NONE);
+   end;
+
    procedure init (task_id : out os_task_id_param_t)
    is
       prev_id : os_task_id_param_t := os_task_id_param_t'First;
@@ -605,18 +616,10 @@ is
       --  Init the MMU
       os_arch.space_init;
 
-      --  Init the task list head to NONE
-      os_task_ready_list_head := OS_TASK_ID_NONE;
-      os_task_ready_list_tail := OS_TASK_ID_NONE;
+      Init_State;
 
-      for task_iterator in os_task_id_param_t'Range loop
-         --  Init the task entry for one task
-         os_task_list_next (task_iterator) := OS_TASK_ID_NONE;
-         os_task_list_prev (task_iterator) := OS_TASK_ID_NONE;
-
-         --  This task is not ready
-         os_ghost_task_list_ready (task_iterator) := false;
-      end loop;
+      --  This task list is not ready
+      os_ghost_task_list_ready := (others => False);
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task
