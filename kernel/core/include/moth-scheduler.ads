@@ -114,9 +114,6 @@ is
    -- Init function for scheduler --
    ---------------------------------
 
-   procedure Init_State
-     with Global => (Output => State);
-   
    procedure init (task_id : out os_task_id_param_t)
    with
       post => os_ghost_task_list_is_well_formed and

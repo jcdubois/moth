@@ -597,7 +597,12 @@ is
    -- init --
    ----------
 
-   procedure Init_State is
+   procedure Init_State
+      with Global => (Output => (task_list_head,
+                                 task_list_tail,
+                                 next_task,
+                                 prev_task))
+   is
    begin
       --  Init the task list head to NONE
       task_list_head := OS_TASK_ID_NONE;

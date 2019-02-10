@@ -105,9 +105,6 @@ is
    -- Init function for Mailbox --
    -------------------------------
 
-   procedure Init_State
-     with Global => (Output => State);
-
    procedure init
    with
       Global => (In_Out => State),

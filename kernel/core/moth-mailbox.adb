@@ -624,7 +624,10 @@ is
    -- init --
    ----------
 
-   procedure Init_State is
+   procedure Init_State
+   with Global => (Output => (mbx_fifo,
+                              os_task_list_mbx_mask))
+   is
    begin
       mbx_fifo := (others => (head  => os_mbx_index_t'First,
                               count => os_mbx_count_t'First,
