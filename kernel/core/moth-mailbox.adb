@@ -251,11 +251,6 @@ is
    with
       Global => (In_Out => (Moth.Scheduler.State,
 			    Moth.Scheduler.os_ghost_task_list_ready,
-                            -- os_task_ready_list_head,
-                            -- os_task_ready_list_tail,
-                            -- os_task_list_next,
-                            -- os_task_list_prev,
-                            -- os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State,
@@ -300,11 +295,6 @@ is
    with
       Global => (In_Out => (Moth.Scheduler.State,
                             Moth.Scheduler.os_ghost_task_list_ready,
-                            -- os_task_ready_list_head,
-                            -- os_task_ready_list_tail,
-                            -- os_task_list_next,
-                            -- os_task_list_prev,
-                            -- os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State,
@@ -639,9 +629,7 @@ is
       for task_iterator in os_task_id_param_t'Range loop
 
          for mbx_iterator in os_mbx_index_t'Range loop
-            mbx_fifo (task_iterator).mbx_array (mbx_iterator).sender_id := OS_TASK_ID_NONE;
-            mbx_fifo (task_iterator).mbx_array (mbx_iterator).msg := 0;
-            -- clear_mbx_entry (task_iterator, mbx_iterator);
+            clear_mbx_entry (task_iterator, mbx_iterator);
          end loop;
 
          mbx_fifo (task_iterator).head := os_mbx_index_t'First;
