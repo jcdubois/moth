@@ -44,7 +44,7 @@ package types is
 
    subtype int32_t is int;
 
-   subtype int64_t is Long_Long_Integer;
+   subtype int64_t is Extensions.long_long;
 
    subtype size_t is unsigned;
 
