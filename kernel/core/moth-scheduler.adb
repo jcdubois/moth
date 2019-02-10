@@ -581,7 +581,7 @@ is
    -- fin --
    ---------
 
-   procedure fin (task_id : out os_task_id_param_t)
+   procedure task_exit (task_id : out os_task_id_param_t)
    is
    begin
       task_id := Moth.Current.get_current_task_id;
@@ -591,11 +591,22 @@ is
 
       --  We determine the new task.
       schedule (task_id);
-   end fin;
+   end task_exit;
 
    ----------
    -- init --
    ----------
+
+   procedure Init_State is
+   begin
+      --  Init the task list head to NONE
+      task_list_head := OS_TASK_ID_NONE;
+      task_list_tail := OS_TASK_ID_NONE;
+
+      --  Init the task entry for one task
+      next_task := (others => OS_TASK_ID_NONE);
+      prev_task := (others => OS_TASK_ID_NONE);
+   end;
 
    procedure init (task_id : out os_task_id_param_t)
    is
@@ -605,18 +616,10 @@ is
       --  Init the MMU
       os_arch.space_init;
 
-      --  Init the task list head to NONE
-      task_list_head := OS_TASK_ID_NONE;
-      task_list_tail := OS_TASK_ID_NONE;
+      Init_State;
 
-      for task_iterator in os_task_id_param_t'Range loop
-         --  Init the task entry for one task
-         next_task (task_iterator) := OS_TASK_ID_NONE;
-         prev_task (task_iterator) := OS_TASK_ID_NONE;
-
-         --  This task is not ready
-         os_ghost_task_list_ready (task_iterator) := false;
-      end loop;
+      --  This task list is not ready
+      os_ghost_task_list_ready := (others => False);
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task

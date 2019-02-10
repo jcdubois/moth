@@ -98,22 +98,25 @@ is
               os_ghost_task_is_ready (task_id);
    pragma Export (C, yield, "os_sched_yield");
 
-   ----------
-   -- fin --
-   ----------
+   ---------------
+   -- task_exit --
+   ---------------
 
-   procedure fin (task_id : out os_task_id_param_t)
+   procedure task_exit (task_id : out os_task_id_param_t)
    with
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
-   pragma Export (C, fin, "os_sched_exit");
+   pragma Export (C, task_exit, "os_sched_exit");
 
    ---------------------------------
    -- Init function for scheduler --
    ---------------------------------
 
+   procedure Init_State
+     with Global => (Output => State);
+   
    procedure init (task_id : out os_task_id_param_t)
    with
       post => os_ghost_task_list_is_well_formed and

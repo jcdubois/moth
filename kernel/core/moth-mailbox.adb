@@ -624,20 +624,19 @@ is
    -- init --
    ----------
 
+   procedure Init_State is
+   begin
+      mbx_fifo := (others => (head  => os_mbx_index_t'First,
+                              count => os_mbx_count_t'First,
+                              mbx_array => (others =>
+			                    (sender_id => OS_TASK_ID_NONE,
+                                             msg => 0))));
+      os_task_list_mbx_mask := (others => 0);
+   end Init_State;
+
    procedure init is
    begin
-      for task_iterator in os_task_id_param_t'Range loop
-
-         for mbx_iterator in os_mbx_index_t'Range loop
-            clear_mbx_entry (task_iterator, mbx_iterator);
-         end loop;
-
-         mbx_fifo (task_iterator).head := os_mbx_index_t'First;
-         mbx_fifo (task_iterator).count := os_mbx_count_t'First;
-
-         os_task_list_mbx_mask (task_iterator) := 0;
-
-      end loop;
+      Init_State;
    end init;
 
 end Moth.Mailbox;
