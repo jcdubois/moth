@@ -32,6 +32,7 @@ package body Moth.Scheduler with
    SPARK_mode => on,
    Refined_State => (State => (task_list_head,
                                task_list_tail,
+			       mbx_mask,
                                next_task,
                                prev_task))
 is
@@ -81,6 +82,12 @@ is
    -----------------------------
 
    task_list_tail : os_task_id_t;
+
+   --------------
+   -- mbx_mask --
+   --------------
+
+   mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
 
    ----------------------
    --  Ghost functions --
@@ -521,6 +528,13 @@ is
    -- Public API --
    ----------------
 
+   ------------------
+   -- get_mbx_mask --
+   ------------------
+
+   function get_mbx_mask (task_id : os_task_id_param_t) return os_mbx_mask_t is
+      (mbx_mask (task_id));
+
    ----------
    -- wait --
    ----------
@@ -539,7 +553,7 @@ is
       remove_task_from_ready_list (task_id);
 
       if tmp_mask /= 0 then
-         Moth.Mailbox.set_task_mbx_mask (task_id, tmp_mask);
+	 mbx_mask (task_id) := tmp_mask;
 
          tmp_mask := tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 
@@ -600,6 +614,7 @@ is
    procedure Init_State
       with Global => (Output => (task_list_head,
                                  task_list_tail,
+				 mbx_mask,
                                  next_task,
                                  prev_task))
    is
@@ -611,6 +626,8 @@ is
       --  Init the task entry for one task
       next_task := (others => OS_TASK_ID_NONE);
       prev_task := (others => OS_TASK_ID_NONE);
+
+      mbx_mask := (others => 0);
    end;
 
    procedure init (task_id : out os_task_id_param_t)

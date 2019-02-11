@@ -30,7 +30,7 @@ with Moth.Scheduler;
 
 package body Moth.Mailbox with
    SPARK_mode => On,
-   Refined_State => (State => (mbx_fifo, os_task_list_mbx_mask))
+   Refined_State => (State => (mbx_fifo))
 is
 
    -----------------
@@ -65,8 +65,6 @@ is
    -----------------------
 
    mbx_fifo : array (os_task_id_param_t) of os_mbx_t;
-
-   os_task_list_mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
 
    ----------------------------------
    -- Private functions/procedures --
@@ -253,8 +251,7 @@ is
 			    Moth.Scheduler.os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
-                            Moth.Current.State,
-                            os_task_list_mbx_mask)),
+                            Moth.Current.State)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
@@ -273,7 +270,7 @@ is
             status := OS_ERROR_FIFO_FULL;
          else
             mbx_add_message (dest_id, current, mbx_msg);
-            if (os_task_list_mbx_mask (dest_id) and
+            if (Moth.Scheduler.get_mbx_mask (dest_id) and
                os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
                Moth.Scheduler.add_task_to_ready_list (dest_id);
             end if;
@@ -297,8 +294,7 @@ is
                             Moth.Scheduler.os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
-                            Moth.Current.State,
-                            os_task_list_mbx_mask)),
+                            Moth.Current.State)),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
@@ -370,12 +366,12 @@ is
    function is_waiting_mbx_entry
      (task_id   : os_task_id_param_t;
       index : os_mbx_count_t) return Boolean
-   is ((os_task_list_mbx_mask (task_id) and
+   is ((Moth.Scheduler.get_mbx_mask (task_id) and
         os_mbx_mask_t (Shift_Left
                 (Unsigned_32'(1), Natural (get_mbx_entry_sender
                 (task_id, index))))) /= 0)
    with
-      Global => (Input => (os_task_list_mbx_mask, mbx_fifo)),
+      Global => (Input => (mbx_fifo)),
       Pre => not mbx_is_empty (task_id) and then
              os_ghost_mbx_are_well_formed and then
              index < get_mbx_count (task_id) and then
@@ -438,12 +434,6 @@ is
    ----------------
    -- Public API --
    ----------------
-
-   procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
-	                        mask    : in os_mbx_mask_t) is
-   begin
-      os_task_list_mbx_mask (task_id) := mask;
-   end set_task_mbx_mask;
 
    ----------------------
    -- remove_first_mbx --
@@ -625,8 +615,7 @@ is
    ----------
 
    procedure Init_State
-   with Global => (Output => (mbx_fifo,
-                              os_task_list_mbx_mask))
+   with Global => (Output => (mbx_fifo))
    is
    begin
       mbx_fifo := (others => (head  => os_mbx_index_t'First,
@@ -634,7 +623,6 @@ is
                               mbx_array => (others =>
 			                    (sender_id => OS_TASK_ID_NONE,
                                              msg => 0))));
-      os_task_list_mbx_mask := (others => 0);
    end Init_State;
 
    procedure init is

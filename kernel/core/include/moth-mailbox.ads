@@ -69,8 +69,8 @@ is
    -- set_task_mbx_mask --
    ------------------------
 
-   procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
-	                        mask    : in os_mbx_mask_t);
+   -- procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
+	                        -- mask    : in os_mbx_mask_t);
 
    -----------------
    -- mbx_receive --

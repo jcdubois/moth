@@ -72,6 +72,12 @@ is
    -- Moth public API for scheduler --
    -----------------------------------
 
+   ------------------
+   -- get_mbx_mask --
+   ------------------
+
+   function get_mbx_mask (task_id : os_task_id_param_t) return os_mbx_mask_t;
+
    ----------
    -- wait --
    ----------
