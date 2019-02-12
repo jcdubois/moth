@@ -32,7 +32,7 @@ package body Moth.Scheduler with
    SPARK_mode => on,
    Refined_State => (State => (task_list_head,
                                task_list_tail,
-			       mbx_mask,
+                               mbx_mask,
                                next_task,
                                prev_task))
 is
@@ -553,7 +553,7 @@ is
       remove_task_from_ready_list (task_id);
 
       if tmp_mask /= 0 then
-	 mbx_mask (task_id) := tmp_mask;
+         mbx_mask (task_id) := tmp_mask;
 
          tmp_mask := tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 
@@ -612,11 +612,18 @@ is
    ----------
 
    procedure Init_State
-      with Global => (Output => (task_list_head,
-                                 task_list_tail,
-				 mbx_mask,
-                                 next_task,
-                                 prev_task))
+   with
+      Refined_Global => (Output => (task_list_head,
+                                    task_list_tail,
+                                    mbx_mask,
+                                    next_task,
+                                    prev_task)),
+      Refined_Post => (task_list_head = OS_TASK_ID_NONE and
+                       task_list_tail = OS_TASK_ID_NONE and
+                       (for all task_id in os_task_id_param_t'Range =>
+                          (next_task (task_id) = OS_TASK_ID_NONE and
+                           prev_task (task_id) = OS_TASK_ID_NONE and
+                           mbx_mask (task_id) = 0)))
    is
    begin
       --  Init the task list head to NONE
@@ -638,6 +645,7 @@ is
       --  Init the MMU
       os_arch.space_init;
 
+      -- Initialize our state variables
       Init_State;
 
       --  This task list is not ready

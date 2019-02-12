@@ -65,7 +65,7 @@ is
                  Input  => (Moth.Config.State)),
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_ready =
-                 os_ghost_task_list_ready'Old'Update (task_id => true) and then
+                os_ghost_task_list_ready'Old'Update (task_id => true) and then
               os_ghost_task_list_is_well_formed;
 
    -----------------------------------
@@ -123,6 +123,14 @@ is
    procedure init (task_id : out os_task_id_param_t)
    with
       post => os_ghost_task_list_is_well_formed and
-              os_ghost_task_is_ready (task_id);
+              os_ghost_task_is_ready (task_id) and
+              os_ghost_current_task_is_ready;
+
+
+private
+
+   procedure Init_State
+   with
+      Global => (Output => State);
 
 end Moth.Scheduler;

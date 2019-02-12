@@ -248,7 +248,7 @@ is
       mbx_msg : in  os_mbx_msg_t)
    with
       Global => (In_Out => (Moth.Scheduler.State,
-			    Moth.Scheduler.os_ghost_task_list_ready,
+                            Moth.Scheduler.os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State)),
@@ -371,7 +371,7 @@ is
                 (Unsigned_32'(1), Natural (get_mbx_entry_sender
                 (task_id, index))))) /= 0)
    with
-      Global => (Input => (mbx_fifo)),
+      Global => (Input => (mbx_fifo, Moth.Scheduler.State)),
       Pre => not mbx_is_empty (task_id) and then
              os_ghost_mbx_are_well_formed and then
              index < get_mbx_count (task_id) and then
@@ -518,7 +518,7 @@ is
    is
       --  retrieve current task id
       current   : constant os_task_id_param_t :=
-	                                      Moth.Current.get_current_task_id;
+                                              Moth.Current.get_current_task_id;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
@@ -614,20 +614,16 @@ is
    -- init --
    ----------
 
-   procedure Init_State
-   with Global => (Output => (mbx_fifo))
+   procedure init
+   with
+      Refined_Global => (Output => (mbx_fifo))
    is
    begin
       mbx_fifo := (others => (head  => os_mbx_index_t'First,
                               count => os_mbx_count_t'First,
                               mbx_array => (others =>
-			                    (sender_id => OS_TASK_ID_NONE,
+                                            (sender_id => OS_TASK_ID_NONE,
                                              msg => 0))));
-   end Init_State;
-
-   procedure init is
-   begin
-      Init_State;
    end init;
 
 end Moth.Mailbox;

@@ -65,13 +65,6 @@ is
    -- Moth public API for Mailbox --
    ---------------------------------
 
-   -----------------------
-   -- set_task_mbx_mask --
-   ------------------------
-
-   -- procedure set_task_mbx_mask (task_id : in os_task_id_param_t;
-	                        -- mask    : in os_mbx_mask_t);
-
    -----------------
    -- mbx_receive --
    -----------------
@@ -107,7 +100,7 @@ is
 
    procedure init
    with
-      Global => (In_Out => State),
+      Global => (Output => State),
       Post => os_ghost_mbx_are_well_formed;
 
 end Moth.Mailbox;
