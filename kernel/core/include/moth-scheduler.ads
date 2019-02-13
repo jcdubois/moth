@@ -31,12 +31,6 @@ package Moth.Scheduler with
    Abstract_State => State
 is
 
-   -------------------------------------
-   -- Ghost variable for task's state --
-   -------------------------------------
-
-   os_ghost_task_list_ready : array (os_task_id_param_t) of Boolean with Ghost;
-
    ---------------------
    -- Ghost functions --
    ---------------------
@@ -60,13 +54,10 @@ is
 
    procedure add_task_to_ready_list (task_id : in os_task_id_param_t)
    with
-      Global => (In_Out => (State,
-                            os_ghost_task_list_ready),
+      Global => (In_Out => (State),
                  Input  => (Moth.Config.State)),
       Pre => os_ghost_task_list_is_well_formed,
-      Post => os_ghost_task_list_ready =
-                os_ghost_task_list_ready'Old'Update (task_id => true) and then
-              os_ghost_task_list_is_well_formed;
+      Post => os_ghost_task_list_is_well_formed;
 
    -----------------------------------
    -- Moth public API for scheduler --

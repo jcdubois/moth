@@ -32,6 +32,7 @@ package body Moth.Scheduler with
    SPARK_mode => on,
    Refined_State => (State => (task_list_head,
                                task_list_tail,
+                               os_ghost_task_list_ready,
                                mbx_mask,
                                next_task,
                                prev_task))
@@ -88,6 +89,12 @@ is
    --------------
 
    mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
+
+   -------------------------------------
+   -- Ghost variable for task's state --
+   -------------------------------------
+
+   os_ghost_task_list_ready : array (os_task_id_param_t) of Boolean with Ghost;
 
    ----------------------
    --  Ghost functions --
@@ -238,6 +245,10 @@ is
    ----------------------------
 
    procedure add_task_to_ready_list (task_id : os_task_id_param_t)
+   with
+      Refined_Post => os_ghost_task_list_ready =
+                os_ghost_task_list_ready'Old'Update (task_id => true) and then
+                os_ghost_task_list_is_well_formed
    is
       index_id : os_task_id_t := task_list_head;
    begin
@@ -615,6 +626,7 @@ is
    with
       Refined_Global => (Output => (task_list_head,
                                     task_list_tail,
+                                    os_ghost_task_list_ready,
                                     mbx_mask,
                                     next_task,
                                     prev_task)),
@@ -623,7 +635,8 @@ is
                        (for all task_id in os_task_id_param_t'Range =>
                           (next_task (task_id) = OS_TASK_ID_NONE and
                            prev_task (task_id) = OS_TASK_ID_NONE and
-                           mbx_mask (task_id) = 0)))
+                           mbx_mask (task_id) = 0 and
+                           os_ghost_task_list_ready (task_id) = False)))
    is
    begin
       --  Init the task list head to NONE
@@ -635,6 +648,9 @@ is
       prev_task := (others => OS_TASK_ID_NONE);
 
       mbx_mask := (others => 0);
+
+      --  This task list is not ready
+      os_ghost_task_list_ready := (others => False);
    end;
 
    procedure init (task_id : out os_task_id_param_t)
@@ -647,9 +663,6 @@ is
 
       -- Initialize our state variables
       Init_State;
-
-      --  This task list is not ready
-      os_ghost_task_list_ready := (others => False);
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task

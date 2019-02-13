@@ -248,7 +248,6 @@ is
       mbx_msg : in  os_mbx_msg_t)
    with
       Global => (In_Out => (Moth.Scheduler.State,
-                            Moth.Scheduler.os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State)),
@@ -291,7 +290,6 @@ is
       mbx_msg : in  os_mbx_msg_t)
    with
       Global => (In_Out => (Moth.Scheduler.State,
-                            Moth.Scheduler.os_ghost_task_list_ready,
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State)),
