@@ -201,8 +201,8 @@ is
    --------------------------
 
    function get_mbx_entry_sender
-     (task_id   : os_task_id_param_t;
-      index : os_mbx_count_t) return os_task_id_param_t
+     (task_id : os_task_id_param_t;
+      index   : os_mbx_count_t) return os_task_id_param_t
    is (os_task_id_param_t (mbx_fifo (task_id).mbx_array
            (get_mbx_head (task_id) + index).sender_id))
    with
@@ -225,13 +225,11 @@ is
          for iterator in 0 ..
                          os_mbx_count_t'Pred (get_mbx_count (task_id))
          loop
-
-             mbx_mask :=
-              mbx_mask or
-              os_mbx_mask_t (Shift_Left
-                (Unsigned_32'(1),
-                 Natural (get_mbx_entry_sender (task_id, iterator))));
-
+             mbx_mask := mbx_mask or
+              os_mbx_mask_t (Shift_Left (Unsigned_32'(1),
+                                         Natural (
+                                            get_mbx_entry_sender (task_id,
+                                                                  iterator))));
          end loop;
       end if;
 
@@ -271,6 +269,7 @@ is
             mbx_add_message (dest_id, current, mbx_msg);
             if (Moth.Scheduler.get_mbx_mask (dest_id) and
                os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
+               pragma assert (os_ghost_task_list_is_well_formed);
                Moth.Scheduler.add_task_to_ready_list (dest_id);
             end if;
             status := OS_SUCCESS;

@@ -59,6 +59,7 @@ is
    function os_mbx_get_posted_mask
      (task_id : os_task_id_param_t) return os_mbx_mask_t
    with
+      Global => (Input => State),
       Pre => os_ghost_mbx_are_well_formed;
 
    ---------------------------------

@@ -205,7 +205,6 @@ is
    ---------------------------------------
 
    function os_ghost_task_list_is_well_formed return Boolean is
-      --  The mbx fifo of all tasks need to be well formed.
       (if task_list_head = OS_TASK_ID_NONE then
          (-- tail is empty like head
           task_list_tail = OS_TASK_ID_NONE and
@@ -566,6 +565,7 @@ is
       if tmp_mask /= 0 then
          mbx_mask (task_id) := tmp_mask;
 
+         pragma assert (os_ghost_mbx_are_well_formed);
          tmp_mask := tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 
          if tmp_mask /= 0 then
