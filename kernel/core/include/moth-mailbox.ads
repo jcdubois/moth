@@ -52,7 +52,7 @@ is
    -- Ghost functions --
    ---------------------
 
-   function os_ghost_mbx_are_well_formed return Boolean
+   function mbx_are_well_formed return Boolean
    with
       Ghost => true;
 

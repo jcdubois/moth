@@ -30,13 +30,13 @@ package body Moth with
 is
 
    function os_ghost_mbx_are_well_formed return Boolean
-   is (Moth.Mailbox.os_ghost_mbx_are_well_formed);
+   is (Moth.Mailbox.mbx_are_well_formed);
 
    function os_ghost_task_list_is_well_formed return Boolean
-   is (Moth.Scheduler.os_ghost_task_list_is_well_formed);
+   is (Moth.Scheduler.task_list_is_well_formed);
 
    function os_ghost_current_task_is_ready return Boolean
-   is (Moth.Scheduler.os_ghost_current_task_is_ready);
+   is (Moth.Scheduler.current_task_is_ready);
 
    procedure init (task_id : out os_task_id_param_t) is
    begin

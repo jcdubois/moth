@@ -35,11 +35,11 @@ is
    -- Ghost functions --
    ---------------------
 
-   function os_ghost_task_list_is_well_formed return Boolean
+   function task_list_is_well_formed return Boolean
    with
       Ghost => true;
 
-   function os_ghost_current_task_is_ready return Boolean
+   function current_task_is_ready return Boolean
    with
       Ghost => true;
 
