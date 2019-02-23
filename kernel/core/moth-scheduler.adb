@@ -142,10 +142,10 @@ is
    is (os_ghost_task_list_ready (task_id));
 
    ------------------------------------
-   -- current_task_is_ready --
+   -- os_ghost_current_task_is_ready --
    ------------------------------------
 
-   function current_task_is_ready return Boolean
+   function os_ghost_current_task_is_ready return Boolean
    is (os_ghost_task_is_ready (Moth.Current.get_current_task_id));
 
    -------------------------------------
@@ -201,10 +201,10 @@ is
       Ghost => true;
 
    ---------------------------------------
-   -- task_list_is_well_formed --
+   -- os_ghost_task_list_is_well_formed --
    ---------------------------------------
 
-   function task_list_is_well_formed return Boolean is
+   function os_ghost_task_list_is_well_formed return Boolean is
       (if task_list_head = OS_TASK_ID_NONE then
          (-- tail is empty like head
           task_list_tail = OS_TASK_ID_NONE and
@@ -247,13 +247,12 @@ is
    with
       Refined_Post => os_ghost_task_list_ready =
                 os_ghost_task_list_ready'Old'Update (task_id => true) and then
-                task_list_is_well_formed
+                os_ghost_task_list_is_well_formed
    is
       index_id : os_task_id_t := task_list_head;
    begin
 
       pragma assert (os_ghost_task_list_is_well_formed);
-      pragma assert (task_list_is_well_formed);
 
       if index_id = OS_TASK_ID_NONE then
          -- list head is empty, so the added task needs not to be ready.
@@ -267,13 +266,13 @@ is
          task_list_tail := task_id;
          os_ghost_task_list_ready (task_id) := true;
 
-         pragma assert (task_list_is_well_formed);
+         pragma assert (os_ghost_task_list_is_well_formed);
       else
          -- index_id is list head, so its prec needs to be empty
          pragma assert (prev_task (index_id) = OS_TASK_ID_NONE);
 
          while index_id /= OS_TASK_ID_NONE loop
-            pragma Loop_Invariant (task_list_is_well_formed);
+            pragma Loop_Invariant (os_ghost_task_list_is_well_formed);
             pragma Loop_Invariant (os_ghost_task_list_ready = os_ghost_task_list_ready'Loop_Entry);
             -- At any step in the loop index_id needs to be ready
             pragma assert (index_id /= OS_TASK_ID_NONE);
@@ -290,7 +289,7 @@ is
                   prev_id : constant os_task_id_t :=
                                             prev_task (index_id);
                begin
-                  pragma assert (task_list_is_well_formed);
+                  pragma assert (os_ghost_task_list_is_well_formed);
 
                   prev_task (index_id) := task_id;
                   prev_task (task_id) := prev_id;
@@ -309,11 +308,11 @@ is
                      next_task (prev_id) := task_id;
                   end if;
 
-                  pragma assert (task_list_is_well_formed);
+                  pragma assert (os_ghost_task_list_is_well_formed);
                   exit;
                end;
             elsif next_task (index_id) = OS_TASK_ID_NONE then
-               pragma assert (task_list_is_well_formed);
+               pragma assert (os_ghost_task_list_is_well_formed);
                pragma assert (task_list_tail = index_id);
                pragma assert (Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (index_id));
 
@@ -323,10 +322,10 @@ is
                task_list_tail      := task_id;
                os_ghost_task_list_ready (task_id) := true;
 
-               pragma assert (task_list_is_well_formed);
+               pragma assert (os_ghost_task_list_is_well_formed);
                exit;
             else
-               pragma assert (task_list_is_well_formed);
+               pragma assert (os_ghost_task_list_is_well_formed);
                index_id := next_task (index_id);
             end if;
          end loop;
@@ -334,7 +333,7 @@ is
 
       -- os_ghost_task_list_ready (task_id) := true;
 
-      pragma assert (task_list_is_well_formed);
+      pragma assert (os_ghost_task_list_is_well_formed);
    end add_task_to_ready_list;
 
    ---------------------------------
@@ -351,10 +350,10 @@ is
                             os_ghost_task_list_ready),
                  Input  => (Moth.Config.State)),
       Pre =>  (os_ghost_task_list_ready (task_id) and then
-               task_list_is_well_formed),
+               os_ghost_task_list_is_well_formed),
       Post => os_ghost_task_list_ready =
                      os_ghost_task_list_ready'Old'Update (task_id => false) and then
-              task_list_is_well_formed
+              os_ghost_task_list_is_well_formed
    is
       next_id : constant os_task_id_t := next_task (task_id);
       prev_id : constant os_task_id_t := prev_task (task_id);
@@ -372,14 +371,14 @@ is
          -- pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
          -- pragma assert (os_ghost_task_is_linked_to_head (prev_id));
       -- end if;
-      -- pragma assert (task_list_is_well_formed);
+      -- pragma assert (os_ghost_task_list_is_well_formed);
       -- pragma assert (os_ghost_task_list_ready (task_list_head));
-      -- pragma assert (task_list_is_well_formed);
+      -- pragma assert (os_ghost_task_list_is_well_formed);
       -- pragma assert (os_ghost_task_list_ready (task_list_head));
       -- pragma assert (os_ghost_task_list_ready (task_list_tail));
       -- pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
       -- pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
-      -- pragma assert (task_list_is_well_formed);
+      -- pragma assert (os_ghost_task_list_is_well_formed);
 
       next_task (task_id) := OS_TASK_ID_NONE;
       prev_task (task_id) := OS_TASK_ID_NONE;
@@ -449,7 +448,7 @@ is
             pragma assert (os_ghost_task_is_linked_to_head (next_id));
             pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
             pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
-            pragma assert (task_list_is_well_formed);
+            pragma assert (os_ghost_task_list_is_well_formed);
          else
             -- The list is now empty. We can check all tasks are not ready
             -- and that they are not part of any ready list.
@@ -461,10 +460,10 @@ is
                            prev_task (id) = OS_TASK_ID_NONE);
             pragma assert (for all id in os_task_id_param_t'Range =>
                            os_ghost_task_list_ready (id) = false);
-            pragma assert (task_list_is_well_formed);
+            pragma assert (os_ghost_task_list_is_well_formed);
          end if;
 
-         pragma assert (task_list_is_well_formed);
+         pragma assert (os_ghost_task_list_is_well_formed);
       else
          --  The list is not empty and the task is not at the list head.
 
@@ -480,10 +479,10 @@ is
          -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
          pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
          pragma assert (os_ghost_task_is_linked_to_head (prev_id));
-         pragma assert (task_list_is_well_formed);
+         pragma assert (os_ghost_task_list_is_well_formed);
       end if;
 
-      pragma assert (task_list_is_well_formed);
+      pragma assert (os_ghost_task_list_is_well_formed);
    end remove_task_from_ready_list;
 
    --------------
@@ -498,12 +497,11 @@ is
                          prev_task,
                          os_ghost_task_list_ready),
               Output => Moth.Current.State,
-              Input  => (Moth.Config.State,
-                         mbx_mask)),
-   Pre => task_list_is_well_formed,
+              Input  => Moth.Config.State),
+   Pre => os_ghost_task_list_is_well_formed,
    Post => os_ghost_task_list_ready (task_id) and then
            task_list_head = task_id and then
-           task_list_is_well_formed
+           os_ghost_task_list_is_well_formed
    is
    begin
       --  Check interrupt status
@@ -514,7 +512,7 @@ is
 
       while task_list_head = OS_TASK_ID_NONE loop
 
-         pragma Loop_Invariant (task_list_is_well_formed);
+         pragma Loop_Invariant (os_ghost_task_list_is_well_formed);
 
          --  No task is elected:
          --  Put processor in idle mode and wait for interrupt.
@@ -557,6 +555,8 @@ is
    is
       tmp_mask : os_mbx_mask_t;
    begin
+      pragma assert (Moth.Mailbox.os_ghost_mbx_are_well_formed);
+
       task_id := Moth.Current.get_current_task_id;
 
       tmp_mask := waiting_mask and Moth.Config.get_mbx_permission (task_id);
@@ -567,7 +567,6 @@ is
       if tmp_mask /= 0 then
          mbx_mask (task_id) := tmp_mask;
 
-         pragma assert (os_ghost_mbx_are_well_formed);
          tmp_mask := tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 
          if tmp_mask /= 0 then

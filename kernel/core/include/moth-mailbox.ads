@@ -52,19 +52,23 @@ is
    -- Ghost functions --
    ---------------------
 
-   function mbx_are_well_formed return Boolean
+   function os_ghost_mbx_are_well_formed return Boolean
    with
       Ghost => true;
+
+   ---------------------------------
+   -- Moth public API for Mailbox --
+   ---------------------------------
+
+   ----------------------------
+   -- os_mbx_get_posted_mask --
+   ----------------------------
 
    function os_mbx_get_posted_mask
      (task_id : os_task_id_param_t) return os_mbx_mask_t
    with
       Global => (Input => State),
       Pre => os_ghost_mbx_are_well_formed;
-
-   ---------------------------------
-   -- Moth public API for Mailbox --
-   ---------------------------------
 
    -----------------
    -- mbx_receive --
@@ -73,10 +77,8 @@ is
    procedure receive (status    : out os_status_t;
                       mbx_entry : out os_mbx_entry_t)
    with
-      Pre => os_ghost_mbx_are_well_formed and
-             os_ghost_current_task_is_ready,
-      Post => os_ghost_mbx_are_well_formed and
-              os_ghost_current_task_is_ready;
+      Pre => os_ghost_mbx_are_well_formed,
+      Post => os_ghost_mbx_are_well_formed;
    pragma Export (C, receive, "os_mbx_receive");
 
    --------------
@@ -87,12 +89,8 @@ is
                    dest_id :     types.int8_t;
                    mbx_msg :     os_mbx_msg_t)
    with
-      Pre => os_ghost_task_list_is_well_formed and
-             os_ghost_mbx_are_well_formed and
-             os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and
-              os_ghost_mbx_are_well_formed and
-              os_ghost_current_task_is_ready;
+      Pre => os_ghost_mbx_are_well_formed,
+      Post => os_ghost_mbx_are_well_formed;
    pragma Export (C, send, "os_mbx_send");
 
    -------------------------------

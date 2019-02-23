@@ -70,31 +70,11 @@ is
 
    subtype os_mbx_mask_t is types.uint32_t;
 
-   ---------------------
-   -- Ghost functions --
-   ---------------------
-
-   function os_ghost_mbx_are_well_formed return Boolean
-   with
-      Ghost => true;
-
-   function os_ghost_task_list_is_well_formed return Boolean
-   with
-      Ghost => true;
-
-   function os_ghost_current_task_is_ready return Boolean
-   with
-      Ghost => true;
-
    -------------
    -- init --
    -------------
 
-   procedure init (task_id : out os_task_id_param_t)
-   with
-      Post => os_ghost_task_list_is_well_formed and
-              os_ghost_mbx_are_well_formed and
-              os_ghost_current_task_is_ready;
+   procedure init (task_id : out os_task_id_param_t);
    pragma Export (C, init, "os_init");
 
 end Moth;

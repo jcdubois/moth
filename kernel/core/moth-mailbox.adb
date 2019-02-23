@@ -183,10 +183,10 @@ is
    with
       Global => (In_Out => mbx_fifo),
       Pre  => ((not mbx_is_full (dest_id)) and then
-               mbx_are_well_formed),
+               os_ghost_mbx_are_well_formed),
       Post => ((not mbx_is_empty (dest_id)) and then
                (mbx_fifo = mbx_fifo'Old'Update (dest_id => mbx_fifo'Old (dest_id)'Update (count => mbx_fifo'Old (dest_id).count + 1, head => mbx_fifo'Old (dest_id).head, mbx_array => mbx_fifo'Old (dest_id).mbx_array'Update (get_mbx_tail (dest_id) => mbx_fifo'Old (dest_id).mbx_array (get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))) and then
-               mbx_are_well_formed)
+               os_ghost_mbx_are_well_formed)
    is
       mbx_index : os_mbx_index_t;
    begin
@@ -249,12 +249,10 @@ is
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State)),
-      Pre => os_ghost_task_list_is_well_formed and
-             mbx_are_well_formed and
-             os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and
-              mbx_are_well_formed and
-              os_ghost_current_task_is_ready
+      Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
+             os_ghost_mbx_are_well_formed,
+      Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
+              os_ghost_mbx_are_well_formed
    is
       current        : constant os_task_id_param_t :=
                                            Moth.Current.get_current_task_id;
@@ -269,7 +267,7 @@ is
             mbx_add_message (dest_id, current, mbx_msg);
             if (Moth.Scheduler.get_mbx_mask (dest_id) and
                os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
-               pragma assert (os_ghost_task_list_is_well_formed);
+               pragma assert (Moth.Scheduler.os_ghost_task_list_is_well_formed);
                Moth.Scheduler.add_task_to_ready_list (dest_id);
             end if;
             status := OS_SUCCESS;
@@ -292,12 +290,10 @@ is
                             mbx_fifo),
                  Input  => (Moth.Config.State,
                             Moth.Current.State)),
-      Pre => os_ghost_task_list_is_well_formed and
-             mbx_are_well_formed and
-             os_ghost_current_task_is_ready,
-      Post => os_ghost_task_list_is_well_formed and
-              mbx_are_well_formed and
-              os_ghost_current_task_is_ready
+      Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
+             os_ghost_mbx_are_well_formed,
+      Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
+              os_ghost_mbx_are_well_formed
    is
       ret : os_status_t;
    begin
@@ -370,7 +366,7 @@ is
    with
       Global => (Input => (mbx_fifo, Moth.Scheduler.State)),
       Pre => not mbx_is_empty (task_id) and then
-             mbx_are_well_formed and then
+             os_ghost_mbx_are_well_formed and then
              index < get_mbx_count (task_id) and then
              get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
 
@@ -392,7 +388,7 @@ is
    --  = -1.
    --  Note: Here we have to duplicate the function code in the post condition
    --  in order to be able to support the pragma Inline_For_Proof required
-   --  to help the prover in mbx_are_well_formed() function below.
+   --  to help the prover in os_ghost_mbx_are_well_formed() function below.
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
@@ -421,10 +417,10 @@ is
                        os_ghost_task_mbx_are_well_formed);
 
    ----------------------------------
-   -- mbx_are_well_formed --
+   -- os_ghost_mbx_are_well_formed --
    ----------------------------------
 
-   function mbx_are_well_formed return Boolean is
+   function os_ghost_mbx_are_well_formed return Boolean is
       (for all task_id in os_task_id_param_t'Range =>
          os_ghost_task_mbx_are_well_formed (task_id));
 
@@ -440,9 +436,9 @@ is
       (task_id    : in os_task_id_param_t)
    with
       Global => (In_Out => mbx_fifo),
-      Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
+      Pre  => (not mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
       Post => (mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count), head => os_mbx_index_t'Succ (mbx_fifo'Old (task_id).head), mbx_array => mbx_fifo'Old (task_id).mbx_array'Update (os_mbx_index_t'Pred (get_mbx_head (task_id)) => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
-              and mbx_are_well_formed
+              and os_ghost_mbx_are_well_formed
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_head (task_id);
    begin
@@ -465,9 +461,9 @@ is
       (task_id    : in os_task_id_param_t)
    with
       Global => (In_Out => mbx_fifo),
-      Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
+      Pre  => (not mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
       Post => (mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count), head => mbx_fifo'Old (task_id).head, mbx_array => mbx_fifo'Old (task_id).mbx_array'Update (mbx_fifo (task_id).head + mbx_fifo (task_id).count => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
-              and mbx_are_well_formed
+              and os_ghost_mbx_are_well_formed
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_tail (task_id);
    begin
@@ -489,16 +485,16 @@ is
    with
       Global => (In_Out => mbx_fifo),
       Pre => (not mbx_is_empty (task_id)) and
-             mbx_are_well_formed and
+             os_ghost_mbx_are_well_formed and
              (index > 0) and
              (index < os_mbx_count_t'Pred (get_mbx_count (task_id))),
-      Post => mbx_are_well_formed and
+      Post => os_ghost_mbx_are_well_formed and
               mbx_fifo (task_id).count = mbx_fifo'Old (task_id).count and
               mbx_fifo (task_id).head = mbx_fifo'Old (task_id).head
    is begin
       for iterator in index ..
                       os_mbx_count_t'Pred (get_mbx_count (task_id)) loop
-         pragma Loop_Invariant (mbx_are_well_formed);
+         pragma Loop_Invariant (os_ghost_mbx_are_well_formed);
          set_mbx_entry (task_id, iterator,
                         get_mbx_entry (task_id,
                                        os_mbx_count_t'Succ (iterator)));
@@ -531,7 +527,7 @@ is
          for iterator in 0 ..
                          os_mbx_count_t'Pred (get_mbx_count (current)) loop
 
-            pragma Loop_Invariant (mbx_are_well_formed and
+            pragma Loop_Invariant (os_ghost_mbx_are_well_formed and
                                    (not mbx_is_empty (current)));
 
             -- This Loop Invariant is a work arround. The prover is unable
@@ -593,11 +589,15 @@ is
      (status  : out os_status_t;
       dest_id : in  types.int8_t;
       mbx_msg : in  os_mbx_msg_t)
+   with
+      Refined_Post => os_ghost_mbx_are_well_formed and
+                      Moth.Scheduler.os_ghost_task_list_is_well_formed
    is
       --  dest_id comes from uncontroled C calls (user space)
       --  We don't make assumptions on its value, so we are testing
       --  all cases.
    begin
+      pragma assert (Moth.Scheduler.os_ghost_task_list_is_well_formed);
       if dest_id = OS_TASK_ID_ALL then
          send_all_task (status, mbx_msg);
       elsif dest_id in os_task_id_param_t then

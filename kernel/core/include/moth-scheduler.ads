@@ -35,11 +35,11 @@ is
    -- Ghost functions --
    ---------------------
 
-   function task_list_is_well_formed return Boolean
+   function os_ghost_task_list_is_well_formed return Boolean
    with
       Ghost => true;
 
-   function current_task_is_ready return Boolean
+   function os_ghost_current_task_is_ready return Boolean
    with
       Ghost => true;
 
@@ -79,7 +79,6 @@ is
                    waiting_mask :     os_mbx_mask_t)
    with
       Pre => os_ghost_task_list_is_well_formed and
-             os_ghost_mbx_are_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id);
