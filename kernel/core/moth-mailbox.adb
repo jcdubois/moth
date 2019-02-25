@@ -25,7 +25,6 @@ with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 
 with Moth.Config;
-with Moth.Current;
 with Moth.Scheduler;
 
 package body Moth.Mailbox with
@@ -247,15 +246,14 @@ is
    with
       Global => (In_Out => (Moth.Scheduler.State,
                             mbx_fifo),
-                 Input  => (Moth.Config.State,
-                            Moth.Current.State)),
+                 Input  => Moth.Config.State),
       Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed,
       Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
               os_ghost_mbx_are_well_formed
    is
       current        : constant os_task_id_param_t :=
-                                           Moth.Current.get_current_task_id;
+                                Moth.Scheduler.get_current_task_id;
       mbx_permission : constant os_mbx_mask_t :=
         Moth.Config.get_mbx_permission (dest_id) and
         os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)));
@@ -288,8 +286,7 @@ is
    with
       Global => (In_Out => (Moth.Scheduler.State,
                             mbx_fifo),
-                 Input  => (Moth.Config.State,
-                            Moth.Current.State)),
+                 Input  => Moth.Config.State),
       Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
              os_ghost_mbx_are_well_formed,
       Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
@@ -511,7 +508,7 @@ is
    is
       --  retrieve current task id
       current   : constant os_task_id_param_t :=
-                                              Moth.Current.get_current_task_id;
+                           Moth.Scheduler.get_current_task_id;
    begin
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
@@ -538,6 +535,11 @@ is
             -- supports branches with exit path.
             pragma Loop_Invariant (mbx_fifo =
                                          mbx_fifo'Loop_Entry);
+
+            pragma assert (not mbx_is_empty (current));
+            pragma assert (os_ghost_mbx_are_well_formed);
+            pragma assert (iterator < get_mbx_count (current));
+            pragma assert (get_mbx_entry_sender (current, iterator) in os_task_id_param_t);
 
             --  is this a mbx we are waiting for
             if is_waiting_mbx_entry (current, iterator) then
@@ -590,13 +592,23 @@ is
       dest_id : in  types.int8_t;
       mbx_msg : in  os_mbx_msg_t)
    with
-      Refined_Post => os_ghost_mbx_are_well_formed and
-                      Moth.Scheduler.os_ghost_task_list_is_well_formed
+      Refined_Post   => os_ghost_mbx_are_well_formed and
+                        Moth.Scheduler.os_ghost_task_list_is_well_formed
    is
       --  dest_id comes from uncontroled C calls (user space)
       --  We don't make assumptions on its value, so we are testing
       --  all cases.
    begin
+      -- We need the task list to be well formed when calling send (and
+      -- it should be when called from a task). But we cannot express it
+      -- through precondition because "Refined_Pre" is not supported (for
+      -- a reason) and it is not passible to include scheduer specification.
+      -- Using "with Moth.Scheduler" would trigger a circular dependency
+      -- problem and using "limited with Moth.Scheduler" does not give
+      -- visibility on sepcification functions (even the ghost ones).
+      -- So here we just use a "pragma assert" (which is the additionnal
+      -- condition we want for pre condition) to allow for the rest of the
+      -- procedure to be proved.
       pragma assert (Moth.Scheduler.os_ghost_task_list_is_well_formed);
       if dest_id = OS_TASK_ID_ALL then
          send_all_task (status, mbx_msg);
@@ -613,7 +625,7 @@ is
 
    procedure init
    with
-      Refined_Global => (Output => (mbx_fifo))
+      Refined_Global => (Output => mbx_fifo)
    is
    begin
       mbx_fifo := (others => (head  => os_mbx_index_t'First,

@@ -59,6 +59,10 @@ is
       Pre => os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_is_well_formed;
 
+   function get_current_task_id return os_task_id_param_t with
+       Global => (Input => State);
+   pragma Export (C, get_current_task_id, "os_sched_get_current_task_id");
+
    -----------------------------------
    -- Moth public API for scheduler --
    -----------------------------------
@@ -78,6 +82,7 @@ is
    procedure wait (task_id      : out os_task_id_param_t;
                    waiting_mask :     os_mbx_mask_t)
    with
+      Global => (In_Out => State),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
@@ -90,6 +95,7 @@ is
 
    procedure yield (task_id : out os_task_id_param_t)
    with
+      Global => (In_Out => State),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
@@ -102,6 +108,7 @@ is
 
    procedure task_exit (task_id : out os_task_id_param_t)
    with
+      Global => (In_Out => State),
       Pre => os_ghost_task_list_is_well_formed and
              os_ghost_current_task_is_ready,
       Post => os_ghost_task_list_is_well_formed and
@@ -114,6 +121,7 @@ is
 
    procedure init (task_id : out os_task_id_param_t)
    with
+      Global => (In_Out => State),
       post => os_ghost_task_list_is_well_formed and
               os_ghost_task_is_ready (task_id) and
               os_ghost_current_task_is_ready;

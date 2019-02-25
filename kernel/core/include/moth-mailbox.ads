@@ -68,7 +68,7 @@ is
      (task_id : os_task_id_param_t) return os_mbx_mask_t
    with
       Global => (Input => State),
-      Pre => os_ghost_mbx_are_well_formed;
+      Pre    => os_ghost_mbx_are_well_formed;
 
    -----------------
    -- mbx_receive --
@@ -77,8 +77,8 @@ is
    procedure receive (status    : out os_status_t;
                       mbx_entry : out os_mbx_entry_t)
    with
-      Pre => os_ghost_mbx_are_well_formed,
-      Post => os_ghost_mbx_are_well_formed;
+      Pre    => os_ghost_mbx_are_well_formed,
+      Post   => os_ghost_mbx_are_well_formed;
    pragma Export (C, receive, "os_mbx_receive");
 
    --------------
@@ -89,8 +89,8 @@ is
                    dest_id :     types.int8_t;
                    mbx_msg :     os_mbx_msg_t)
    with
-      Pre => os_ghost_mbx_are_well_formed,
-      Post => os_ghost_mbx_are_well_formed;
+      Pre    => os_ghost_mbx_are_well_formed,
+      Post   => os_ghost_mbx_are_well_formed;
    pragma Export (C, send, "os_mbx_send");
 
    -------------------------------
@@ -100,6 +100,6 @@ is
    procedure init
    with
       Global => (Output => State),
-      Post => os_ghost_mbx_are_well_formed;
+      Post   => os_ghost_mbx_are_well_formed;
 
 end Moth.Mailbox;

@@ -25,7 +25,6 @@ with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 
 with os_arch;
-with Moth.Current;
 with Moth.Mailbox;
 
 package body Moth.Scheduler with
@@ -34,6 +33,7 @@ package body Moth.Scheduler with
                                task_list_tail,
                                os_ghost_task_list_ready,
                                mbx_mask,
+                               os_task_current,
                                next_task,
                                prev_task))
 is
@@ -89,6 +89,12 @@ is
    --------------
 
    mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
+
+   ---------------------
+   -- os_task_current --
+   ---------------------
+
+   os_task_current : os_task_id_param_t;
 
    -------------------------------------
    -- Ghost variable for task's state --
@@ -146,7 +152,7 @@ is
    ------------------------------------
 
    function os_ghost_current_task_is_ready return Boolean
-   is (os_ghost_task_is_ready (Moth.Current.get_current_task_id));
+   is (os_ghost_task_is_ready (os_task_current));
 
    -------------------------------------
    -- os_ghost_task_is_linked_to_head --
@@ -349,8 +355,8 @@ is
                             next_task,
                             os_ghost_task_list_ready),
                  Input  => (Moth.Config.State)),
-      Pre =>  (os_ghost_task_list_ready (task_id) and then
-               os_ghost_task_list_is_well_formed),
+      Pre =>  os_ghost_task_list_ready (task_id) and then
+               os_ghost_task_list_is_well_formed,
       Post => os_ghost_task_list_ready =
                      os_ghost_task_list_ready'Old'Update (task_id => false) and then
               os_ghost_task_list_is_well_formed
@@ -496,7 +502,7 @@ is
                          next_task,
                          prev_task,
                          os_ghost_task_list_ready),
-              Output => Moth.Current.State,
+              Output => os_task_current,
               Input  => Moth.Config.State),
    Pre => os_ghost_task_list_is_well_formed,
    Post => os_ghost_task_list_ready (task_id) and then
@@ -528,7 +534,7 @@ is
       task_id := task_list_head;
 
       --  Select the elected task as current task.
-      Moth.Current.set_current_task_id (task_id);
+      os_task_current := task_id;
 
       --  Return the ID of the elected task to allow context switch at low
       --  (arch) level
@@ -537,6 +543,13 @@ is
    ----------------
    -- Public API --
    ----------------
+
+   -------------------------
+   -- get_current_task_id --
+   -------------------------
+
+   function get_current_task_id return os_task_id_param_t is
+      (os_task_current);
 
    ------------------
    -- get_mbx_mask --
@@ -557,7 +570,7 @@ is
    begin
       pragma assert (Moth.Mailbox.os_ghost_mbx_are_well_formed);
 
-      task_id := Moth.Current.get_current_task_id;
+      task_id := os_task_current;
 
       tmp_mask := waiting_mask and Moth.Config.get_mbx_permission (task_id);
 
@@ -591,7 +604,7 @@ is
    procedure yield (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := Moth.Current.get_current_task_id;
+      task_id := os_task_current;
 
       --  We remove the current task from the ready list.
       remove_task_from_ready_list (task_id);
@@ -599,23 +612,23 @@ is
       --  We insert it back after the other tasks with same priority.
       add_task_to_ready_list (task_id);
 
-      --  We determine the new task.
+      --  Let's elect the new running task.
       schedule (task_id);
    end yield;
 
-   ---------
-   -- fin --
-   ---------
+   ---------------
+   -- task_exit --
+   ---------------
 
    procedure task_exit (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := Moth.Current.get_current_task_id;
+      task_id := os_task_current;
 
       --  Remove the current task from the ready list.
       remove_task_from_ready_list (task_id);
 
-      --  We determine the new task.
+      --  Let's elect the new running task.
       schedule (task_id);
    end task_exit;
 
@@ -623,16 +636,18 @@ is
    -- init --
    ----------
 
-   procedure Init_State
+   procedure init_state
    with
       Refined_Global => (Output => (task_list_head,
                                     task_list_tail,
                                     os_ghost_task_list_ready,
                                     mbx_mask,
+                                    os_task_current,
                                     next_task,
                                     prev_task)),
       Refined_Post => (task_list_head = OS_TASK_ID_NONE and
                        task_list_tail = OS_TASK_ID_NONE and
+                       os_task_current = OS_TASK_ID_MIN and
                        (for all task_id in os_task_id_param_t'Range =>
                           (next_task (task_id) = OS_TASK_ID_NONE and
                            prev_task (task_id) = OS_TASK_ID_NONE and
@@ -644,13 +659,17 @@ is
       task_list_head := OS_TASK_ID_NONE;
       task_list_tail := OS_TASK_ID_NONE;
 
+      -- Init the current task to a default value (not meaningfull)
+      os_task_current := OS_TASK_ID_MIN;
+
       --  Init the task entry for one task
       next_task := (others => OS_TASK_ID_NONE);
       prev_task := (others => OS_TASK_ID_NONE);
 
+      -- All Mbx mask for tasks are 0
       mbx_mask := (others => 0);
 
-      --  This task list is not ready
+      --  Tasks are not ready
       os_ghost_task_list_ready := (others => False);
    end;
 
@@ -663,7 +682,7 @@ is
       os_arch.space_init;
 
       -- Initialize our state variables
-      Init_State;
+      init_state;
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task

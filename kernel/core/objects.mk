@@ -23,7 +23,6 @@
 
 core-objs-y += moth.o
 core-objs-y += moth-config.o
-core-objs-y += moth-current.o
 core-objs-y += moth-mailbox.o
 core-objs-y += moth-scheduler.o
 core-objs-$(CONFIG_NONE_UART) += os_device_console_none.o
