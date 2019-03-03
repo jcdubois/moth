@@ -22,18 +22,33 @@
 --
 
 with os_arch;
-with Moth.scheduler;
-with Moth.Mailbox;
 
 package body Moth with
    Spark_Mode     => On
 is
 
-   procedure init (task_id : out os_task_id_param_t)
-   with
-      Refined_post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
-                      Moth.Mailbox.os_ghost_mbx_are_well_formed
-   is
+   ----------------------------
+   -- Global Ghost functions --
+   ----------------------------
+
+   function os_ghost_mbx_are_well_formed return Boolean is
+      (Moth.Mailbox.mbx_are_well_formed);
+
+   function os_ghost_task_list_is_well_formed return Boolean is
+      (Moth.Scheduler.task_list_is_well_formed);
+
+   function os_ghost_current_task_is_ready return Boolean is
+      (Moth.Scheduler.current_task_is_ready);
+
+   function os_ghost_task_is_ready
+                     (task_id : in os_task_id_param_t) return Boolean is
+      (Moth.Scheduler.task_is_ready(task_id));
+
+   package body Scheduler is separate;
+
+   package body Mailbox is separate;
+
+   procedure init (task_id : out os_task_id_param_t) is
    begin
       --  Init the console if any
       os_arch.cons_init;

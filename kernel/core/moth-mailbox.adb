@@ -25,9 +25,8 @@ with Interfaces;   use Interfaces;
 with Interfaces.C; use Interfaces.C;
 
 with Moth.Config;
-with Moth.Scheduler;
 
-package body Moth.Mailbox with
+separate (Moth) package body Mailbox with
    SPARK_mode => On,
    Refined_State => (State => (mbx_fifo))
 is
@@ -135,7 +134,6 @@ is
    is (get_mbx_head (task_id) +
        os_mbx_count_t'Pred (get_mbx_count (task_id)))
    with
-      Global => (Input => mbx_fifo),
       Pre => not mbx_is_empty (task_id);
 
    -------------------
@@ -145,7 +143,6 @@ is
 
    procedure inc_mbx_count (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => mbx_fifo),
       Pre => (mbx_fifo (task_id).count < os_mbx_count_t'Last),
       Post => mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => mbx_fifo'Old (task_id).count + 1))
    is
@@ -161,7 +158,6 @@ is
 
    procedure dec_mbx_count (task_id : os_task_id_param_t)
    with
-      Global => (In_Out => mbx_fifo),
       Pre => (not mbx_is_empty (task_id)),
       Post => mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => mbx_fifo'Old (task_id).count - 1))
    is
@@ -180,12 +176,11 @@ is
       src_id  : os_task_id_param_t;
       mbx_msg : os_mbx_msg_t)
    with
-      Global => (In_Out => mbx_fifo),
       Pre  => ((not mbx_is_full (dest_id)) and then
-               os_ghost_mbx_are_well_formed),
+               mbx_are_well_formed),
       Post => ((not mbx_is_empty (dest_id)) and then
                (mbx_fifo = mbx_fifo'Old'Update (dest_id => mbx_fifo'Old (dest_id)'Update (count => mbx_fifo'Old (dest_id).count + 1, head => mbx_fifo'Old (dest_id).head, mbx_array => mbx_fifo'Old (dest_id).mbx_array'Update (get_mbx_tail (dest_id) => mbx_fifo'Old (dest_id).mbx_array (get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))) and then
-               os_ghost_mbx_are_well_formed)
+               mbx_are_well_formed)
    is
       mbx_index : os_mbx_index_t;
    begin
@@ -205,7 +200,6 @@ is
    is (os_task_id_param_t (mbx_fifo (task_id).mbx_array
            (get_mbx_head (task_id) + index).sender_id))
    with
-      Global => (Input => (mbx_fifo)),
       Pre => mbx_fifo (task_id).mbx_array
                   (get_mbx_head (task_id) + index).sender_id
                   in os_task_id_param_t;
@@ -244,13 +238,10 @@ is
       dest_id : in  os_task_id_param_t;
       mbx_msg : in  os_mbx_msg_t)
    with
-      Global => (In_Out => (Moth.Scheduler.State,
-                            mbx_fifo),
-                 Input  => Moth.Config.State),
-      Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
-             os_ghost_mbx_are_well_formed,
-      Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
-              os_ghost_mbx_are_well_formed
+      Pre => Moth.os_ghost_task_list_is_well_formed and
+             mbx_are_well_formed,
+      Post => Moth.os_ghost_task_list_is_well_formed and
+              mbx_are_well_formed
    is
       current        : constant os_task_id_param_t :=
                                 Moth.Scheduler.get_current_task_id;
@@ -265,7 +256,7 @@ is
             mbx_add_message (dest_id, current, mbx_msg);
             if (Moth.Scheduler.get_mbx_mask (dest_id) and
                os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
-               pragma assert (Moth.Scheduler.os_ghost_task_list_is_well_formed);
+               pragma assert (Moth.os_ghost_task_list_is_well_formed);
                Moth.Scheduler.add_task_to_ready_list (dest_id);
             end if;
             status := OS_SUCCESS;
@@ -284,13 +275,10 @@ is
      (status  : out os_status_t;
       mbx_msg : in  os_mbx_msg_t)
    with
-      Global => (In_Out => (Moth.Scheduler.State,
-                            mbx_fifo),
-                 Input  => Moth.Config.State),
-      Pre => Moth.Scheduler.os_ghost_task_list_is_well_formed and
-             os_ghost_mbx_are_well_formed,
-      Post => Moth.Scheduler.os_ghost_task_list_is_well_formed and
-              os_ghost_mbx_are_well_formed
+      Pre => Moth.os_ghost_task_list_is_well_formed and
+             mbx_are_well_formed,
+      Post => Moth.os_ghost_task_list_is_well_formed and
+              mbx_are_well_formed
    is
       ret : os_status_t;
    begin
@@ -361,9 +349,8 @@ is
                 (Unsigned_32'(1), Natural (get_mbx_entry_sender
                 (task_id, index))))) /= 0)
    with
-      Global => (Input => (mbx_fifo, Moth.Scheduler.State)),
       Pre => not mbx_is_empty (task_id) and then
-             os_ghost_mbx_are_well_formed and then
+             mbx_are_well_formed and then
              index < get_mbx_count (task_id) and then
              get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
 
@@ -385,7 +372,7 @@ is
    --  = -1.
    --  Note: Here we have to duplicate the function code in the post condition
    --  in order to be able to support the pragma Inline_For_Proof required
-   --  to help the prover in os_ghost_mbx_are_well_formed() function below.
+   --  to help the prover in mbx_are_well_formed() function below.
 
    function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
       (for all index in os_mbx_index_t'Range =>
@@ -413,11 +400,11 @@ is
       pragma Annotate (GNATprove, Inline_For_Proof,
                        os_ghost_task_mbx_are_well_formed);
 
-   ----------------------------------
-   -- os_ghost_mbx_are_well_formed --
-   ----------------------------------
+   -------------------------
+   -- mbx_are_well_formed --
+   -------------------------
 
-   function os_ghost_mbx_are_well_formed return Boolean is
+   function mbx_are_well_formed return Boolean is
       (for all task_id in os_task_id_param_t'Range =>
          os_ghost_task_mbx_are_well_formed (task_id));
 
@@ -432,10 +419,9 @@ is
    procedure remove_first_mbx
       (task_id    : in os_task_id_param_t)
    with
-      Global => (In_Out => mbx_fifo),
-      Pre  => (not mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
+      Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
       Post => (mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count), head => os_mbx_index_t'Succ (mbx_fifo'Old (task_id).head), mbx_array => mbx_fifo'Old (task_id).mbx_array'Update (os_mbx_index_t'Pred (get_mbx_head (task_id)) => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
-              and os_ghost_mbx_are_well_formed
+              and mbx_are_well_formed
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_head (task_id);
    begin
@@ -457,10 +443,9 @@ is
    procedure remove_last_mbx
       (task_id    : in os_task_id_param_t)
    with
-      Global => (In_Out => mbx_fifo),
-      Pre  => (not mbx_is_empty (task_id)) and os_ghost_mbx_are_well_formed,
+      Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
       Post => (mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count), head => mbx_fifo'Old (task_id).head, mbx_array => mbx_fifo'Old (task_id).mbx_array'Update (mbx_fifo (task_id).head + mbx_fifo (task_id).count => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
-              and os_ghost_mbx_are_well_formed
+              and mbx_are_well_formed
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_tail (task_id);
    begin
@@ -480,18 +465,17 @@ is
       (task_id    : in os_task_id_param_t;
        index      : in os_mbx_count_t)
    with
-      Global => (In_Out => mbx_fifo),
       Pre => (not mbx_is_empty (task_id)) and
-             os_ghost_mbx_are_well_formed and
+             mbx_are_well_formed and
              (index > 0) and
              (index < os_mbx_count_t'Pred (get_mbx_count (task_id))),
-      Post => os_ghost_mbx_are_well_formed and
+      Post => mbx_are_well_formed and
               mbx_fifo (task_id).count = mbx_fifo'Old (task_id).count and
               mbx_fifo (task_id).head = mbx_fifo'Old (task_id).head
    is begin
       for iterator in index ..
                       os_mbx_count_t'Pred (get_mbx_count (task_id)) loop
-         pragma Loop_Invariant (os_ghost_mbx_are_well_formed);
+         pragma Loop_Invariant (mbx_are_well_formed);
          set_mbx_entry (task_id, iterator,
                         get_mbx_entry (task_id,
                                        os_mbx_count_t'Succ (iterator)));
@@ -524,7 +508,7 @@ is
          for iterator in 0 ..
                          os_mbx_count_t'Pred (get_mbx_count (current)) loop
 
-            pragma Loop_Invariant (os_ghost_mbx_are_well_formed and
+            pragma Loop_Invariant (mbx_are_well_formed and
                                    (not mbx_is_empty (current)));
 
             -- This Loop Invariant is a work arround. The prover is unable
@@ -537,7 +521,7 @@ is
                                          mbx_fifo'Loop_Entry);
 
             pragma assert (not mbx_is_empty (current));
-            pragma assert (os_ghost_mbx_are_well_formed);
+            pragma assert (mbx_are_well_formed);
             pragma assert (iterator < get_mbx_count (current));
             pragma assert (get_mbx_entry_sender (current, iterator) in os_task_id_param_t);
 
@@ -591,25 +575,11 @@ is
      (status  : out os_status_t;
       dest_id : in  types.int8_t;
       mbx_msg : in  os_mbx_msg_t)
-   with
-      Refined_Post   => os_ghost_mbx_are_well_formed and
-                        Moth.Scheduler.os_ghost_task_list_is_well_formed
    is
       --  dest_id comes from uncontroled C calls (user space)
       --  We don't make assumptions on its value, so we are testing
       --  all cases.
    begin
-      -- We need the task list to be well formed when calling send (and
-      -- it should be when called from a task). But we cannot express it
-      -- through precondition because "Refined_Pre" is not supported (for
-      -- a reason) and it is not passible to include scheduer specification.
-      -- Using "with Moth.Scheduler" would trigger a circular dependency
-      -- problem and using "limited with Moth.Scheduler" does not give
-      -- visibility on sepcification functions (even the ghost ones).
-      -- So here we just use a "pragma assert" (which is the additionnal
-      -- condition we want for pre condition) to allow for the rest of the
-      -- procedure to be proved.
-      pragma assert (Moth.Scheduler.os_ghost_task_list_is_well_formed);
       if dest_id = OS_TASK_ID_ALL then
          send_all_task (status, mbx_msg);
       elsif dest_id in os_task_id_param_t then
@@ -623,10 +593,7 @@ is
    -- init --
    ----------
 
-   procedure init
-   with
-      Refined_Global => (Output => mbx_fifo)
-   is
+   procedure init is
    begin
       mbx_fifo := (others => (head  => os_mbx_index_t'First,
                               count => os_mbx_count_t'First,
@@ -635,4 +602,4 @@ is
                                              msg => 0))));
    end init;
 
-end Moth.Mailbox;
+end Mailbox;
