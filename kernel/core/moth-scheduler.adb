@@ -28,14 +28,7 @@ with os_arch;
 with Moth.Config;
 
 separate (Moth) package body Scheduler with
-   SPARK_mode => on,
-   Refined_State => (State => (task_list_head,
-                               task_list_tail,
-                               os_ghost_task_list_ready,
-                               mbx_mask,
-                               os_task_current,
-                               next_task,
-                               prev_task))
+   SPARK_mode => on
 is
 
    OS_INTERRUPT_TASK_ID : constant := 0;
@@ -623,13 +616,6 @@ is
 
    procedure init_state
    with
-      Global => (Output => (task_list_head,
-                                    task_list_tail,
-                                    os_ghost_task_list_ready,
-                                    mbx_mask,
-                                    os_task_current,
-                                    next_task,
-                                    prev_task)),
       Post => (task_list_head = OS_TASK_ID_NONE and
                        task_list_tail = OS_TASK_ID_NONE and
                        os_task_current = OS_TASK_ID_MIN and

@@ -27,8 +27,7 @@ with Interfaces.C; use Interfaces.C;
 with Moth.Config;
 
 separate (Moth) package body Mailbox with
-   SPARK_mode => On,
-   Refined_State => (State => (mbx_fifo))
+   SPARK_mode => On
 is
 
    -----------------
@@ -102,19 +101,6 @@ is
      (task_id : os_task_id_param_t) return os_mbx_index_t
    is (mbx_fifo (task_id).head);
 
-   ------------------
-   -- inc_mbx_head --
-   ------------------
-   --  Increment the mbx head index of the given task.
-   --  No contract, it will be inlined
-
-   procedure inc_mbx_head (task_id : os_task_id_param_t)
-   is
-   begin
-      mbx_fifo (task_id).head :=
-              os_mbx_index_t'Succ (get_mbx_head (task_id));
-   end inc_mbx_head;
-
    -------------------
    -- get_mbx_count --
    -------------------
@@ -136,36 +122,6 @@ is
    with
       Pre => not mbx_is_empty (task_id);
 
-   -------------------
-   -- inc_mbx_count --
-   -------------------
-   --  Increment the mbx count of the given task.
-
-   procedure inc_mbx_count (task_id : os_task_id_param_t)
-   with
-      Pre => (mbx_fifo (task_id).count < os_mbx_count_t'Last),
-      Post => mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => mbx_fifo'Old (task_id).count + 1))
-   is
-   begin
-      mbx_fifo (task_id).count :=
-              os_mbx_count_t'Succ (get_mbx_count (task_id));
-   end inc_mbx_count;
-
-   -------------------
-   -- dec_mbx_count --
-   -------------------
-   --  Decrement the mbx count of the given task.
-
-   procedure dec_mbx_count (task_id : os_task_id_param_t)
-   with
-      Pre => (not mbx_is_empty (task_id)),
-      Post => mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => mbx_fifo'Old (task_id).count - 1))
-   is
-   begin
-      mbx_fifo (task_id).count :=
-              os_mbx_count_t'Pred (get_mbx_count (task_id));
-   end dec_mbx_count;
-
    ---------------------
    -- mbx_add_message --
    ---------------------
@@ -182,12 +138,18 @@ is
                (mbx_fifo = mbx_fifo'Old'Update (dest_id => mbx_fifo'Old (dest_id)'Update (count => mbx_fifo'Old (dest_id).count + 1, head => mbx_fifo'Old (dest_id).head, mbx_array => mbx_fifo'Old (dest_id).mbx_array'Update (get_mbx_tail (dest_id) => mbx_fifo'Old (dest_id).mbx_array (get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))) and then
                mbx_are_well_formed)
    is
-      mbx_index : os_mbx_index_t;
+      mbx_index : constant os_mbx_index_t := get_mbx_head (dest_id) + get_mbx_count (dest_id);
    begin
-      inc_mbx_count (dest_id);
-      mbx_index := get_mbx_tail (dest_id);
-      mbx_fifo (dest_id).mbx_array (mbx_index).sender_id := src_id;
-      mbx_fifo (dest_id).mbx_array (mbx_index).msg := mbx_msg;
+      mbx_fifo (dest_id) :=
+         mbx_fifo (dest_id)'Update (
+            -- increment count
+            count => os_mbx_count_t'Succ (mbx_fifo (dest_id).count),
+            -- head doesn't change
+            mbx_array => mbx_fifo (dest_id).mbx_array'Update (
+               -- modifiy the new mbx_entry
+               mbx_index => (
+                  sender_id => src_id,
+                  msg => mbx_msg)));
    end mbx_add_message;
 
    --------------------------
@@ -299,21 +261,6 @@ is
       end loop;
    end send_all_task;
 
-   ---------------------
-   -- clear_mbx_entry --
-   ---------------------
-   --  No contract, it will be inlined
-
-   procedure clear_mbx_entry
-     (task_id   : os_task_id_param_t;
-      mbx_index : os_mbx_index_t)
-   is
-   begin
-      mbx_fifo (task_id).mbx_array (mbx_index).sender_id :=
-                                                               OS_TASK_ID_NONE;
-      mbx_fifo (task_id).mbx_array (mbx_index).msg := 0;
-   end clear_mbx_entry;
-
    -------------------
    -- set_mbx_entry --
    -------------------
@@ -349,7 +296,7 @@ is
                 (Unsigned_32'(1), Natural (get_mbx_entry_sender
                 (task_id, index))))) /= 0)
    with
-      Pre => not mbx_is_empty (task_id) and then
+      Pre => (not mbx_is_empty (task_id)) and then
              mbx_are_well_formed and then
              index < get_mbx_count (task_id) and then
              get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
@@ -358,55 +305,16 @@ is
    --  Ghost functions --
    ----------------------
 
-   ---------------------------------------
-   -- os_ghost_task_mbx_are_well_formed --
-   ---------------------------------------
-   --  mbx are circular FIFO (contained in an array) where head is the index
-   --  of the fisrt element of the FIFO and count is the number of element
-   --  stored in the FIFO.
-   --  When an element of the FIFO is filled its sender_id field needs to be
-   --  >= 0. When an element in the circular FIFO is empty, its sender_if field
-   --  is -1 (OS_TASK_ID_NONE).
-   --  So this condition makes sure that all non empty element of the circular
-   --  FIFO have sender_id >= 0 and empty elements of the FIFO have sender_id
-   --  = -1.
-   --  Note: Here we have to duplicate the function code in the post condition
-   --  in order to be able to support the pragma Inline_For_Proof required
-   --  to help the prover in mbx_are_well_formed() function below.
-
-   function os_ghost_task_mbx_are_well_formed (task_id : os_task_id_param_t) return Boolean is
-      (for all index in os_mbx_index_t'Range =>
-         (if (os_mbx_count_t(index) >= get_mbx_count (task_id))
-          then (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id = OS_TASK_ID_NONE)
-          else (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id in os_task_id_param_t)))
-   with
-      Ghost => true,
-      Post => os_ghost_task_mbx_are_well_formed'Result =
-         (for all index in os_mbx_index_t'Range =>
-            (if (mbx_is_empty (task_id))
-             then (mbx_fifo (task_id).mbx_array (index).sender_id
-                     = OS_TASK_ID_NONE)
-             else (if (((get_mbx_tail (task_id)
-                            < get_mbx_head (task_id)) and
-                        ((index >= get_mbx_head (task_id)) or
-                         (index <= get_mbx_tail (task_id)))) or else
-                       (index in get_mbx_head (task_id) ..
-                                 get_mbx_tail (task_id)))
-                   then (mbx_fifo (task_id).mbx_array (index).sender_id
-                           in os_task_id_param_t)
-                   else (mbx_fifo (task_id).mbx_array (index).sender_id
-                           = OS_TASK_ID_NONE))));
-
-      pragma Annotate (GNATprove, Inline_For_Proof,
-                       os_ghost_task_mbx_are_well_formed);
-
    -------------------------
    -- mbx_are_well_formed --
    -------------------------
 
    function mbx_are_well_formed return Boolean is
       (for all task_id in os_task_id_param_t'Range =>
-         os_ghost_task_mbx_are_well_formed (task_id));
+         (for all index in os_mbx_index_t'Range =>
+            (if (os_mbx_count_t(index) >= get_mbx_count (task_id))
+               then (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id = OS_TASK_ID_NONE)
+               else (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id in os_task_id_param_t))));
 
    ----------------
    -- Public API --
@@ -425,15 +333,18 @@ is
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_head (task_id);
    begin
-      --  remove the first mbx from the mbx queue
-      --  (by clearing the entry).
-      clear_mbx_entry (task_id, mbx_index);
-
-      --  We just increase the mbx head
-      inc_mbx_head (task_id);
-
-      --  decrement the mbx count
-      dec_mbx_count (task_id);
+      mbx_fifo (task_id) :=
+         mbx_fifo (task_id)'Update (count =>
+            -- decrement count
+            os_mbx_count_t'Pred (mbx_fifo (task_id).count),
+                                    head =>
+            -- increment head
+            os_mbx_index_t'Succ (mbx_fifo (task_id).head),
+                                    mbx_array =>
+            -- erase mbx at previous head
+            mbx_fifo (task_id).mbx_array'Update (mbx_index =>
+               (sender_id => OS_TASK_ID_NONE,
+                msg => 0)));
    end remove_first_mbx;
 
    ---------------------
@@ -449,12 +360,16 @@ is
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_tail (task_id);
    begin
-      --  remove the last mbx from the mbx queue
-      --  (by clearing the entry).
-      clear_mbx_entry (task_id, mbx_index);
-
-      --  decrement the mbx count
-      dec_mbx_count (task_id);
+      mbx_fifo (task_id) :=
+         mbx_fifo (task_id)'Update (count =>
+            -- decrement count
+            os_mbx_count_t'Pred (mbx_fifo (task_id).count),
+            -- don't touch head
+            -- erase mbx at mbx tail
+                                    mbx_array =>
+            mbx_fifo (task_id).mbx_array'Update (mbx_index =>
+               (sender_id => OS_TASK_ID_NONE,
+                msg => 0)));
    end remove_last_mbx;
 
    --------------------
@@ -494,6 +409,9 @@ is
       current   : constant os_task_id_param_t :=
                            Moth.Scheduler.get_current_task_id;
    begin
+      pragma assert (mbx_are_well_formed);
+      pragma assert (Moth.os_ghost_mbx_are_well_formed);
+
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
 

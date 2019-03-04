@@ -97,8 +97,7 @@ is
 
    package Scheduler
    with
-      SPARK_mode     => on,
-      Abstract_State => State
+      SPARK_mode     => on
    is
       ---------------------
       -- Ghost functions --
@@ -184,7 +183,6 @@ is
 
       procedure init (task_id : out os_task_id_param_t)
       with
-         Global => (Output => State),
          Post   => Moth.os_ghost_task_list_is_well_formed;
 
    end Scheduler;
@@ -195,8 +193,7 @@ is
 
    package Mailbox
    with
-      SPARK_mode     => on,
-      Abstract_State => State
+      SPARK_mode     => on
    is
       ------------------
       -- Public types --
@@ -261,7 +258,6 @@ is
 
       procedure init
       with
-         Global => (Output => State),
          Post   => Moth.os_ghost_mbx_are_well_formed;
 
    end Mailbox;
