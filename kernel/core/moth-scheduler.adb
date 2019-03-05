@@ -614,18 +614,14 @@ is
    -- init --
    ----------
 
-   procedure init_state
-   with
-      Post => (task_list_head = OS_TASK_ID_NONE and
-                       task_list_tail = OS_TASK_ID_NONE and
-                       os_task_current = OS_TASK_ID_MIN and
-                       (for all task_id in os_task_id_param_t'Range =>
-                          (next_task (task_id) = OS_TASK_ID_NONE and
-                           prev_task (task_id) = OS_TASK_ID_NONE and
-                           mbx_mask (task_id) = 0 and
-                           os_ghost_task_list_ready (task_id) = False)))
+   procedure init (task_id : out os_task_id_param_t)
    is
+      prev_id : os_task_id_param_t := os_task_id_param_t'First;
    begin
+
+      --  Init the MMU
+      os_arch.space_init;
+
       --  Init the task list head to NONE
       task_list_head := OS_TASK_ID_NONE;
       task_list_tail := OS_TASK_ID_NONE;
@@ -642,18 +638,6 @@ is
 
       --  Tasks are not ready
       os_ghost_task_list_ready := (others => False);
-   end;
-
-   procedure init (task_id : out os_task_id_param_t)
-   is
-      prev_id : os_task_id_param_t := os_task_id_param_t'First;
-   begin
-
-      --  Init the MMU
-      os_arch.space_init;
-
-      -- Initialize our state variables
-      init_state;
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task
