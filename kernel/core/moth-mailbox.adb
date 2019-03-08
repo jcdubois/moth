@@ -18,7 +18,7 @@
 --
 --  @file moth-mailbox.adb
 --  @author Jean-Christophe Dubois (jcd@tribudubois.net)
---  @brief Moth Mailbos subsytem
+--  @brief Moth Mailbox subsytem
 --
 
 with Interfaces;   use Interfaces;
@@ -140,16 +140,9 @@ is
    is
       mbx_index : constant os_mbx_index_t := get_mbx_head (dest_id) + get_mbx_count (dest_id);
    begin
-      mbx_fifo (dest_id) :=
-         mbx_fifo (dest_id)'Update (
-            -- increment count
-            count => os_mbx_count_t'Succ (mbx_fifo (dest_id).count),
-            -- head doesn't change
-            mbx_array => mbx_fifo (dest_id).mbx_array'Update (
-               -- modifiy the new mbx_entry
-               mbx_index => (
-                  sender_id => src_id,
-                  msg => mbx_msg)));
+      mbx_fifo (dest_id).count :=  os_mbx_count_t'Succ (mbx_fifo (dest_id).count);
+      mbx_fifo (dest_id).mbx_array (mbx_index).sender_id := src_id;
+      mbx_fifo (dest_id).mbx_array (mbx_index).msg := mbx_msg;
    end mbx_add_message;
 
    --------------------------
@@ -261,20 +254,6 @@ is
    end send_all_task;
 
    -------------------
-   -- set_mbx_entry --
-   -------------------
-   --  No contract, it will be inlined
-
-   procedure set_mbx_entry
-     (task_id   : os_task_id_param_t;
-      index : os_mbx_count_t;
-      mbx_entry : os_mbx_entry_t)
-   is
-   begin
-      mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index) := mbx_entry;
-   end set_mbx_entry;
-
-   -------------------
    -- get_mbx_entry --
    -------------------
 
@@ -332,18 +311,10 @@ is
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_head (task_id);
    begin
-      mbx_fifo (task_id) :=
-         mbx_fifo (task_id)'Update (count =>
-            -- decrement count
-            os_mbx_count_t'Pred (mbx_fifo (task_id).count),
-                                    head =>
-            -- increment head
-            os_mbx_index_t'Succ (mbx_fifo (task_id).head),
-                                    mbx_array =>
-            -- erase mbx at previous head
-            mbx_fifo (task_id).mbx_array'Update (mbx_index =>
-               (sender_id => OS_TASK_ID_NONE,
-                msg => 0)));
+      mbx_fifo (task_id).count := os_mbx_count_t'Pred (mbx_fifo (task_id).count);
+      mbx_fifo (task_id).head := os_mbx_index_t'Succ (mbx_fifo (task_id).head);
+      mbx_fifo (task_id).mbx_array (mbx_index).sender_id := OS_TASK_ID_NONE;
+      mbx_fifo (task_id).mbx_array (mbx_index).msg := 0;
    end remove_first_mbx;
 
    ---------------------
@@ -359,16 +330,9 @@ is
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_tail (task_id);
    begin
-      mbx_fifo (task_id) :=
-         mbx_fifo (task_id)'Update (count =>
-            -- decrement count
-            os_mbx_count_t'Pred (mbx_fifo (task_id).count),
-            -- don't touch head
-            -- erase mbx at mbx tail
-                                    mbx_array =>
-            mbx_fifo (task_id).mbx_array'Update (mbx_index =>
-               (sender_id => OS_TASK_ID_NONE,
-                msg => 0)));
+      mbx_fifo (task_id).count := os_mbx_count_t'Pred (mbx_fifo (task_id).count);
+      mbx_fifo (task_id).mbx_array (mbx_index).sender_id := OS_TASK_ID_NONE;
+      mbx_fifo (task_id).mbx_array (mbx_index).msg := 0;
    end remove_last_mbx;
 
    --------------------
@@ -386,13 +350,17 @@ is
       Post => mbx_are_well_formed and
               mbx_fifo (task_id).count = mbx_fifo'Old (task_id).count and
               mbx_fifo (task_id).head = mbx_fifo'Old (task_id).head
-   is begin
+   is
+      mbx_index   : os_mbx_index_t;
+   begin
       for iterator in index ..
                       os_mbx_count_t'Pred (get_mbx_count (task_id)) loop
          pragma Loop_Invariant (mbx_are_well_formed);
-         set_mbx_entry (task_id, iterator,
-                        get_mbx_entry (task_id,
-                                       os_mbx_count_t'Succ (iterator)));
+
+         mbx_index := get_mbx_head (task_id) + iterator;
+
+         mbx_fifo (task_id).mbx_array (mbx_index) :=
+            mbx_fifo (task_id).mbx_array (os_mbx_index_t'Succ (mbx_index));
       end loop;
    end mbx_shift_down;
 
