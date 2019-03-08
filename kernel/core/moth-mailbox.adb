@@ -218,7 +218,6 @@ is
             mbx_add_message (dest_id, current, mbx_msg);
             if (Moth.Scheduler.get_mbx_mask (dest_id) and
                os_mbx_mask_t (Shift_Left (Unsigned_32'(1), Natural (current)))) /= 0 then
-               pragma assert (Moth.os_ghost_task_list_is_well_formed);
                Moth.Scheduler.add_task_to_ready_list (dest_id);
             end if;
             status := OS_SUCCESS;
@@ -409,8 +408,6 @@ is
       current   : constant os_task_id_param_t :=
                            Moth.Scheduler.get_current_task_id;
    begin
-      pragma assert (mbx_are_well_formed);
-      pragma assert (Moth.os_ghost_mbx_are_well_formed);
 
       mbx_entry.sender_id := OS_TASK_ID_NONE;
       mbx_entry.msg       := 0;
@@ -437,11 +434,6 @@ is
             -- supports branches with exit path.
             pragma Loop_Invariant (mbx_fifo =
                                          mbx_fifo'Loop_Entry);
-
-            pragma assert (not mbx_is_empty (current));
-            pragma assert (mbx_are_well_formed);
-            pragma assert (iterator < get_mbx_count (current));
-            pragma assert (get_mbx_entry_sender (current, iterator) in os_task_id_param_t);
 
             --  is this a mbx we are waiting for
             if is_waiting_mbx_entry (current, iterator) then
