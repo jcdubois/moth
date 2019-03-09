@@ -37,15 +37,6 @@ is
    -- Private API --
    -----------------
 
-   -------------------
-   -- Private types --
-   -------------------
-
-   -- This specific type is used to make sure we exit from recursive
-   -- loop in functions used for proof (Ghost)
-   subtype os_recurs_cnt_t is types.int8_t
-                         range OS_TASK_ID_MIN .. OS_MAX_TASK_CNT;
-
    -----------------------
    -- Private variables --
    -----------------------
@@ -99,40 +90,6 @@ is
    --  Ghost functions --
    ----------------------
 
-   ------------------------------
-   -- os_ghost_not_next_twice --
-   ------------------------------
-   --  A task_id should not be twice in next attribute
-
-   function os_ghost_not_next_twice (task_id : os_task_id_t) return Boolean is
-      (not
-         (for some next_id in os_task_id_param_t'Range =>
-            os_ghost_task_list_ready (next_id) and
-            next_task (next_id) = task_id and
-               (for some next_id2 in os_task_id_param_t'Range =>
-                  next_id2 /= next_id and
-                  os_ghost_task_list_ready (next_id2) and
-                  next_task (next_id2) = task_id)))
-   with
-      Ghost => true;
-
-   ------------------------------
-   -- os_ghost_not_prev_twice --
-   ------------------------------
-   --  A task_id should not be twice in prev attribute
-
-   function os_ghost_not_prev_twice (task_id : os_task_id_t) return Boolean is
-      (not
-         (for some prev_id in os_task_id_param_t'Range =>
-            os_ghost_task_list_ready (prev_id) and
-            prev_task (prev_id) = task_id and
-               (for some prev_id2 in os_task_id_param_t'Range =>
-                  prev_id2 /= prev_id and
-                  os_ghost_task_list_ready (prev_id2) and
-                  prev_task (prev_id2) = task_id)))
-   with
-      Ghost => true;
-
    -------------------
    -- task_is_ready --
    -------------------
@@ -146,58 +103,6 @@ is
 
    function current_task_is_ready return Boolean
    is (task_is_ready (os_task_current));
-
-   -------------------------------------
-   -- os_ghost_task_is_linked_to_head --
-   -------------------------------------
-
-   function os_ghost_task_is_linked_to_head_recurs (task_id : os_task_id_param_t; recursive_count : os_recurs_cnt_t) return Boolean is
-      (recursive_count < OS_MAX_TASK_CNT and then
-       os_ghost_task_list_ready (task_id) and then
-       os_ghost_not_prev_twice (task_id) and then
-          (if prev_task (task_id) = OS_TASK_ID_NONE then
-              (task_list_head = task_id)
-           else
-              (next_task (task_id) /= task_id and
-               prev_task (task_id) /= task_id and
-               prev_task (task_id) /= next_task (task_id) and
-               next_task (prev_task (task_id)) = task_id and
-               Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (prev_task (task_id)) and
-               os_ghost_task_is_linked_to_head_recurs (prev_task (task_id), recursive_count + 1))))
-   with
-      Ghost => true;
-   pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_head_recurs);
-
-   function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t) return Boolean is
-      (os_ghost_task_is_linked_to_head_recurs (task_id, OS_TASK_ID_MIN))
-   with
-      Ghost => true;
-
-   --------------------------------------
-   -- os_ghost_task_is_linked_to_tail --
-   --------------------------------------
-
-   function os_ghost_task_is_linked_to_tail_recurs (task_id : os_task_id_param_t; recursive_count : os_recurs_cnt_t) return Boolean is
-      (recursive_count < OS_MAX_TASK_CNT and then
-       os_ghost_task_list_ready (task_id) and then
-       os_ghost_not_next_twice (task_id) and then
-          (if next_task (task_id) = OS_TASK_ID_NONE then
-              (task_list_tail = task_id)
-           else
-              (next_task (task_id) /= task_id and
-               prev_task (task_id) /= task_id and
-               prev_task (task_id) /= next_task (task_id) and
-               prev_task (next_task (task_id)) = task_id and
-               Moth.Config.get_task_priority (task_id) >= Moth.Config.get_task_priority (next_task (task_id)) and
-               os_ghost_task_is_linked_to_tail_recurs (next_task (task_id), recursive_count + 1))))
-   with
-      Ghost => true;
-   pragma Annotate (GNATprove, Terminating, os_ghost_task_is_linked_to_tail_recurs);
-
-   function os_ghost_task_is_linked_to_tail (task_id : os_task_id_param_t) return Boolean is
-      (os_ghost_task_is_linked_to_tail_recurs (task_id, OS_TASK_ID_MIN))
-   with
-      Ghost => true;
 
    ------------------------------
    -- task_list_is_well_formed --
@@ -220,16 +125,9 @@ is
           (for some task_id in os_task_id_param_t'Range =>
              (os_ghost_task_list_ready (task_id))) and then
           (for all task_id in os_task_id_param_t'Range =>
-             (if os_ghost_task_list_ready (task_id) then
-                -- This is a member of the ready task list
-                (-- the ready task need to be connected to head
-                 os_ghost_task_is_linked_to_head (task_id) and then
-                 -- the ready task need to be connected to tail
-                 os_ghost_task_is_linked_to_tail (task_id))
-              else
+             (if not os_ghost_task_list_ready (task_id) then
                 -- This task is not part of the ready list
-                (os_ghost_task_list_ready (task_id) = false and
-                 -- no next
+                (-- no next
                  next_task (task_id) = OS_TASK_ID_NONE and
                  -- no prev
                  prev_task (task_id) = OS_TASK_ID_NONE)))));
