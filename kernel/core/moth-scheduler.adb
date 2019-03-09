@@ -251,33 +251,18 @@ is
       index_id : os_task_id_t := task_list_head;
    begin
 
-      pragma assert (task_list_is_well_formed);
-
       if index_id = OS_TASK_ID_NONE then
-         -- list head is empty, so the added task needs not to be ready.
-         pragma assert (not os_ghost_task_list_ready (task_id));
-         pragma assert (task_list_tail = OS_TASK_ID_NONE);
-
          --  No task in the ready list. Add this task at list head
          next_task (task_id) := OS_TASK_ID_NONE;
          prev_task (task_id) := OS_TASK_ID_NONE;
          task_list_head := task_id;
          task_list_tail := task_id;
-         os_ghost_task_list_ready (task_id) := true;
-
-         pragma assert (task_list_is_well_formed);
       else
-         -- index_id is list head, so its prec needs to be empty
-         pragma assert (prev_task (index_id) = OS_TASK_ID_NONE);
-
          while index_id /= OS_TASK_ID_NONE loop
             pragma Loop_Invariant (task_list_is_well_formed);
             pragma Loop_Invariant (os_ghost_task_list_ready = os_ghost_task_list_ready'Loop_Entry);
             -- At any step in the loop index_id needs to be ready
-            pragma assert (index_id /= OS_TASK_ID_NONE);
-            pragma assert (os_ghost_task_list_ready (index_id));
             if index_id = task_id then
-               pragma assert (os_ghost_task_list_ready (task_id));
                --  Already in the ready list, nothing to do
                exit;
             elsif Moth.Config.get_task_priority (task_id) >
@@ -288,51 +273,34 @@ is
                   prev_id : constant os_task_id_t :=
                                             prev_task (index_id);
                begin
-                  pragma assert (task_list_is_well_formed);
-
                   prev_task (index_id) := task_id;
                   prev_task (task_id) := prev_id;
                   next_task (task_id) := index_id;
-                  os_ghost_task_list_ready (task_id) := true;
-                  pragma assert (Moth.Config.get_task_priority (task_id) > Moth.Config.get_task_priority (index_id));
 
                   if prev_id = OS_TASK_ID_NONE then
-                     pragma assert (index_id = task_list_head);
                      task_list_head := task_id;
                   else
-                     pragma assert (index_id /= task_list_head);
-                     pragma assert (Moth.Config.get_task_priority (prev_id) >= Moth.Config.get_task_priority (index_id));
-                     pragma assert (Moth.Config.get_task_priority (task_id) >= Moth.Config.get_task_priority (index_id));
-                     pragma assert (Moth.Config.get_task_priority (prev_id) >= Moth.Config.get_task_priority (task_id));
                      next_task (prev_id) := task_id;
                   end if;
 
-                  pragma assert (task_list_is_well_formed);
                   exit;
                end;
             elsif next_task (index_id) = OS_TASK_ID_NONE then
-               pragma assert (task_list_is_well_formed);
-               pragma assert (task_list_tail = index_id);
-               pragma assert (Moth.Config.get_task_priority (task_id) <= Moth.Config.get_task_priority (index_id));
 
                next_task (index_id) := task_id;
                prev_task (task_id)  := index_id;
                next_task (task_id)  := OS_TASK_ID_NONE;
                task_list_tail      := task_id;
-               os_ghost_task_list_ready (task_id) := true;
 
-               pragma assert (task_list_is_well_formed);
                exit;
             else
-               pragma assert (task_list_is_well_formed);
                index_id := next_task (index_id);
             end if;
          end loop;
       end if;
 
-      -- os_ghost_task_list_ready (task_id) := true;
+      os_ghost_task_list_ready (task_id) := true;
 
-      pragma assert (task_list_is_well_formed);
    end add_task_to_ready_list;
 
    ---------------------------------
@@ -351,27 +319,6 @@ is
       next_id : constant os_task_id_t := next_task (task_id);
       prev_id : constant os_task_id_t := prev_task (task_id);
    begin
-      -- As there is a ready task, the list head cannot be empty
-      -- pragma assert (task_list_head /= OS_TASK_ID_NONE);
-      -- pragma assert (task_list_tail /= OS_TASK_ID_NONE);
-      -- pragma assert (os_ghost_task_is_linked_to_tail (task_id));
-      -- pragma assert (os_ghost_task_is_linked_to_head (task_id));
-      if next_id /= OS_TASK_ID_NONE then
-         pragma assert (os_ghost_task_is_linked_to_tail (next_id));
-         pragma assert (os_ghost_task_is_linked_to_head (next_id));
-      end if;
-      -- if prev_id /= OS_TASK_ID_NONE then
-         -- pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
-         -- pragma assert (os_ghost_task_is_linked_to_head (prev_id));
-      -- end if;
-      -- pragma assert (task_list_is_well_formed);
-      -- pragma assert (os_ghost_task_list_ready (task_list_head));
-      -- pragma assert (task_list_is_well_formed);
-      -- pragma assert (os_ghost_task_list_ready (task_list_head));
-      -- pragma assert (os_ghost_task_list_ready (task_list_tail));
-      -- pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
-      -- pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
-      -- pragma assert (task_list_is_well_formed);
 
       next_task (task_id) := OS_TASK_ID_NONE;
       prev_task (task_id) := OS_TASK_ID_NONE;
@@ -379,103 +326,46 @@ is
       os_ghost_task_list_ready (task_id) := false;
 
       if task_id = task_list_tail then
-         -- As task_id is the list tail, its next needs to be empty.
-         pragma assert (next_id = OS_TASK_ID_NONE);
 
          -- Set the new list tail (the prev from the removed task)
          -- Note: prev could be set to OS_TASK_ID_NONE
          task_list_tail := prev_id;
 
          if prev_id /= OS_TASK_ID_NONE then
-            -- prev is a valid task and needs to be ready
-            pragma assert (os_ghost_task_list_ready (prev_id));
 
             -- The new list tail [prev] has no next
             next_task (prev_id) := OS_TASK_ID_NONE;
 
-            -- pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
-         -- else
-            -- pragma assert (for all id in os_task_id_param_t'Range =>
-                           -- next_task (id) = OS_TASK_ID_NONE);
-            -- pragma assert (for all id in os_task_id_param_t'Range =>
-                           -- prev_task (id) = OS_TASK_ID_NONE);
-            -- pragma assert (for all id in os_task_id_param_t'Range =>
-                           -- os_ghost_task_list_ready (id) = false);
          end if;
       else
          --  The list is not empty and the task is not at the list tail.
 
-         --  task_id need to have a valid next as it is not at list tail
-         pragma assert (next_id /= OS_TASK_ID_NONE);
-
-         --  next is valid and it needs to be ready
-         pragma assert (os_ghost_task_list_ready (next_id));
-
-         --  for now the prev of next is task_id
-         pragma assert (prev_task (next_id) = task_id);
-
-         -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
          --  link prev from next task to our prev
          prev_task (next_id) := prev_id;
 
-         -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
       end if;
 
       if task_id = task_list_head then
-         -- As task_id is the list head, its prev needs to be empty.
-         pragma assert (prev_id = OS_TASK_ID_NONE);
 
          -- Set the new list head (the next from the removed task)
          -- Note: next could be set to OS_TASK_ID_NONE
          task_list_head := next_id;
 
          if next_id /= OS_TASK_ID_NONE then
-            -- next is a valid task and needs to be ready
-            pragma assert (os_ghost_task_list_ready (next_id));
-            pragma assert (task_list_tail /= OS_TASK_ID_NONE);
 
             -- The new list head [next] has no prev
             prev_task (next_id) := OS_TASK_ID_NONE;
 
-            pragma assert (os_ghost_task_is_linked_to_tail (next_id));
-            pragma assert (os_ghost_task_is_linked_to_head (next_id));
-            pragma assert (os_ghost_task_is_linked_to_tail (task_list_head));
-            pragma assert (os_ghost_task_is_linked_to_head (task_list_tail));
-            pragma assert (task_list_is_well_formed);
-         else
-            -- The list is now empty. We can check all tasks are not ready
-            -- and that they are not part of any ready list.
-            pragma assert (task_list_head = OS_TASK_ID_NONE);
-            pragma assert (task_list_tail = OS_TASK_ID_NONE);
-            pragma assert (for all id in os_task_id_param_t'Range =>
-                           next_task (id) = OS_TASK_ID_NONE);
-            pragma assert (for all id in os_task_id_param_t'Range =>
-                           prev_task (id) = OS_TASK_ID_NONE);
-            pragma assert (for all id in os_task_id_param_t'Range =>
-                           os_ghost_task_list_ready (id) = false);
-            pragma assert (task_list_is_well_formed);
          end if;
 
-         pragma assert (task_list_is_well_formed);
       else
          --  The list is not empty and the task is not at the list head.
-
-         --  task_id need to have a valid prev as it is not at list head
-         pragma assert (prev_id /= OS_TASK_ID_NONE);
-
-         --  prev is valid and it needs to be ready
-         pragma assert (os_ghost_task_list_ready (prev_id));
 
          --  link next from prev task to our next
          next_task (prev_id) := next_id;
 
-         -- pragma assert (os_ghost_task_is_linked_to_tail (next_id));
-         pragma assert (os_ghost_task_is_linked_to_tail (prev_id));
-         pragma assert (os_ghost_task_is_linked_to_head (prev_id));
-         pragma assert (task_list_is_well_formed);
       end if;
 
-      pragma assert (task_list_is_well_formed);
    end remove_task_from_ready_list;
 
    --------------
@@ -625,9 +515,6 @@ is
       --  Init the task list head to NONE
       task_list_head := OS_TASK_ID_NONE;
       task_list_tail := OS_TASK_ID_NONE;
-
-      -- Init the current task to a default value (not meaningfull)
-      os_task_current := OS_TASK_ID_MIN;
 
       --  Init the task entry for one task
       next_task := (others => OS_TASK_ID_NONE);
