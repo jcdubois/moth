@@ -112,13 +112,13 @@ is
               -- no prev for all task
               prev_task (task_id) = OS_TASK_ID_NONE and
               -- and all tasks are not in ready state
-              os_ghost_task_list_ready (task_id) = false)))
+              task_is_ready (task_id) = false)))
        else -- There is at least one task in the ready list
          (-- At least one task is ready.
           (for some task_id in os_task_id_param_t'Range =>
-             (os_ghost_task_list_ready (task_id))) and then
+             (task_is_ready (task_id))) and then
           (for all task_id in os_task_id_param_t'Range =>
-             (if not os_ghost_task_list_ready (task_id) then
+             (if not task_is_ready (task_id) then
                 -- This task is not part of the ready list
                 (-- no next
                  next_task (task_id) = OS_TASK_ID_NONE and
@@ -199,7 +199,7 @@ is
    procedure remove_task_from_ready_list
      (task_id : os_task_id_param_t)
    with
-      Pre =>  os_ghost_task_list_ready (task_id) and then
+      Pre =>  task_is_ready (task_id) and then
                task_list_is_well_formed,
       Post => os_ghost_task_list_ready =
                      os_ghost_task_list_ready'Old'Update (task_id => false) and then
@@ -251,7 +251,7 @@ is
    procedure schedule (task_id : out os_task_id_param_t)
    with
       Pre => task_list_is_well_formed,
-      Post => os_ghost_task_list_ready (task_id) and then
+      Post => task_is_ready (task_id) and then
               task_list_head = task_id and then
               task_list_is_well_formed
    is
