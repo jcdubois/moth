@@ -62,12 +62,6 @@ is
 
    task_list_head : os_task_id_t;
 
-   -----------------------------
-   -- task_list_tail --
-   -----------------------------
-
-   task_list_tail : os_task_id_t;
-
    --------------
    -- mbx_mask --
    --------------
@@ -110,8 +104,7 @@ is
 
    function task_list_is_well_formed return Boolean is
       (if task_list_head = OS_TASK_ID_NONE then
-         (-- tail is empty like head
-          task_list_tail = OS_TASK_ID_NONE and
+         (
           (-- there is no ready task
           for all task_id in os_task_id_param_t'Range =>
              (-- no next for all task
@@ -154,7 +147,6 @@ is
          next_task (task_id) := OS_TASK_ID_NONE;
          prev_task (task_id) := OS_TASK_ID_NONE;
          task_list_head := task_id;
-         task_list_tail := task_id;
       else
          while index_id /= OS_TASK_ID_NONE loop
             pragma Loop_Invariant (task_list_is_well_formed);
@@ -188,7 +180,6 @@ is
                next_task (index_id) := task_id;
                prev_task (task_id)  := index_id;
                next_task (task_id)  := OS_TASK_ID_NONE;
-               task_list_tail      := task_id;
 
                exit;
             else
@@ -223,30 +214,10 @@ is
 
       os_ghost_task_list_ready (task_id) := false;
 
-      if task_id = task_list_tail then
-
-         -- Set the new list tail (the prev from the removed task)
-         -- Note: prev could be set to OS_TASK_ID_NONE
-         task_list_tail := prev_id;
-
-         if prev_id /= OS_TASK_ID_NONE then
-
-            -- The new list tail [prev] has no next
-            next_task (prev_id) := OS_TASK_ID_NONE;
-
-         end if;
-      else
-         --  The list is not empty and the task is not at the list tail.
-
-         --  link prev from next task to our prev
-         prev_task (next_id) := prev_id;
-
-      end if;
-
       if task_id = task_list_head then
 
          -- Set the new list head (the next from the removed task)
-         -- Note: next could be set to OS_TASK_ID_NONE
+         -- Note: next_id could be set to OS_TASK_ID_NONE
          task_list_head := next_id;
 
          if next_id /= OS_TASK_ID_NONE then
@@ -261,6 +232,13 @@ is
 
          --  link next from prev task to our next
          next_task (prev_id) := next_id;
+
+         if next_id /= OS_TASK_ID_NONE then
+
+            --  link prev from next task to our prev
+            prev_task (next_id) := prev_id;
+
+         end if;
 
       end if;
 
@@ -412,7 +390,6 @@ is
 
       --  Init the task list head to NONE
       task_list_head := OS_TASK_ID_NONE;
-      task_list_tail := OS_TASK_ID_NONE;
 
       --  Init the task entry for one task
       next_task := (others => OS_TASK_ID_NONE);
