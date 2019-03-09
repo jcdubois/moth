@@ -68,11 +68,11 @@ is
 
    mbx_mask : array (os_task_id_param_t) of os_mbx_mask_t;
 
-   ---------------------
-   -- os_task_current --
-   ---------------------
+   ------------------
+   -- current_task --
+   ------------------
 
-   os_task_current : os_task_id_param_t;
+   current_task : os_task_id_param_t;
 
    -------------------------------------
    -- Ghost variable for task's state --
@@ -96,7 +96,7 @@ is
    ---------------------------
 
    function current_task_is_ready return Boolean
-   is (task_is_ready (os_task_current));
+   is (task_is_ready (current_task));
 
    ------------------------------
    -- task_list_is_well_formed --
@@ -280,7 +280,7 @@ is
       task_id := task_list_head;
 
       --  Select the elected task as current task.
-      os_task_current := task_id;
+      current_task := task_id;
 
       --  Return the ID of the elected task to allow context switch at low
       --  (arch) level
@@ -295,7 +295,7 @@ is
    -------------------------
 
    function get_current_task_id return os_task_id_param_t is
-      (os_task_current);
+      (current_task);
 
    ------------------
    -- get_mbx_mask --
@@ -314,7 +314,7 @@ is
    is
       tmp_mask : os_mbx_mask_t;
    begin
-      task_id := os_task_current;
+      task_id := current_task;
 
       tmp_mask := waiting_mask and Moth.Config.get_mbx_permission (task_id);
 
@@ -348,7 +348,7 @@ is
    procedure yield (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := os_task_current;
+      task_id := current_task;
 
       --  We remove the current task from the ready list.
       remove_task_from_ready_list (task_id);
@@ -367,7 +367,7 @@ is
    procedure task_exit (task_id : out os_task_id_param_t)
    is
    begin
-      task_id := os_task_current;
+      task_id := current_task;
 
       --  Remove the current task from the ready list.
       remove_task_from_ready_list (task_id);
