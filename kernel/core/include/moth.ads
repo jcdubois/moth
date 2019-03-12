@@ -21,6 +21,14 @@
 --  @brief Moth base types and init function.
 --
 
+-- pragma Unevaluated_Use_Of_Old (Allow);
+
+with Ada.Containers.Formal_Ordered_Sets;
+with Ada.Containers.Functional_Sets;
+with Ada.Containers;
+
+use type Ada.Containers.Count_Type;
+
 with types;
 with OpenConf;
 
@@ -99,6 +107,56 @@ is
    with
       SPARK_mode     => on
    is
+
+      package M
+      with
+         Ghost,
+         Initializes => Model,
+         Initial_Condition =>
+          (Length (Model.Ready) = 0 and then
+           Length (Model.Idle) = OS_MAX_TASK_CNT and then
+           (for all task_id in os_task_id_param_t =>
+                               Contains (Model.Idle, task_id)))
+      is
+
+         function "<" (Left, Right : os_task_id_param_t) return Boolean;
+
+         package S1 is new Ada.Containers.Formal_Ordered_Sets
+            (Element_Type => os_task_id_param_t);
+         use S1;
+
+         package S2 is new Ada.Containers.Functional_Sets
+            (Element_Type => os_task_id_param_t);
+         use S2;
+
+         type T is record
+            -- Idle tasks are unordered. So they are modeled as a set
+            Idle  : S2.Set;
+            -- Ready tasks are ordered. So they are modeled as an ordered set
+            Ready : S1.Set (OS_MAX_TASK_CNT);
+         end record;
+
+         function "=" (X, Y : T) return Boolean;
+
+         Model : T;
+
+         function os_ghost_task_list_is_well_formed return Boolean;
+
+         procedure enable_task (task_id : os_task_id_param_t)
+         with
+            Pre => os_ghost_task_list_is_well_formed;
+
+         procedure disable_task (task_id : os_task_id_param_t)
+         with
+            Pre => os_ghost_task_list_is_well_formed;
+
+      end M;
+
+      use M;
+      use M.S1;
+      use M.S2;
+
+
       ---------------------
       -- Ghost functions --
       ---------------------

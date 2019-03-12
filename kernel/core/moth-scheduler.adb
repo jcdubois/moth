@@ -27,7 +27,8 @@ with Interfaces.C; use Interfaces.C;
 with os_arch;
 with Moth.Config;
 
-separate (Moth) package body Scheduler with
+separate (Moth) package body Scheduler
+with
    SPARK_mode => on
 is
 
@@ -74,11 +75,76 @@ is
 
    current_task : os_task_id_param_t;
 
-   -------------------------------------
-   -- Ghost variable for task's state --
-   -------------------------------------
+   package body M is
 
-   os_ghost_task_list_ready : array (os_task_id_param_t) of Boolean with Ghost;
+      function "<" (Left, Right : os_task_id_param_t) return Boolean is
+         (Moth.Config.get_task_priority (Left)
+               < Moth.Config.get_task_priority (Right));
+
+      function "=" (X, Y : T) return Boolean is
+         (X.Idle = Y.Idle and then X.Ready = Y.Ready);
+
+      function os_ghost_task_list_is_well_formed return Boolean is
+        (Length (Model.Idle) <= OS_MAX_TASK_CNT and then
+         Length (Model.Ready) <= OS_MAX_TASK_CNT and then
+         Length (Model.Idle) + Length (Model.Ready) = OS_MAX_TASK_CNT and then
+         (if Length (Model.Ready) = 0
+             then task_list_head = OS_TASK_ID_NONE
+             else task_list_head = First_Element (Model.Ready) and
+                  prev_task (First_Element (Model.Ready)) = OS_TASK_ID_NONE) and then
+         (for all task_id of Model.Ready =>
+              next_task (task_id) =
+                 (if task_id = Last_Element (Model.Ready)
+                    then OS_TASK_ID_NONE
+                    else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, task_id)))) and then
+              prev_task (task_id) =
+                 (if task_id = First_Element (Model.Ready)
+                    then OS_TASK_ID_NONE
+                    else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, task_id))))) and then
+         (for all task_id in os_task_id_param_t =>
+            (if Contains (Model.Ready, task_id)
+               then not Contains (Model.Idle, task_id)
+               else (Contains (Model.Idle, task_id) and then
+                     next_task (task_id) = OS_TASK_ID_NONE and then
+                     prev_task (task_id) = OS_TASK_ID_NONE))));
+
+      procedure enable_task (task_id : os_task_id_param_t) is
+      begin
+         if Contains (Model.Idle, task_id) then
+            pragma assert (not Contains (Model.Ready, task_id));
+            Model.Idle := Remove (Model.Idle, task_id);
+            Insert (Model.Ready, task_id);
+         end if;
+         pragma assert (Contains (Model.Ready, task_id));
+         pragma assert (not Contains (Model.Idle, task_id));
+      end enable_task;
+
+      procedure disable_task (task_id : os_task_id_param_t) is
+      begin
+         if Contains (Model.Ready, task_id) then
+            pragma assert (not Contains (Model.Idle, task_id));
+            Model.Idle := Add (Model.Idle, task_id);
+            Delete (Model.Ready, task_id);
+         end if;
+         pragma assert (Contains (Model.Idle, task_id));
+         pragma assert (not Contains (Model.Ready, task_id));
+      end disable_task;
+
+   begin
+      Clear (Model.Ready);
+      pragma Assert (Length (Model.Idle) = 0);
+      pragma Assert (Is_Empty (Model.Idle));
+      for task_id in os_task_id_param_t loop
+         pragma assert (not Contains (Model.Idle, task_id));
+         pragma assert (not Contains (Model.Ready, task_id));
+         Model.Idle := Add (Model.Idle, task_id);
+         pragma Loop_Invariant (Length (Model.Ready) = 0);
+         pragma Loop_Invariant (Integer (Length (Model.Idle)) = Natural (task_id) + 1);
+         pragma Loop_Invariant (for all id2 in OS_TASK_ID_MIN .. task_id
+                                   => Contains (Model.Idle, id2));
+      end loop;
+      pragma Assert (Length (Model.Idle) = OS_MAX_TASK_CNT);
+   end M;
 
    ----------------------
    --  Ghost functions --
@@ -89,7 +155,7 @@ is
    -------------------
 
    function task_is_ready (task_id : os_task_id_param_t) return Boolean
-   is (os_ghost_task_list_ready (task_id));
+   is (Contains (M.Model.Ready, task_id));
 
    ---------------------------
    -- current_task_is_ready --
@@ -103,31 +169,7 @@ is
    ------------------------------
 
    function task_list_is_well_formed return Boolean is
-      (if task_list_head = OS_TASK_ID_NONE then
-         (
-          (-- there is no ready task
-          for all task_id in os_task_id_param_t'Range =>
-             (-- no next for all task
-              next_task (task_id) = OS_TASK_ID_NONE and
-              -- no prev for all task
-              prev_task (task_id) = OS_TASK_ID_NONE and
-              -- and all tasks are not in ready state
-              task_is_ready (task_id) = false)))
-       else -- There is at least one task in the ready list
-         (-- At least one task is ready.
-          (for some task_id in os_task_id_param_t'Range =>
-             (task_is_ready (task_id))) and then
-          (for all task_id in os_task_id_param_t'Range =>
-             (if not task_is_ready (task_id) then
-                -- This task is not part of the ready list
-                (-- no next
-                 next_task (task_id) = OS_TASK_ID_NONE and
-                 -- no prev
-                 prev_task (task_id) = OS_TASK_ID_NONE)))));
-
-   ----------------------------------
-   -- Private functions/procedures --
-   ----------------------------------
+      (M.os_ghost_task_list_is_well_formed);
 
    ----------------------------
    -- add_task_to_ready_list --
@@ -135,9 +177,8 @@ is
 
    procedure add_task_to_ready_list (task_id : os_task_id_param_t)
    with
-      Refined_Post => os_ghost_task_list_ready =
-                os_ghost_task_list_ready'Old'Update (task_id => true) and then
-                task_list_is_well_formed
+      Refined_Post => Contains (M.Model.Ready, task_id) and then
+                      task_list_is_well_formed
    is
       index_id : os_task_id_t := task_list_head;
    begin
@@ -150,7 +191,6 @@ is
       else
          while index_id /= OS_TASK_ID_NONE loop
             pragma Loop_Invariant (task_list_is_well_formed);
-            pragma Loop_Invariant (os_ghost_task_list_ready = os_ghost_task_list_ready'Loop_Entry);
             -- At any step in the loop index_id needs to be ready
             if index_id = task_id then
                --  Already in the ready list, nothing to do
@@ -188,7 +228,7 @@ is
          end loop;
       end if;
 
-      os_ghost_task_list_ready (task_id) := true;
+      M.enable_task (task_id);
 
    end add_task_to_ready_list;
 
@@ -200,9 +240,8 @@ is
      (task_id : os_task_id_param_t)
    with
       Pre =>  task_is_ready (task_id) and then
-               task_list_is_well_formed,
-      Post => os_ghost_task_list_ready =
-                     os_ghost_task_list_ready'Old'Update (task_id => false) and then
+              task_list_is_well_formed,
+      Post => Contains (M.Model.Idle, task_id) and then
               task_list_is_well_formed
    is
       next_id : constant os_task_id_t := next_task (task_id);
@@ -212,7 +251,7 @@ is
       next_task (task_id) := OS_TASK_ID_NONE;
       prev_task (task_id) := OS_TASK_ID_NONE;
 
-      os_ghost_task_list_ready (task_id) := false;
+      M.disable_task (task_id);
 
       if task_id = task_list_head then
 
@@ -397,9 +436,6 @@ is
 
       -- All Mbx mask for tasks are 0
       mbx_mask := (others => 0);
-
-      --  Tasks are not ready
-      os_ghost_task_list_ready := (others => False);
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task
