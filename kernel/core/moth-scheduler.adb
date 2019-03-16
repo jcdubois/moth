@@ -79,7 +79,16 @@ is
 
       function "<" (Left, Right : os_task_id_param_t) return Boolean is
          (Moth.Config.get_task_priority (Left)
-               < Moth.Config.get_task_priority (Right));
+               < Moth.Config.get_task_priority (Right))
+      with
+         -- The comparison function for a Formal_Ordered_Sets should not rely
+         -- on Globals (Globals => null). Here our functions uses
+         -- Moth.Config.get_task_priority and therefore some constant (RO)
+         -- variables from Moth.Config. It shall be OK but this is not what is
+         -- expected for Formal_Ordered_Sets. So we set "Spark_Mode" to "Off"
+         -- for this function to prevent SPARK from complaining that we do not
+         -- comply with the specificatin.
+         Spark_Mode => Off;
 
       function "=" (X, Y : T) return Boolean is
          (X.Idle = Y.Idle and then X.Ready = Y.Ready);
