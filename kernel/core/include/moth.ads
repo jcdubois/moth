@@ -24,7 +24,6 @@
 -- pragma Unevaluated_Use_Of_Old (Allow);
 
 with Ada.Containers.Formal_Ordered_Sets;
-with Ada.Containers.Functional_Sets;
 with Ada.Containers;
 
 use type Ada.Containers.Count_Type;
@@ -119,49 +118,51 @@ is
                                Contains (Model.Idle, task_id)))
       is
 
-         function "<" (Left, Right : os_task_id_param_t) return Boolean
+         function ready_lt (Left, Right : os_task_id_param_t) return Boolean
          with
             Global => null;
-	 -- We tells the prover that this function is terminating because
-	 -- we will have to disable the prover in the body of this function
-	 -- as the boby is not complying with the specification and is
-	 -- accessing some global constants
-         pragma Annotate (GNATprove, Terminating, "<");
+         -- We tells the prover that this function is terminating because
+         -- we will have to disable the prover in the body of this function
+         -- as the boby is not complying with the specification and is
+         -- accessing some global constants
+         pragma Annotate (GNATprove, Terminating, ready_lt);
 
-         package S1 is new Ada.Containers.Formal_Ordered_Sets
-            (Element_Type => os_task_id_param_t);
-         use S1;
+         package ready_list_t is new Ada.Containers.Formal_Ordered_Sets
+            (Element_Type => os_task_id_param_t,
+             "<" => ready_lt);
+         use ready_list_t;
 
-         package S2 is new Ada.Containers.Functional_Sets
-            (Element_Type => os_task_id_param_t);
-         use S2;
+         function idle_lt (Left, Right : os_task_id_param_t) return Boolean;
+
+         package idle_list_t is new Ada.Containers.Formal_Ordered_Sets
+            (Element_Type => os_task_id_param_t,
+             "<" => idle_lt);
+         use idle_list_t;
 
          type T is record
             -- Idle tasks are unordered. So they are modeled as a set
-            Idle  : S2.Set;
+            Idle  : idle_list_t.Set (OS_MAX_TASK_CNT);
             -- Ready tasks are ordered. So they are modeled as an ordered set
-            Ready : S1.Set (OS_MAX_TASK_CNT);
+            Ready : ready_list_t.Set (OS_MAX_TASK_CNT);
          end record;
-
-         function "=" (X, Y : T) return Boolean;
 
          Model : T;
 
          function os_ghost_task_list_is_well_formed return Boolean;
 
-         procedure enable_task (task_id : os_task_id_param_t)
+         procedure init
          with
-            Pre => os_ghost_task_list_is_well_formed;
-
-         procedure disable_task (task_id : os_task_id_param_t)
-         with
-            Pre => os_ghost_task_list_is_well_formed;
+            Post => (Length (Model.Idle) = OS_MAX_TASK_CNT and
+                     Length (Model.Ready) = 0) and then
+                     (for all task_id in os_task_id_param_t =>
+                         (Contains (Model.Idle, task_id) and
+                          not Contains (Model.Ready, task_id)));
 
       end M;
 
       use M;
-      use M.S1;
-      use M.S2;
+      use M.ready_list_t;
+      use M.idle_list_t;
 
 
       ---------------------
@@ -188,7 +189,8 @@ is
       procedure add_task_to_ready_list (task_id : in os_task_id_param_t)
       with
          Pre    => Moth.os_ghost_task_list_is_well_formed,
-         Post   => Moth.os_ghost_task_list_is_well_formed;
+         Post   => Moth.os_ghost_task_list_is_well_formed and then
+                   Moth.os_ghost_task_is_ready (task_id);
 
       ----------
       -- wait --
@@ -197,12 +199,12 @@ is
       procedure wait (task_id      : out os_task_id_param_t;
                       waiting_mask :     os_mbx_mask_t)
       with
-         Pre    => Moth.os_ghost_task_list_is_well_formed and
-                   Moth.os_ghost_mbx_are_well_formed and
-                   Moth.os_ghost_current_task_is_ready,
-         Post   => Moth.os_ghost_task_list_is_well_formed and
-                   Moth.os_ghost_mbx_are_well_formed and
-                   Moth.os_ghost_task_is_ready (task_id);
+         Pre    => Moth.os_ghost_mbx_are_well_formed and
+                   (Moth.os_ghost_task_list_is_well_formed and then
+                    Moth.os_ghost_current_task_is_ready),
+         Post   => Moth.os_ghost_mbx_are_well_formed and 
+                   (Moth.os_ghost_task_list_is_well_formed and then
+                    Moth.os_ghost_task_is_ready (task_id));
       pragma Export (C, wait, "os_sched_wait");
 
       -----------
@@ -211,9 +213,9 @@ is
 
       procedure yield (task_id : out os_task_id_param_t)
       with
-         Pre    => Moth.os_ghost_task_list_is_well_formed and
+         Pre    => Moth.os_ghost_task_list_is_well_formed and then
                    Moth.os_ghost_current_task_is_ready,
-         Post   => Moth.os_ghost_task_list_is_well_formed and
+         Post   => Moth.os_ghost_task_list_is_well_formed and then
                    Moth.os_ghost_task_is_ready (task_id);
       pragma Export (C, yield, "os_sched_yield");
 
@@ -223,9 +225,9 @@ is
 
       procedure task_exit (task_id : out os_task_id_param_t)
       with
-         Pre    => Moth.os_ghost_task_list_is_well_formed and
+         Pre    => Moth.os_ghost_task_list_is_well_formed and then
                    Moth.os_ghost_current_task_is_ready,
-         Post   => Moth.os_ghost_task_list_is_well_formed and
+         Post   => Moth.os_ghost_task_list_is_well_formed and then
                    Moth.os_ghost_task_is_ready (task_id);
       pragma Export (C, task_exit, "os_sched_exit");
 

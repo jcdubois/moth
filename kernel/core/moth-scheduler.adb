@@ -77,7 +77,7 @@ is
 
    package body M is
 
-      function "<" (Left, Right : os_task_id_param_t) return Boolean is
+      function ready_lt (Left, Right : os_task_id_param_t) return Boolean is
          (Moth.Config.get_task_priority (Left)
                < Moth.Config.get_task_priority (Right))
       with
@@ -90,69 +90,61 @@ is
          -- comply with the specificatin.
          Spark_Mode => Off;
 
-      function "=" (X, Y : T) return Boolean is
-         (X.Idle = Y.Idle and then X.Ready = Y.Ready);
+      function idle_lt (Left, Right : os_task_id_param_t) return Boolean is
+         (Left < Right);
 
       function os_ghost_task_list_is_well_formed return Boolean is
-        (Length (Model.Idle) <= OS_MAX_TASK_CNT and then
-         Length (Model.Ready) <= OS_MAX_TASK_CNT and then
-         Length (Model.Idle) + Length (Model.Ready) = OS_MAX_TASK_CNT and then
-         (if Length (Model.Ready) = 0
-             then task_list_head = OS_TASK_ID_NONE
-             else task_list_head = First_Element (Model.Ready) and
-                  prev_task (First_Element (Model.Ready)) = OS_TASK_ID_NONE) and then
-         (for all task_id of Model.Ready =>
-              next_task (task_id) =
-                 (if task_id = Last_Element (Model.Ready)
-                    then OS_TASK_ID_NONE
-                    else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, task_id)))) and then
-              prev_task (task_id) =
-                 (if task_id = First_Element (Model.Ready)
-                    then OS_TASK_ID_NONE
-                    else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, task_id))))) and then
-         (for all task_id in os_task_id_param_t =>
-            (if Contains (Model.Ready, task_id)
-               then not Contains (Model.Idle, task_id)
-               else (Contains (Model.Idle, task_id) and then
-                     next_task (task_id) = OS_TASK_ID_NONE and then
-                     prev_task (task_id) = OS_TASK_ID_NONE))));
-
-      procedure enable_task (task_id : os_task_id_param_t) is
+         ((Length (Model.Idle) <= OS_MAX_TASK_CNT) and then
+          (Length (Model.Ready) <= OS_MAX_TASK_CNT) and then
+          (Length (Model.Idle) + Length (Model.Ready) = OS_MAX_TASK_CNT) and then
+          (for all task_id in os_task_id_param_t =>
+              ((Contains (Model.Idle, task_id) and then
+                not Contains (Model.Ready, task_id)) or
+               (Contains (Model.Ready, task_id) and then
+                not Contains (Model.Idle, task_id)))) and then
+          (if Length (Model.Ready) = 0
+              then (task_list_head = OS_TASK_ID_NONE)
+              else (task_list_head = First_Element (Model.Ready) and
+                    prev_task (First_Element (Model.Ready)) = OS_TASK_ID_NONE)) and then
+          (for all task_id of Model.Ready =>
+              ((next_task (task_id) =
+                  (if task_id = Last_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, task_id))))) and then
+               (prev_task (task_id) =
+                  (if task_id = First_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, task_id))))) and then
+               Contains (Model.Ready, task_id) and then
+               (not Contains (Model.Idle, task_id)))) and then
+          (for all task_id of Model.Idle =>
+              (not Contains (Model.Ready, task_id) and then
+               Contains (Model.Idle, task_id) and then
+               next_task (task_id) = OS_TASK_ID_NONE and then
+               prev_task (task_id) = OS_TASK_ID_NONE)));
+               
+      procedure init is
       begin
-         if Contains (Model.Idle, task_id) then
-            pragma assert (not Contains (Model.Ready, task_id));
-            Model.Idle := Remove (Model.Idle, task_id);
-            Insert (Model.Ready, task_id);
-         end if;
-         pragma assert (Contains (Model.Ready, task_id));
-         pragma assert (not Contains (Model.Idle, task_id));
-      end enable_task;
 
-      procedure disable_task (task_id : os_task_id_param_t) is
-      begin
-         if Contains (Model.Ready, task_id) then
+         Clear (Model.Ready);
+
+         Clear (Model.Idle);
+
+         for task_id in os_task_id_param_t loop
             pragma assert (not Contains (Model.Idle, task_id));
-            Model.Idle := Add (Model.Idle, task_id);
-            Delete (Model.Ready, task_id);
-         end if;
-         pragma assert (Contains (Model.Idle, task_id));
-         pragma assert (not Contains (Model.Ready, task_id));
-      end disable_task;
+            Insert (Model.Idle, task_id);
+            -- pragma Loop_Invariant (Integer (Length (Model.Idle))
+                                            -- = Natural (task_id) + 1);
+            -- pragma Loop_Invariant (for all id2 in OS_TASK_ID_MIN .. task_id
+                                      -- => Contains (Model.Idle, id2));
+         end loop;
+
+      end init;
 
    begin
-      Clear (Model.Ready);
-      pragma Assert (Length (Model.Idle) = 0);
-      pragma Assert (Is_Empty (Model.Idle));
-      for task_id in os_task_id_param_t loop
-         pragma assert (not Contains (Model.Idle, task_id));
-         pragma assert (not Contains (Model.Ready, task_id));
-         Model.Idle := Add (Model.Idle, task_id);
-         pragma Loop_Invariant (Length (Model.Ready) = 0);
-         pragma Loop_Invariant (Integer (Length (Model.Idle)) = Natural (task_id) + 1);
-         pragma Loop_Invariant (for all id2 in OS_TASK_ID_MIN .. task_id
-                                   => Contains (Model.Idle, id2));
-      end loop;
-      pragma Assert (Length (Model.Idle) = OS_MAX_TASK_CNT);
+
+      init;
+
    end M;
 
    ----------------------
@@ -164,7 +156,12 @@ is
    -------------------
 
    function task_is_ready (task_id : os_task_id_param_t) return Boolean
-   is (Contains (M.Model.Ready, task_id));
+   is (Contains (M.Model.Ready, task_id) and
+       not Contains (M.Model.Idle, task_id));
+   -- with
+      -- Post => task_is_ready'Result = (Contains (M.Model.Ready, task_id) and
+       -- not Contains (M.Model.Idle, task_id));
+   -- pragma Annotate (GNATprove, Inline_For_Proof, task_is_ready);
 
    ---------------------------
    -- current_task_is_ready --
@@ -172,6 +169,7 @@ is
 
    function current_task_is_ready return Boolean
    is (task_is_ready (current_task));
+   -- pragma Annotate (GNATprove, Inline_For_Proof, current_task_is_ready);
 
    ------------------------------
    -- task_list_is_well_formed --
@@ -179,29 +177,43 @@ is
 
    function task_list_is_well_formed return Boolean is
       (M.os_ghost_task_list_is_well_formed);
+   -- pragma Annotate (GNATprove, Inline_For_Proof, task_list_is_well_formed);
 
    ----------------------------
    -- add_task_to_ready_list --
    ----------------------------
 
    procedure add_task_to_ready_list (task_id : os_task_id_param_t)
-   with
-      Refined_Post => Contains (M.Model.Ready, task_id) and then
-                      task_list_is_well_formed
+   -- with
+      -- Refined_Post => task_is_ready (task_id) and then
+                      -- M.os_ghost_task_list_is_well_formed
    is
       index_id : os_task_id_t := task_list_head;
    begin
 
       if index_id = OS_TASK_ID_NONE then
          --  No task in the ready list. Add this task at list head
-         next_task (task_id) := OS_TASK_ID_NONE;
-         prev_task (task_id) := OS_TASK_ID_NONE;
+
+          pragma assert (for all id of Model.Idle =>
+              (not Contains (Model.Ready, id) and then
+               Contains (Model.Idle, id) and then
+               next_task (id) = OS_TASK_ID_NONE and then
+               prev_task (id) = OS_TASK_ID_NONE));
+
+         Delete (Model.Idle, task_id);
+         Insert (Model.Ready, task_id);
+
+         -- next_task (task_id) := OS_TASK_ID_NONE;
+         -- prev_task (task_id) := OS_TASK_ID_NONE;
          task_list_head := task_id;
       else
          while index_id /= OS_TASK_ID_NONE loop
+            pragma assert (Contains (Model.Ready, index_id));
             pragma Loop_Invariant (task_list_is_well_formed);
             -- At any step in the loop index_id needs to be ready
             if index_id = task_id then
+               pragma assert (not Contains (Model.Idle, task_id));
+               pragma assert (Contains (Model.Ready, task_id));
                --  Already in the ready list, nothing to do
                exit;
             elsif Moth.Config.get_task_priority (task_id) >
@@ -212,6 +224,12 @@ is
                   prev_id : constant os_task_id_t :=
                                             prev_task (index_id);
                begin
+
+                  pragma assert (Contains (Model.Idle, task_id));
+                  pragma assert (not Contains (Model.Ready, task_id));
+                  Delete (Model.Idle, task_id);
+                  Insert (Model.Ready, task_id);
+
                   prev_task (index_id) := task_id;
                   prev_task (task_id) := prev_id;
                   next_task (task_id) := index_id;
@@ -226,6 +244,11 @@ is
                end;
             elsif next_task (index_id) = OS_TASK_ID_NONE then
 
+               pragma assert (Contains (Model.Idle, task_id));
+               pragma assert (not Contains (Model.Ready, task_id));
+               Delete (Model.Idle, task_id);
+               Insert (Model.Ready, task_id);
+
                next_task (index_id) := task_id;
                prev_task (task_id)  := index_id;
                next_task (task_id)  := OS_TASK_ID_NONE;
@@ -237,8 +260,6 @@ is
          end loop;
       end if;
 
-      M.enable_task (task_id);
-
    end add_task_to_ready_list;
 
    ---------------------------------
@@ -249,47 +270,138 @@ is
      (task_id : os_task_id_param_t)
    with
       Pre =>  task_is_ready (task_id) and then
-              task_list_is_well_formed,
+              M.os_ghost_task_list_is_well_formed,
       Post => Contains (M.Model.Idle, task_id) and then
-              task_list_is_well_formed
+              M.os_ghost_task_list_is_well_formed
    is
       next_id : constant os_task_id_t := next_task (task_id);
       prev_id : constant os_task_id_t := prev_task (task_id);
    begin
 
-      next_task (task_id) := OS_TASK_ID_NONE;
-      prev_task (task_id) := OS_TASK_ID_NONE;
-
-      M.disable_task (task_id);
-
+      pragma assert (Length (Model.Idle) <= OS_MAX_TASK_CNT);
+      pragma assert (Length (Model.Ready) <= OS_MAX_TASK_CNT);
+      pragma assert (Length (Model.Idle) + Length (Model.Ready) = OS_MAX_TASK_CNT);
+      pragma assert (for all id in os_task_id_param_t =>
+              ((Contains (Model.Idle, id) and then
+                not Contains (Model.Ready, id)) or
+               (Contains (Model.Ready, id) and then
+                not Contains (Model.Idle, id))));
+      pragma assert (if Length (Model.Ready) = 0
+              then (task_list_head = OS_TASK_ID_NONE)
+              else (task_list_head = First_Element (Model.Ready) and
+                    prev_task (First_Element (Model.Ready)) = OS_TASK_ID_NONE));
+      pragma assert (for all id of Model.Ready =>
+              ((next_task (id) =
+                  (if id = Last_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, id))))) and then
+               (prev_task (id) =
+                  (if id = First_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, id))))) and then
+               Contains (Model.Ready, id) and then
+               (not Contains (Model.Idle, id))));
+      pragma assert (for all id of Model.Idle =>
+              (not Contains (Model.Ready, id) and then
+               Contains (Model.Idle, id) and then
+               next_task (id) = OS_TASK_ID_NONE and then
+               prev_task (id) = OS_TASK_ID_NONE));
+               
       if task_id = task_list_head then
+
+         pragma assert (task_id = First_Element (Model.Ready));
+         pragma assert (prev_id = OS_TASK_ID_NONE);
 
          -- Set the new list head (the next from the removed task)
          -- Note: next_id could be set to OS_TASK_ID_NONE
          task_list_head := next_id;
 
+         next_task := next_task'update (task_id => OS_TASK_ID_NONE);
+
          if next_id /= OS_TASK_ID_NONE then
 
             -- The new list head [next] has no prev
-            prev_task (next_id) := OS_TASK_ID_NONE;
+            -- prev_task (next_id) := OS_TASK_ID_NONE;
+            prev_task := prev_task'update (next_id => OS_TASK_ID_NONE,
+                                           task_id => OS_TASK_ID_NONE);
 
+         else
+            prev_task := prev_task'update (task_id => OS_TASK_ID_NONE);
          end if;
 
       else
          --  The list is not empty and the task is not at the list head.
+          pragma assert (for all id of Model.Ready =>
+              ((next_task (id) =
+                  (if id = Last_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, id))))) and then
+               (prev_task (id) =
+                  (if id = First_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, id))))) and then
+               Contains (Model.Ready, id) and then
+               (not Contains (Model.Idle, id))));
+
+         pragma assert (task_id /= First_Element (Model.Ready));
+         pragma assert (Contains (Model.Ready, task_id));
+         pragma assert (prev_task (task_id) /= OS_TASK_ID_NONE);
+         pragma assert (prev_id /= OS_TASK_ID_NONE);
 
          --  link next from prev task to our next
-         next_task (prev_id) := next_id;
+         -- next_task (prev_id) := next_id;
+         next_task := next_task'update (prev_id => next_id,
+                                        task_id => OS_TASK_ID_NONE);
 
          if next_id /= OS_TASK_ID_NONE then
 
             --  link prev from next task to our prev
-            prev_task (next_id) := prev_id;
-
+            -- prev_task (next_id) := prev_id;
+            prev_task := prev_task'update (next_id => prev_id,
+                                           task_id => OS_TASK_ID_NONE);
+         else
+            prev_task := prev_task'update (task_id => OS_TASK_ID_NONE);
          end if;
 
       end if;
 
+      Delete (Model.Ready, task_id);
+      Insert (Model.Idle, task_id);
+
+      -- prev_task := prev_task'update (task_id => OS_TASK_ID_NONE);
+      -- next_task := next_task'update (task_id => OS_TASK_ID_NONE);
+      -- next_task (task_id) := OS_TASK_ID_NONE;
+      -- prev_task (task_id) := OS_TASK_ID_NONE;
+
+      pragma assert (Length (Model.Idle) <= OS_MAX_TASK_CNT);
+      pragma assert (Length (Model.Ready) <= OS_MAX_TASK_CNT);
+      pragma assert (Length (Model.Idle) + Length (Model.Ready) = OS_MAX_TASK_CNT);
+      pragma assert (for all id in os_task_id_param_t =>
+              ((Contains (Model.Idle, id) and then
+                not Contains (Model.Ready, id)) or
+               (Contains (Model.Ready, id) and then
+                not Contains (Model.Idle, id))));
+      pragma assert (if Length (Model.Ready) = 0
+              then (task_list_head = OS_TASK_ID_NONE)
+              else (task_list_head = First_Element (Model.Ready) and
+                    prev_task (First_Element (Model.Ready)) = OS_TASK_ID_NONE));
+      pragma assert (for all id of Model.Ready =>
+              ((next_task (id) =
+                  (if id = Last_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Next (Model.Ready, Find (Model.Ready, id))))) and then
+               (prev_task (id) =
+                  (if id = First_Element (Model.Ready)
+                      then OS_TASK_ID_NONE
+                      else Element (Model.Ready, Previous (Model.Ready, Find (Model.Ready, id))))) and then
+               Contains (Model.Ready, id) and then
+               (not Contains (Model.Idle, id))));
+      pragma assert (for all id of Model.Idle =>
+              (not Contains (Model.Ready, id) and then
+               Contains (Model.Idle, id) and then
+               next_task (id) = OS_TASK_ID_NONE and then
+               prev_task (id) = OS_TASK_ID_NONE));
+               
    end remove_task_from_ready_list;
 
    --------------
@@ -445,6 +557,8 @@ is
 
       -- All Mbx mask for tasks are 0
       mbx_mask := (others => 0);
+
+      M.init;
 
       for task_iterator in os_task_id_param_t'Range loop
          --  Initialise the memory space for one task
