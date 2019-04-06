@@ -24,6 +24,7 @@
 -- pragma Unevaluated_Use_Of_Old (Allow);
 
 with Ada.Containers.Formal_Ordered_Sets;
+with Ada.Containers.Formal_Doubly_Linked_Lists;
 with Ada.Containers;
 
 use type Ada.Containers.Count_Type;
@@ -31,7 +32,8 @@ use type Ada.Containers.Count_Type;
 with types;
 with OpenConf;
 
-package Moth with
+package Moth
+with
    Spark_Mode     => On
 is
    ---------------------------
@@ -112,27 +114,17 @@ is
          Ghost,
          Initializes => Model,
          Initial_Condition =>
-          (Length (Model.Ready) = 0 and then
+          (Is_Empty (Model.Ready) and then
            Length (Model.Idle) = OS_MAX_TASK_CNT and then
            (for all task_id in os_task_id_param_t =>
                                Contains (Model.Idle, task_id)))
       is
 
-         function ready_lt (Left, Right : os_task_id_param_t) return Boolean
-         with
-            Global => null;
-         -- We tells the prover that this function is terminating because
-         -- we will have to disable the prover in the body of this function
-         -- as the boby is not complying with the specification and is
-         -- accessing some global constants
-         pragma Annotate (GNATprove, Terminating, ready_lt);
-
-         package ready_list_t is new Ada.Containers.Formal_Ordered_Sets
-            (Element_Type => os_task_id_param_t,
-             "<" => ready_lt);
-         use ready_list_t;
-
          function idle_lt (Left, Right : os_task_id_param_t) return Boolean;
+
+         package ready_list_t is new Ada.Containers.Formal_Doubly_Linked_Lists
+            (Element_Type => os_task_id_param_t);
+         use ready_list_t;
 
          package idle_list_t is new Ada.Containers.Formal_Ordered_Sets
             (Element_Type => os_task_id_param_t,
@@ -143,7 +135,7 @@ is
             -- Idle tasks are unordered. So they are modeled as a set
             Idle  : idle_list_t.Set (OS_MAX_TASK_CNT);
             -- Ready tasks are ordered. So they are modeled as an ordered set
-            Ready : ready_list_t.Set (OS_MAX_TASK_CNT);
+            Ready : ready_list_t.List (OS_MAX_TASK_CNT);
          end record;
 
          Model : T;
@@ -152,11 +144,11 @@ is
 
          procedure init
          with
-            Post => (Length (Model.Idle) = OS_MAX_TASK_CNT and
-                     Length (Model.Ready) = 0) and then
-                     (for all task_id in os_task_id_param_t =>
-                         (Contains (Model.Idle, task_id) and
-                          not Contains (Model.Ready, task_id)));
+            Post => Length (Model.Idle) = OS_MAX_TASK_CNT and then
+                    Length (Model.Ready) = 0 and then
+                    (for all task_id in os_task_id_param_t =>
+                        (Contains (Model.Idle, task_id) and then
+                         not Contains (Model.Ready, task_id)));
 
       end M;
 
@@ -189,8 +181,8 @@ is
       procedure add_task_to_ready_list (task_id : in os_task_id_param_t)
       with
          Pre    => Moth.os_ghost_task_list_is_well_formed,
-         Post   => Moth.os_ghost_task_list_is_well_formed and then
-                   Moth.os_ghost_task_is_ready (task_id);
+         Post   => Moth.os_ghost_task_is_ready (task_id) and then
+                   Moth.os_ghost_task_list_is_well_formed;
 
       ----------
       -- wait --

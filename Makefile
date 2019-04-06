@@ -136,6 +136,7 @@ adacppflags+=-I$(core_dir)/include
 cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
 cflags+=-Os
+cflags+=-fdata-sections -ffunction-sections
 cflags+=$(board-cflags)
 cflags+=$(cpu-cflags)
 cflags+=$(libs-cflags-y)
@@ -146,6 +147,7 @@ endif
 ada=$(CROSS_COMPILE)gnatgcc
 adaflags=-g -Wall -Wextra
 adaflags+=-Os
+adaflags+=-fdata-sections -ffunction-sections
 adaflags+=-gnatp
 adaflags+=$(board-cflags)
 adaflags+=$(cpu-cflags)
