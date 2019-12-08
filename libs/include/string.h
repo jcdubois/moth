@@ -5,8 +5,7 @@
 #include "types.h"
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 void *memset(void *s, int c, size_t n);
