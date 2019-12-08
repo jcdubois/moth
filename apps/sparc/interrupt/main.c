@@ -62,23 +62,23 @@ static void putc(void *opaque, char car) {
 }
 
 static os_task_id_t interrupt_dest[14] = {
-  OS_TASK_ID_NONE, // interrupt 0
-  OS_TASK_ID_NONE, // interrupt 1
-  OS_TASK_ID_NONE, // interrupt 2
-  OS_TASK_ID_NONE, // interrupt 3
-  OS_TASK_ID_NONE, // interrupt 4
-  OS_TASK_ID_NONE, // interrupt 5
-  OS_TIMER_TASK_ID, // interrupt 6
-  OS_TASK_ID_NONE, // interrupt 7
-  OS_TIMER_TASK_ID, // interrupt 8
-  OS_TASK_ID_NONE, // interrupt 9
-  OS_TASK_ID_NONE, // interrupt 10
-  OS_TASK_ID_NONE, // interrupt 11
-  OS_TASK_ID_NONE, // interrupt 12
-  OS_TASK_ID_NONE, // interrupt 13
+    OS_TASK_ID_NONE,  // interrupt 0
+    OS_TASK_ID_NONE,  // interrupt 1
+    OS_TASK_ID_NONE,  // interrupt 2
+    OS_TASK_ID_NONE,  // interrupt 3
+    OS_TASK_ID_NONE,  // interrupt 4
+    OS_TASK_ID_NONE,  // interrupt 5
+    OS_TIMER_TASK_ID, // interrupt 6
+    OS_TASK_ID_NONE,  // interrupt 7
+    OS_TIMER_TASK_ID, // interrupt 8
+    OS_TASK_ID_NONE,  // interrupt 9
+    OS_TASK_ID_NONE,  // interrupt 10
+    OS_TASK_ID_NONE,  // interrupt 11
+    OS_TASK_ID_NONE,  // interrupt 12
+    OS_TASK_ID_NONE,  // interrupt 13
 };
 
-static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) { 
+static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
   if (interrupt >= 32) {
     return OS_TASK_ID_NONE;
   } else {
@@ -125,17 +125,17 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(dest_id, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("interrupt: mbx %d sent to task %d\n", (int)msg, (int)dest_id);
+              printf("interrupt: mbx %d sent to task %d\n", (int)msg,
+                     (int)dest_id);
             } else {
               printf("interrupt: failed (cr = %d) to send mbx to task %d\n",
                      (int)cr, (int)dest_id);
             }
 
-	    msg++;
+            msg++;
 
           } else {
-            printf("interrupt: no task to send interrupt %d to\n",
-                   i);
+            printf("interrupt: no task to send interrupt %d to\n", i);
           }
         }
       }

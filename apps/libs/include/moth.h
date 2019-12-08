@@ -4,8 +4,7 @@
 #include <os.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 os_status_t wait(os_mbx_mask_t mask);

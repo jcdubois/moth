@@ -48,21 +48,21 @@
 #define TIMER_DEVICE_OFFSET 0x300
 
 /* GPTimer Config register fields */
-#define GPTIMER_ENABLE      (1 << 0)
-#define GPTIMER_RESTART     (1 << 1)
-#define GPTIMER_LOAD        (1 << 2)
-#define GPTIMER_INT_ENABLE  (1 << 3)
+#define GPTIMER_ENABLE (1 << 0)
+#define GPTIMER_RESTART (1 << 1)
+#define GPTIMER_LOAD (1 << 2)
+#define GPTIMER_INT_ENABLE (1 << 3)
 #define GPTIMER_INT_PENDING (1 << 4)
-#define GPTIMER_CHAIN       (1 << 5) /* Not supported */
-#define GPTIMER_DEBUG_HALT  (1 << 6) /* Not supported */
+#define GPTIMER_CHAIN (1 << 5)      /* Not supported */
+#define GPTIMER_DEBUG_HALT (1 << 6) /* Not supported */
 
 /* Memory mapped register offsets */
-#define SCALER_OFFSET         0x00
-#define SCALER_RELOAD_OFFSET  0x04
-#define CONFIG_OFFSET         0x08
-#define COUNTER_OFFSET        0x00
+#define SCALER_OFFSET 0x00
+#define SCALER_RELOAD_OFFSET 0x04
+#define CONFIG_OFFSET 0x08
+#define COUNTER_OFFSET 0x00
 #define COUNTER_RELOAD_OFFSET 0x04
-#define TIMER_BASE            0x10
+#define TIMER_BASE 0x10
 
 /* Default system clock. 40 MHz */
 #define CPU_CLK (40 * 1000 * 1000)
@@ -125,19 +125,19 @@ int main(int argc, char **argv, char **argp) {
       if (cr == OS_SUCCESS) {
         printf("timer: mbx %d received from task %d\n", (int)msg, (int)tmp_id);
 
-	/* process mbx from the interrupt task */
+        /* process mbx from the interrupt task */
         if (tmp_id == OS_INTERRUPT_TASK_ID) {
           uint32_t config_reg =
               io_read32(timer_addr + TIMER_BASE + CONFIG_OFFSET);
 
-	  /* check the timer interrupt has not been already processed */
+          /* check the timer interrupt has not been already processed */
           if (config_reg & GPTIMER_INT_PENDING) {
             /* mark the timer as being processed */
             config_reg &= ~GPTIMER_INT_PENDING;
 
             io_write32(timer_addr + TIMER_BASE + CONFIG_OFFSET, config_reg);
 
-	    /* For now send a MBX to all permitted task */
+            /* For now send a MBX to all permitted task */
             cr = mbx_send(OS_TASK_ID_ALL, msg);
 
             if (cr == OS_SUCCESS) {
