@@ -34,13 +34,15 @@
 
 static void os_arch_cons_write_char(void *uart, char a) {
   /* Wait until FIFO is full */
-  while (os_arch_io_read32((uint32_t)uart + IMX21_UTS) & UTS_TXFULL);
+  while (os_arch_io_read32((uint32_t)uart + IMX21_UTS) & UTS_TXFULL)
+    ;
 
   /* Send the character */
   os_arch_io_write32((uint32_t)uart + URTX0, (uint32_t)a);
 
   /* Wait until FIFO is empty */
-  while (!(os_arch_io_read32((uint32_t)uart + IMX21_UTS) & UTS_TXEMPTY));
+  while (!(os_arch_io_read32((uint32_t)uart + IMX21_UTS) & UTS_TXEMPTY))
+    ;
 }
 
 /**

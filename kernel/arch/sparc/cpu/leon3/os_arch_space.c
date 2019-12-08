@@ -73,7 +73,7 @@ void os_arch_space_init(void) {
   asm volatile("sta %0, [%1] %2;\n"
                : /* no output */
                : "r"(((uint32_t)(os_arch_mmu_get_ctx_table())) >> 4),
-	         "r"(MMU_CTXTBL_PTR), "i"(ASI_LEON_MMUREGS)
+                 "r"(MMU_CTXTBL_PTR), "i"(ASI_LEON_MMUREGS)
                : "memory");
 
   syslog("%s: CTR is set\n", __func__);
@@ -91,14 +91,17 @@ void os_arch_space_init(void) {
   asm volatile("sta %0, [%1] %2;\n"
                : /* no output */
                : "r"(MMU_CTRL_REG_ENABLE), "r"(MMU_CTRL_REG),
-	         "i"(ASI_LEON_MMUREGS) : "memory");
+                 "i"(ASI_LEON_MMUREGS)
+               : "memory");
 
   /*
    * flush all memory
    */
   asm volatile("flush\n"
                "sta %%g0, [%%g0] %0\n"
-               : : "i" (ASI_LEON_DFLUSH) : "memory");
+               :
+               : "i"(ASI_LEON_DFLUSH)
+               : "memory");
 
   syslog("%s: MMU enabling done\n", __func__);
 

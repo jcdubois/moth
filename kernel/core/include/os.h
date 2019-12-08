@@ -27,8 +27,7 @@
 #include <types.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef uint32_t os_mbx_mask_t;

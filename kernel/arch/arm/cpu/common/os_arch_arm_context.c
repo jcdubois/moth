@@ -42,12 +42,13 @@ void os_arch_context_create(os_task_id_t task_id) {
 }
 
 /**
- * 
+ *
  */
 void os_arch_context_switch(os_task_id_t prev_id, os_task_id_t next_id) {
   (void)prev_id;
   (void)next_id;
-  syslog("%s(prev_id = %d, next_id = %d)\n", __func__, (int)prev_id, (int)next_id);
+  syslog("%s(prev_id = %d, next_id = %d)\n", __func__, (int)prev_id,
+         (int)next_id);
 }
 
 void os_arch_context_set(os_task_id_t task_id) {

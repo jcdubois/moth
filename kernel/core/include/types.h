@@ -16,31 +16,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file 
+ * @file
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief 
+ * @brief
  */
 
 #ifndef __MOTH_SPARC_TYPES_H__
 #define __MOTH_SPARC_TYPES_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
-typedef unsigned char         uint8_t;
-typedef unsigned short        uint16_t;
-typedef unsigned int          uint32_t;
-typedef unsigned long long    uint64_t;
+typedef unsigned char uint8_t;
+typedef unsigned short uint16_t;
+typedef unsigned int uint32_t;
+typedef unsigned long long uint64_t;
 
-typedef signed char           int8_t;
-typedef signed short          int16_t;
-typedef signed int            int32_t;
-typedef signed long long      int64_t;
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef signed long long int64_t;
 
-typedef unsigned int          size_t;
-typedef unsigned long int     intptr_t;
+typedef unsigned int size_t;
+typedef unsigned long int intptr_t;
 
 #define NULL (0)
 

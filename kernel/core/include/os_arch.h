@@ -27,8 +27,7 @@
 #include <os.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 uint8_t os_arch_interrupt_is_pending(void);

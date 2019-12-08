@@ -21,13 +21,21 @@
 # @brief list of leon specific objects.
 # */
 
+# This is a 32 bits Sparc V8 processor
 arch-$(CONFIG_ARCH_SPARC) += -m32 
+# This is LEON3
 arch-$(CONFIG_ARCH_SPARC) += -mcpu=leon3
-#arch-$(CONFIG_ARCH_SPARC) += -mtune=leon3
+# This is LEON3
+arch-$(CONFIG_ARCH_SPARC) += -mtune=leon3
+# Don't generate SPARC supervisor specific code
+# The libraies (and the apps) are running in user space
+arch-$(CONFIG_ARCH_SPARC) += -muser-mode
 
-# Need -Uarm for gcc < 3.x
 cpu-cflags += $(arch-y) $(tune-y)
 cpu-cflags += -msoft-float
+cpu-cflags += -mstd-struct-return
+cpu-cflags += -mlra
+cpu-cflags += -mfaster-structs
 cpu-cflags += -fno-strict-aliasing
 cpu-cflags += -mno-fpu
 cpu-cflags += -mno-v8plus
