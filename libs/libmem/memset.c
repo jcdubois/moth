@@ -44,8 +44,7 @@ void *__memset(void *s, int c, size_t n) {
 
 void *memset(void *s, int c, size_t n) {
 
-  static void *(* const __memset_vp)(void *, int, size_t)
-    = (__memset);
+  static void *(*const __memset_vp)(void *, int, size_t) = (__memset);
 
   /**
    * we call __memset through a funtion pointer to make sure it
