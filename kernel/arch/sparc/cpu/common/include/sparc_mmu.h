@@ -52,8 +52,8 @@ extern "C" {
 #define MM_ACC_E (0x4 << 2)      /**< All Execute only */
 #define MM_ACC_R_S_RW (0x5 << 2) /**< User Read only, Supervisor Read Write */
 
-#define MM_ACC_S_RE (0x6 << 2)  /**< Supervisor Read Write Execute */
-#define MM_ACC_S_RWE (0x7 << 2) /**< Supervisor Read Execute */
+#define MM_ACC_S_RE (0x6 << 2)  /**< Supervisor Read Execute */
+#define MM_ACC_S_RWE (0x7 << 2) /**< Supervisor Read Write Execute */
 /** @} */
 
 /**
