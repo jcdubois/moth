@@ -3,27 +3,29 @@
 #define TINYPRINTF_DEFINE_TFP_SPRINTF 0
 #define TINYPRINTF_OVERRIDE_LIBC 0
 
+#include <limits.h>
 #include <stdio.h>
 #include <string.h>
-#include <limits.h>
 
 #include "tinyprintf.h"
 
 /* Clear unused warnings for actually unused variables */
 #define UNUSED(x) (void)(x)
 
-#define TPRINTF(expr...) \
-  ({ printf("libc_printf(%s) -> ", #expr); printf(expr); \
-     printf(" tfp_printf(%s) -> ", #expr); tfp_printf(expr); })
+#define TPRINTF(expr...)                                                       \
+  ({                                                                           \
+    printf("libc_printf(%s) -> ", #expr);                                      \
+    printf(expr);                                                              \
+    printf(" tfp_printf(%s) -> ", #expr);                                      \
+    tfp_printf(expr);                                                          \
+  })
 
-static void stdout_putf(void *unused, char c)
-{
+static void stdout_putf(void *unused, char c) {
   UNUSED(unused);
   putchar(c);
 }
 
-int main()
-{
+int main() {
   init_printf(NULL, stdout_putf);
 
   printf("Fun with printf and %%!\n");
@@ -37,8 +39,8 @@ int main()
   TPRINTF("|%-4s|\n", "string4");
   TPRINTF("42=%3d d1=%4.4x |%4s| d2=%8.8x\n", 42, 0xd1, "string4", 0xd2);
   TPRINTF("42=%3d d1=%4.4x |%-4s| d2=%8.8x\n", 42, 0xd1, "string4", 0xd2);
-  TPRINTF("84=%d 21=%ds |%s| |%sOK| d1=%x d2=%#x\n",
-          84, 21, "hello", "fine", 0xd1, 0xd2);
+  TPRINTF("84=%d 21=%ds |%s| |%sOK| d1=%x d2=%#x\n", 84, 21, "hello", "fine",
+          0xd1, 0xd2);
 
   TPRINTF("%lld\n", LLONG_MIN);
   TPRINTF("%lld\n", LLONG_MAX);
