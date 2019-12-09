@@ -91,7 +91,7 @@ The first step to build Moth is to install the required packages:
 
 **Development tools**
 ```bash
-$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git gnat-9
+$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git gnat-9 gnat-9-sparc64-linux-gnu
 ```
 
 **Qemu**
