@@ -75,8 +75,8 @@ environment listed in the following table.
 
 | Software          | Version                                 |
 |:----------------- |:--------------------------------------- |
-| Operating systems | Ubuntu 17.10 (Artful Aardvark), x86_64  |
-| GCC               | 7.2.0                                   |
+| Operating systems | Ubuntu 19.10 (Eoan Ermine), x86_64      |
+| GCC               | 9.2.0                                   |
 
 The following hardware is used for the development of Moth.
 
@@ -91,7 +91,7 @@ The first step to build Moth is to install the required packages:
 
 **Development tools**
 ```bash
-$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git
+$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git gnat-9
 ```
 
 **Qemu**
