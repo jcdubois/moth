@@ -137,6 +137,7 @@ cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
 cflags+=-Os
 cflags+=-fdata-sections -ffunction-sections
+cflags+=-fno-jump-tables
 cflags+=$(board-cflags)
 cflags+=$(cpu-cflags)
 cflags+=$(libs-cflags-y)
@@ -156,7 +157,7 @@ adaflags+=$(adacppflags)
 ifdef CONFIG_PROFILE
 adaflags+=-finstrument-functions
 endif
-as=$(CROSS_COMPILE)gcc
+as=$(cc)
 asflags=-g -Wall -nostdlib -D__ASSEMBLY__ 
 asflags+=$(board-asflags)
 asflags+=$(cpu-asflags)
@@ -164,7 +165,7 @@ asflags+=$(libs-asflags-y)
 asflags+=$(cppflags)
 ar=$(CROSS_COMPILE)ar
 arflags=rcs
-ld=$(CROSS_COMPILE)gcc
+ld=$(cc)
 ldflags=-g -Wall -nostdlib -Wl,--build-id=none
 ldflags+=$(board-ldflags)
 ldflags+=$(cpu-ldflags)
