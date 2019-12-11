@@ -30,6 +30,10 @@ arch-$(CONFIG_ARCH_SPARC) += -mtune=leon3
 # Don't generate SPARC supervisor specific code
 # The libraies (and the apps) are running in user space
 arch-$(CONFIG_ARCH_SPARC) += -muser-mode
+# gcc puts jump tables in the text section. This would trigger an
+# abort on the user space application. Don't use it.
+arch-$(CONFIG_ARCH_SPARC) += -fno-jump-tables
+
 
 cpu-cflags += $(arch-y) $(tune-y)
 cpu-cflags += -msoft-float

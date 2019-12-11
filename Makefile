@@ -137,7 +137,6 @@ cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
 cflags+=-Os
 cflags+=-fdata-sections -ffunction-sections
-cflags+=-fno-jump-tables
 cflags+=$(board-cflags)
 cflags+=$(cpu-cflags)
 cflags+=$(libs-cflags-y)
