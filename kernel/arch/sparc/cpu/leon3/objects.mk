@@ -44,7 +44,6 @@ cpu-cflags += -fno-strict-aliasing
 cpu-cflags += -mno-fpu
 cpu-cflags += -mno-v8plus
 cpu-cflags += -Wa,-Av8
-cpu-cflags += -Os
 cpu-asflags += $(arch-y) $(tune-y)
 cpu-asflags += -Wa,-Av8
 cpu-ldflags += $(arch-y)
