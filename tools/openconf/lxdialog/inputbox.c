@@ -43,16 +43,19 @@ int dialog_inputbox(const char *title, const char *prompt, int height,
   char *instr = dialog_input_result;
   WINDOW *dialog;
 
-  if (!init)
+  if (!init) {
     instr[0] = '\0';
-  else
+  } else {
     strcpy(instr, init);
+  }
 
 do_resize:
-  if (getmaxy(stdscr) <= (height - 2))
+  if (getmaxy(stdscr) <= (height - 2)) {
     return -ERRDISPLAYTOOSMALL;
-  if (getmaxx(stdscr) <= (width - 2))
+  }
+  if (getmaxx(stdscr) <= (width - 2)) {
     return -ERRDISPLAYTOOSMALL;
+  }
 
   /* center dialog box on screen */
   x = (COLS - width) / 2;
@@ -66,8 +69,9 @@ do_resize:
   draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
   wattrset(dialog, dlg.border.atr);
   mvwaddch(dialog, height - 3, 0, ACS_LTEE);
-  for (i = 0; i < width - 2; i++)
+  for (i = 0; i < width - 2; i++) {
     waddch(dialog, ACS_HLINE);
+  }
   wattrset(dialog, dlg.dialog.atr);
   waddch(dialog, ACS_RTEE);
 
@@ -95,8 +99,9 @@ do_resize:
   if (input_x >= box_width) {
     scroll = input_x - box_width + 1;
     input_x = box_width - 1;
-    for (i = 0; i < box_width - 1; i++)
+    for (i = 0; i < box_width - 1; i++) {
       waddch(dialog, instr[scroll + i]);
+    }
   } else {
     waddstr(dialog, instr);
   }
@@ -125,13 +130,15 @@ do_resize:
           if (!input_x) {
             scroll = scroll < box_width - 1 ? 0 : scroll - (box_width - 1);
             wmove(dialog, box_y, box_x);
-            for (i = 0; i < box_width; i++)
+            for (i = 0; i < box_width; i++) {
               waddch(dialog, instr[scroll + input_x + i]
                                  ? instr[scroll + input_x + i]
                                  : ' ');
+            }
             input_x = strlen(instr) - scroll;
-          } else
+          } else {
             input_x--;
+          }
           instr[scroll + input_x] = '\0';
           mvwaddch(dialog, box_y, input_x + box_x, ' ');
           wmove(dialog, box_y, input_x + box_x);
@@ -147,17 +154,20 @@ do_resize:
             if (input_x == box_width - 1) {
               scroll++;
               wmove(dialog, box_y, box_x);
-              for (i = 0; i < box_width - 1; i++)
+              for (i = 0; i < box_width - 1; i++) {
                 waddch(dialog, instr[scroll + i]);
+              }
             } else {
               wmove(dialog, box_y, input_x++ + box_x);
               waddch(dialog, key);
             }
             wrefresh(dialog);
-          } else
+          } else {
             flash(); /* Alarm user about overflow */
+          }
           continue;
         }
+	break;
       }
     }
     switch (key) {
@@ -186,6 +196,8 @@ do_resize:
         button = 0; /* Indicates "OK" button is selected */
         print_buttons(dialog, height, width, 0);
         break;
+      default:
+        break;
       }
       break;
     case TAB:
@@ -206,6 +218,8 @@ do_resize:
         wmove(dialog, box_y, box_x + input_x);
         wrefresh(dialog);
         break;
+      default:
+        break;
       }
       break;
     case ' ':
@@ -223,6 +237,8 @@ do_resize:
       delwin(dialog);
       on_key_resize();
       goto do_resize;
+    default:
+      break;
     }
   }
 

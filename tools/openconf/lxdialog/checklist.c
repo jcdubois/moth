@@ -30,8 +30,9 @@ static void print_item(WINDOW *win, int choice, int selected) {
   /* Clear 'residue' of last item */
   wattrset(win, dlg.menubox.atr);
   wmove(win, choice, 0);
-  for (i = 0; i < list_width; i++)
+  for (i = 0; i < list_width; i++) {
     waddch(win, ' ');
+  }
 
   wmove(win, choice, check_x);
   wattrset(win, selected ? dlg.check_selected.atr : dlg.check.atr);
@@ -108,8 +109,9 @@ int dialog_checklist(const char *title, const char *prompt, int height,
 
   /* which item to highlight */
   item_foreach() {
-    if (item_is_tag('X'))
+    if (item_is_tag('X')) {
       choice = item_n();
+    }
     if (item_is_selected()) {
       choice = item_n();
       break;
@@ -117,10 +119,12 @@ int dialog_checklist(const char *title, const char *prompt, int height,
   }
 
 do_resize:
-  if (getmaxy(stdscr) < (height + 6))
+  if (getmaxy(stdscr) < (height + 6)) {
     return -ERRDISPLAYTOOSMALL;
-  if (getmaxx(stdscr) < (width + 6))
+  }
+  if (getmaxx(stdscr) < (width + 6)) {
     return -ERRDISPLAYTOOSMALL;
+  }
 
   max_choice = MIN(list_height, item_count());
 
@@ -136,8 +140,9 @@ do_resize:
   draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
   wattrset(dialog, dlg.border.atr);
   mvwaddch(dialog, height - 3, 0, ACS_LTEE);
-  for (i = 0; i < width - 2; i++)
+  for (i = 0; i < width - 2; i++) {
     waddch(dialog, ACS_HLINE);
+  }
   wattrset(dialog, dlg.dialog.atr);
   waddch(dialog, ACS_RTEE);
 
@@ -191,16 +196,18 @@ do_resize:
 
     for (i = 0; i < max_choice; i++) {
       item_set(i + scroll);
-      if (toupper(key) == toupper(item_str()[0]))
+      if (toupper(key) == toupper(item_str()[0])) {
         break;
+      }
     }
 
     if (i < max_choice || key == KEY_UP || key == KEY_DOWN || key == '+' ||
         key == '-') {
       if (key == KEY_UP || key == '-') {
         if (!choice) {
-          if (!scroll)
+          if (!scroll) {
             continue;
+          }
           /* Scroll list down */
           if (list_height > 1) {
             /* De-highlight current first item */
@@ -220,12 +227,14 @@ do_resize:
           wrefresh(list);
 
           continue; /* wait for another key press */
-        } else
+        } else {
           i = choice - 1;
+        }
       } else if (key == KEY_DOWN || key == '+') {
         if (choice == max_choice - 1) {
-          if (scroll + choice >= item_count() - 1)
+          if (scroll + choice >= item_count() - 1) {
             continue;
+          }
           /* Scroll list up */
           if (list_height > 1) {
             /* De-highlight current last item before scrolling up */
@@ -246,8 +255,9 @@ do_resize:
           wrefresh(list);
 
           continue; /* wait for another key press */
-        } else
+        } else {
           i = choice + 1;
+        }
       }
       if (i != choice) {
         /* De-highlight current item */
@@ -300,6 +310,8 @@ do_resize:
       delwin(dialog);
       on_key_resize();
       goto do_resize;
+    default:
+      break;
     }
 
     /* Now, update everything... */

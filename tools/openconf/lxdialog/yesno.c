@@ -39,10 +39,12 @@ int dialog_yesno(const char *title, const char *prompt, int height, int width) {
   WINDOW *dialog;
 
 do_resize:
-  if (getmaxy(stdscr) < (height + 4))
+  if (getmaxy(stdscr) < (height + 4)) {
     return -ERRDISPLAYTOOSMALL;
-  if (getmaxx(stdscr) < (width + 4))
+  }
+  if (getmaxx(stdscr) < (width + 4)) {
     return -ERRDISPLAYTOOSMALL;
+  }
 
   /* center dialog box on screen */
   x = (COLS - width) / 2;
@@ -56,8 +58,9 @@ do_resize:
   draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
   wattrset(dialog, dlg.border.atr);
   mvwaddch(dialog, height - 3, 0, ACS_LTEE);
-  for (i = 0; i < width - 2; i++)
+  for (i = 0; i < width - 2; i++) {
     waddch(dialog, ACS_HLINE);
+  }
   wattrset(dialog, dlg.dialog.atr);
   waddch(dialog, ACS_RTEE);
 
@@ -101,6 +104,8 @@ do_resize:
       delwin(dialog);
       on_key_resize();
       goto do_resize;
+    default:
+      break;
     }
   }
 

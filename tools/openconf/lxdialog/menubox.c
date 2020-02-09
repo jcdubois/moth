@@ -66,8 +66,9 @@ static void do_print_item(WINDOW *win, const char *item, int line_y,
 #if OLD_NCURSES
   {
     int i;
-    for (i = 0; i < menu_width; i++)
+    for (i = 0; i < menu_width; i++) {
       waddch(win, ' ');
+    }
   }
 #else
   wclrtoeol(win);
@@ -173,8 +174,9 @@ int dialog_menu(const char *title, const char *prompt, const void *selected,
 do_resize:
   height = getmaxy(stdscr);
   width = getmaxx(stdscr);
-  if (height < 15 || width < 65)
+  if (height < 15 || width < 65) {
     return -ERRDISPLAYTOOSMALL;
+  }
 
   height -= 4;
   width -= 5;
@@ -194,8 +196,9 @@ do_resize:
   draw_box(dialog, 0, 0, height, width, dlg.dialog.atr, dlg.border.atr);
   wattrset(dialog, dlg.border.atr);
   mvwaddch(dialog, height - 3, 0, ACS_LTEE);
-  for (i = 0; i < width - 2; i++)
+  for (i = 0; i < width - 2; i++) {
     waddch(dialog, ACS_HLINE);
+  }
   wattrset(dialog, dlg.dialog.atr);
   wbkgdset(dialog, dlg.dialog.atr & A_COLOR);
   waddch(dialog, ACS_RTEE);
@@ -217,10 +220,11 @@ do_resize:
   draw_box(dialog, box_y, box_x, menu_height + 2, menu_width + 2,
            dlg.menubox_border.atr, dlg.menubox.atr);
 
-  if (menu_width >= 80)
+  if (menu_width >= 80) {
     item_x = (menu_width - 70) / 2;
-  else
+  } else {
     item_x = 4;
+  }
 
   /* Set choice to default item */
   item_foreach() if (selected && (selected == item_data())) choice = item_n();
@@ -234,10 +238,11 @@ do_resize:
     scroll = 0;
   }
   if ((choice >= max_choice)) {
-    if (choice >= item_count() - max_choice / 2)
+    if (choice >= item_count() - max_choice / 2) {
       scroll = first_item = item_count() - max_choice;
-    else
+    } else {
       scroll = first_item = choice - max_choice / 2;
+    }
     choice = choice - scroll;
   }
 
@@ -258,25 +263,29 @@ do_resize:
   while (key != KEY_ESC) {
     key = wgetch(menu);
 
-    if (key < 256 && isalpha(key))
+    if (key < 256 && isalpha(key)) {
       key = tolower(key);
+    }
 
-    if (strchr("ynmh", key))
+    if (strchr("ynmh", key)) {
       i = max_choice;
-    else {
+    } else {
       for (i = choice + 1; i < max_choice; i++) {
         item_set(scroll + i);
         j = first_alpha(item_str(), "YyNnMmHh");
-        if (key == tolower(item_str()[j]))
+        if (key == tolower(item_str()[j])) {
           break;
+        }
       }
-      if (i == max_choice)
+      if (i == max_choice) {
         for (i = 0; i < max_choice; i++) {
           item_set(scroll + i);
           j = first_alpha(item_str(), "YyNnMmHh");
-          if (key == tolower(item_str()[j]))
+          if (key == tolower(item_str()[j])) {
             break;
+          }
         }
+      }
     }
 
     if (i < max_choice || key == KEY_UP || key == KEY_DOWN || key == '-' ||
@@ -290,8 +299,9 @@ do_resize:
           do_scroll(menu, &scroll, -1);
 
           print_item(scroll, 0, FALSE);
-        } else
+        } else {
           choice = MAX(choice - 1, 0);
+        }
 
       } else if (key == KEY_DOWN || key == '+') {
         print_item(scroll + choice, choice, FALSE);
@@ -301,8 +311,9 @@ do_resize:
           do_scroll(menu, &scroll, 1);
 
           print_item(scroll + max_choice - 1, max_choice - 1, FALSE);
-        } else
+        } else {
           choice = MIN(choice + 1, max_choice - 1);
+        }
 
       } else if (key == KEY_PPAGE) {
         scrollok(menu, TRUE);
@@ -311,23 +322,25 @@ do_resize:
             do_scroll(menu, &scroll, -1);
             print_item(scroll, 0, FALSE);
           } else {
-            if (choice > 0)
+            if (choice > 0) {
               choice--;
+            }
           }
         }
-
       } else if (key == KEY_NPAGE) {
         for (i = 0; (i < max_choice); i++) {
           if (scroll + max_choice < item_count()) {
             do_scroll(menu, &scroll, 1);
             print_item(scroll + max_choice - 1, max_choice - 1, FALSE);
           } else {
-            if (choice + 1 < max_choice)
+            if (choice + 1 < max_choice) {
               choice++;
+            }
           }
         }
-      } else
+      } else {
         choice = i;
+      }
 
       print_item(scroll + choice, choice, TRUE);
 
@@ -376,11 +389,14 @@ do_resize:
         return 6;
       case '/':
         return 7;
+      default:
+        break;
       }
       return 0;
     case 'h':
     case '?':
       button = 2;
+      /* falls through */
     case '\n':
       *s_scroll = scroll;
       delwin(menu);
@@ -400,6 +416,8 @@ do_resize:
       delwin(menu);
       delwin(dialog);
       goto do_resize;
+    default:
+      break;
     }
   }
   delwin(menu);

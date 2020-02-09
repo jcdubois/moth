@@ -49,22 +49,25 @@ struct expr *expr_alloc_comp(enum expr_type type, struct symbol *s1,
 }
 
 struct expr *expr_alloc_and(struct expr *e1, struct expr *e2) {
-  if (!e1)
+  if (!e1) {
     return e2;
+  }
   return e2 ? expr_alloc_two(E_AND, e1, e2) : e1;
 }
 
 struct expr *expr_alloc_or(struct expr *e1, struct expr *e2) {
-  if (!e1)
+  if (!e1) {
     return e2;
+  }
   return e2 ? expr_alloc_two(E_OR, e1, e2) : e1;
 }
 
 struct expr *expr_copy(struct expr *org) {
   struct expr *e;
 
-  if (!org)
+  if (!org) {
     return NULL;
+  }
 
   e = malloc(sizeof(*org));
   memcpy(e, org, sizeof(*org));
@@ -97,8 +100,9 @@ struct expr *expr_copy(struct expr *org) {
 }
 
 void expr_free(struct expr *e) {
-  if (!e)
+  if (!e) {
     return;
+  }
 
   switch (e->type) {
   case E_SYMBOL:
@@ -140,10 +144,12 @@ static void __expr_eliminate_eq(enum expr_type type, struct expr **ep1,
   }
   if (e1->type == E_SYMBOL && e2->type == E_SYMBOL &&
       e1->left.sym == e2->left.sym &&
-      (e1->left.sym == &symbol_yes || e1->left.sym == &symbol_no))
+      (e1->left.sym == &symbol_yes || e1->left.sym == &symbol_no)) {
     return;
-  if (!expr_eq(e1, e2))
+  }
+  if (!expr_eq(e1, e2)) {
     return;
+  }
   trans_count++;
   expr_free(e1);
   expr_free(e2);
@@ -156,26 +162,32 @@ static void __expr_eliminate_eq(enum expr_type type, struct expr **ep1,
     e1 = expr_alloc_symbol(&symbol_yes);
     e2 = expr_alloc_symbol(&symbol_yes);
     break;
-  default:;
+  default:
+    break;
   }
 }
 
 void expr_eliminate_eq(struct expr **ep1, struct expr **ep2) {
-  if (!e1 || !e2)
+  if (!e1 || !e2) {
     return;
+  }
   switch (e1->type) {
   case E_OR:
   case E_AND:
     __expr_eliminate_eq(e1->type, ep1, ep2);
-  default:;
+  default:
+    break;
   }
-  if (e1->type != e2->type)
+  if (e1->type != e2->type) {
     switch (e2->type) {
     case E_OR:
     case E_AND:
       __expr_eliminate_eq(e2->type, ep1, ep2);
-    default:;
+      /* falls through */
+    default:
+      break;
     }
+  }
   e1 = expr_eliminate_yn(e1);
   e2 = expr_eliminate_yn(e2);
 }
@@ -186,8 +198,9 @@ void expr_eliminate_eq(struct expr **ep1, struct expr **ep2) {
 int expr_eq(struct expr *e1, struct expr *e2) {
   int res, old_count;
 
-  if (e1->type != e2->type)
+  if (e1->type != e2->type) {
     return 0;
+  }
   switch (e1->type) {
   case E_EQUAL:
   case E_UNEQUAL:
@@ -211,7 +224,9 @@ int expr_eq(struct expr *e1, struct expr *e2) {
   case E_LIST:
   case E_RANGE:
   case E_NONE:
+  default:
       /* panic */;
+    break;
   }
 
   if (DEBUG_EXPR) {
@@ -227,7 +242,7 @@ int expr_eq(struct expr *e1, struct expr *e2) {
 struct expr *expr_eliminate_yn(struct expr *e) {
   struct expr *tmp;
 
-  if (e)
+  if (e) {
     switch (e->type) {
     case E_AND:
       e->left.expr = expr_eliminate_yn(e->left.expr);
@@ -301,8 +316,10 @@ struct expr *expr_eliminate_yn(struct expr *e) {
         }
       }
       break;
-    default:;
+    default:
+      break;
     }
+  }
   return e;
 }
 
@@ -310,8 +327,9 @@ struct expr *expr_eliminate_yn(struct expr *e) {
  * bool FOO!=n => FOO
  */
 struct expr *expr_trans_bool(struct expr *e) {
-  if (!e)
+  if (!e) {
     return NULL;
+  }
   switch (e->type) {
   case E_AND:
   case E_OR:
@@ -328,7 +346,8 @@ struct expr *expr_trans_bool(struct expr *e) {
       }
     }
     break;
-  default:;
+  default:
+    break;
   }
   return e;
 }
@@ -340,31 +359,41 @@ struct expr *expr_join_or(struct expr *e1, struct expr *e2) {
   struct expr *tmp;
   struct symbol *sym1, *sym2;
 
-  if (expr_eq(e1, e2))
+  if (expr_eq(e1, e2)) {
     return expr_copy(e1);
+  }
   if (e1->type != E_EQUAL && e1->type != E_UNEQUAL && e1->type != E_SYMBOL &&
-      e1->type != E_NOT)
+      e1->type != E_NOT) {
     return NULL;
+  }
   if (e2->type != E_EQUAL && e2->type != E_UNEQUAL && e2->type != E_SYMBOL &&
-      e2->type != E_NOT)
+      e2->type != E_NOT) {
     return NULL;
+  }
   if (e1->type == E_NOT) {
     tmp = e1->left.expr;
-    if (tmp->type != E_EQUAL && tmp->type != E_UNEQUAL && tmp->type != E_SYMBOL)
+    if (tmp->type != E_EQUAL && tmp->type != E_UNEQUAL &&
+        tmp->type != E_SYMBOL) {
       return NULL;
+    }
     sym1 = tmp->left.sym;
-  } else
+  } else {
     sym1 = e1->left.sym;
+  }
   if (e2->type == E_NOT) {
-    if (e2->left.expr->type != E_SYMBOL)
+    if (e2->left.expr->type != E_SYMBOL) {
       return NULL;
+    }
     sym2 = e2->left.expr->left.sym;
-  } else
+  } else {
     sym2 = e2->left.sym;
-  if (sym1 != sym2)
+  }
+  if (sym1 != sym2) {
     return NULL;
-  if (sym1->type != S_BOOLEAN && sym1->type != S_TRISTATE)
+  }
+  if (sym1->type != S_BOOLEAN && sym1->type != S_TRISTATE) {
     return NULL;
+  }
   if (sym1->type == S_TRISTATE) {
     if (e1->type == E_EQUAL && e2->type == E_EQUAL &&
         ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_mod) ||
@@ -389,8 +418,9 @@ struct expr *expr_join_or(struct expr *e1, struct expr *e2) {
     if ((e1->type == E_NOT && e1->left.expr->type == E_SYMBOL &&
          e2->type == E_SYMBOL) ||
         (e2->type == E_NOT && e2->left.expr->type == E_SYMBOL &&
-         e1->type == E_SYMBOL))
+         e1->type == E_SYMBOL)) {
       return expr_alloc_symbol(&symbol_yes);
+    }
   }
 
   if (DEBUG_EXPR) {
@@ -407,85 +437,105 @@ struct expr *expr_join_and(struct expr *e1, struct expr *e2) {
   struct expr *tmp;
   struct symbol *sym1, *sym2;
 
-  if (expr_eq(e1, e2))
+  if (expr_eq(e1, e2)) {
     return expr_copy(e1);
+  }
   if (e1->type != E_EQUAL && e1->type != E_UNEQUAL && e1->type != E_SYMBOL &&
-      e1->type != E_NOT)
+      e1->type != E_NOT) {
     return NULL;
+  }
   if (e2->type != E_EQUAL && e2->type != E_UNEQUAL && e2->type != E_SYMBOL &&
-      e2->type != E_NOT)
+      e2->type != E_NOT) {
     return NULL;
+  }
   if (e1->type == E_NOT) {
     tmp = e1->left.expr;
-    if (tmp->type != E_EQUAL && tmp->type != E_UNEQUAL && tmp->type != E_SYMBOL)
+    if (tmp->type != E_EQUAL && tmp->type != E_UNEQUAL &&
+        tmp->type != E_SYMBOL) {
       return NULL;
+    }
     sym1 = tmp->left.sym;
-  } else
+  } else {
     sym1 = e1->left.sym;
+  }
   if (e2->type == E_NOT) {
-    if (e2->left.expr->type != E_SYMBOL)
+    if (e2->left.expr->type != E_SYMBOL) {
       return NULL;
+    }
     sym2 = e2->left.expr->left.sym;
-  } else
+  } else {
     sym2 = e2->left.sym;
-  if (sym1 != sym2)
+  }
+  if (sym1 != sym2) {
     return NULL;
-  if (sym1->type != S_BOOLEAN && sym1->type != S_TRISTATE)
+  }
+  if (sym1->type != S_BOOLEAN && sym1->type != S_TRISTATE) {
     return NULL;
+  }
 
   if ((e1->type == E_SYMBOL && e2->type == E_EQUAL &&
        e2->right.sym == &symbol_yes) ||
       (e2->type == E_SYMBOL && e1->type == E_EQUAL &&
-       e1->right.sym == &symbol_yes))
+       e1->right.sym == &symbol_yes)) {
     // (a) && (a='y') -> (a='y')
     return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
+  }
 
   if ((e1->type == E_SYMBOL && e2->type == E_UNEQUAL &&
        e2->right.sym == &symbol_no) ||
       (e2->type == E_SYMBOL && e1->type == E_UNEQUAL &&
-       e1->right.sym == &symbol_no))
+       e1->right.sym == &symbol_no)) {
     // (a) && (a!='n') -> (a)
     return expr_alloc_symbol(sym1);
+  }
 
   if ((e1->type == E_SYMBOL && e2->type == E_UNEQUAL &&
        e2->right.sym == &symbol_mod) ||
       (e2->type == E_SYMBOL && e1->type == E_UNEQUAL &&
-       e1->right.sym == &symbol_mod))
+       e1->right.sym == &symbol_mod)) {
     // (a) && (a!='m') -> (a='y')
     return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
+  }
 
   if (sym1->type == S_TRISTATE) {
     if (e1->type == E_EQUAL && e2->type == E_UNEQUAL) {
       // (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
       sym2 = e1->right.sym;
-      if ((e2->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+      if ((e2->right.sym->flags & SYMBOL_CONST) &&
+          (sym2->flags & SYMBOL_CONST)) {
         return sym2 != e2->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
                                      : expr_alloc_symbol(&symbol_no);
+      }
     }
     if (e1->type == E_UNEQUAL && e2->type == E_EQUAL) {
       // (a='b') && (a!='c') -> 'b'='c' ? 'n' : a='b'
       sym2 = e2->right.sym;
-      if ((e1->right.sym->flags & SYMBOL_CONST) && (sym2->flags & SYMBOL_CONST))
+      if ((e1->right.sym->flags & SYMBOL_CONST) &&
+          (sym2->flags & SYMBOL_CONST)) {
         return sym2 != e1->right.sym ? expr_alloc_comp(E_EQUAL, sym1, sym2)
                                      : expr_alloc_symbol(&symbol_no);
+      }
     }
     if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
         ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_no) ||
-         (e1->right.sym == &symbol_no && e2->right.sym == &symbol_yes)))
+         (e1->right.sym == &symbol_no && e2->right.sym == &symbol_yes))) {
       // (a!='y') && (a!='n') -> (a='m')
       return expr_alloc_comp(E_EQUAL, sym1, &symbol_mod);
+    }
 
     if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
         ((e1->right.sym == &symbol_yes && e2->right.sym == &symbol_mod) ||
-         (e1->right.sym == &symbol_mod && e2->right.sym == &symbol_yes)))
+         (e1->right.sym == &symbol_mod && e2->right.sym == &symbol_yes))) {
       // (a!='y') && (a!='m') -> (a='n')
       return expr_alloc_comp(E_EQUAL, sym1, &symbol_no);
+    }
 
     if (e1->type == E_UNEQUAL && e2->type == E_UNEQUAL &&
         ((e1->right.sym == &symbol_mod && e2->right.sym == &symbol_no) ||
-         (e1->right.sym == &symbol_no && e2->right.sym == &symbol_mod)))
+         (e1->right.sym == &symbol_no && e2->right.sym == &symbol_mod))) {
       // (a!='m') && (a!='n') -> (a='m')
       return expr_alloc_comp(E_EQUAL, sym1, &symbol_yes);
+    }
 
     if ((e1->type == E_SYMBOL && e2->type == E_EQUAL &&
          e2->right.sym == &symbol_mod) ||
@@ -494,8 +544,9 @@ struct expr *expr_join_and(struct expr *e1, struct expr *e2) {
         (e1->type == E_SYMBOL && e2->type == E_UNEQUAL &&
          e2->right.sym == &symbol_yes) ||
         (e2->type == E_SYMBOL && e1->type == E_UNEQUAL &&
-         e1->right.sym == &symbol_yes))
+         e1->right.sym == &symbol_yes)) {
       return NULL;
+    }
   }
 
   if (DEBUG_EXPR) {
@@ -524,14 +575,17 @@ static void expr_eliminate_dups1(enum expr_type type, struct expr **ep1,
     expr_eliminate_dups1(type, &e1, &e2->right.expr);
     return;
   }
-  if (e1 == e2)
+  if (e1 == e2) {
     return;
+  }
 
   switch (e1->type) {
   case E_OR:
   case E_AND:
     expr_eliminate_dups1(e1->type, &e1, &e1);
-  default:;
+    /* falls through */
+  default:
+    break;
   }
 
   switch (type) {
@@ -555,7 +609,8 @@ static void expr_eliminate_dups1(enum expr_type type, struct expr **ep1,
       trans_count++;
     }
     break;
-  default:;
+  default:
+    break;
   }
 #undef e1
 #undef e2
@@ -576,8 +631,9 @@ static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1,
     expr_eliminate_dups2(type, &e1, &e2->left.expr);
     expr_eliminate_dups2(type, &e1, &e2->right.expr);
   }
-  if (e1 == e2)
+  if (e1 == e2) {
     return;
+  }
 
   switch (e1->type) {
   case E_OR:
@@ -610,7 +666,8 @@ static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1,
     expr_free(tmp1);
     expr_free(tmp);
     break;
-  default:;
+  default:
+    break;
   }
 #undef e1
 #undef e2
@@ -618,8 +675,9 @@ static void expr_eliminate_dups2(enum expr_type type, struct expr **ep1,
 
 struct expr *expr_eliminate_dups(struct expr *e) {
   int oldcount;
-  if (!e)
+  if (!e) {
     return e;
+  }
 
   oldcount = trans_count;
   while (1) {
@@ -629,10 +687,13 @@ struct expr *expr_eliminate_dups(struct expr *e) {
     case E_AND:
       expr_eliminate_dups1(e->type, &e, &e);
       expr_eliminate_dups2(e->type, &e, &e);
-    default:;
-    }
-    if (!trans_count)
+      /* falls through */
+    default:
       break;
+    }
+    if (!trans_count) {
+      break;
+    }
     e = expr_eliminate_yn(e);
   }
   trans_count = oldcount;
@@ -642,8 +703,9 @@ struct expr *expr_eliminate_dups(struct expr *e) {
 struct expr *expr_transform(struct expr *e) {
   struct expr *tmp;
 
-  if (!e)
+  if (!e) {
     return NULL;
+  }
   switch (e->type) {
   case E_EQUAL:
   case E_UNEQUAL:
@@ -653,12 +715,14 @@ struct expr *expr_transform(struct expr *e) {
   default:
     e->left.expr = expr_transform(e->left.expr);
     e->right.expr = expr_transform(e->right.expr);
+    break;
   }
 
   switch (e->type) {
   case E_EQUAL:
-    if (e->left.sym->type != S_BOOLEAN)
+    if (e->left.sym->type != S_BOOLEAN) {
       break;
+    }
     if (e->right.sym == &symbol_no) {
       e->type = E_NOT;
       e->left.expr = expr_alloc_symbol(e->left.sym);
@@ -680,8 +744,9 @@ struct expr *expr_transform(struct expr *e) {
     }
     break;
   case E_UNEQUAL:
-    if (e->left.sym->type != S_BOOLEAN)
+    if (e->left.sym->type != S_BOOLEAN) {
       break;
+    }
     if (e->right.sym == &symbol_no) {
       e->type = E_SYMBOL;
       e->right.sym = NULL;
@@ -767,10 +832,12 @@ struct expr *expr_transform(struct expr *e) {
         break;
       }
       break;
-    default:;
+    default:
+      break;
     }
     break;
-  default:;
+  default:
+    break;
   }
   return e;
 }
@@ -791,7 +858,8 @@ int expr_contains_symbol(struct expr *dep, struct symbol *sym) {
     return dep->left.sym == sym || dep->right.sym == sym;
   case E_NOT:
     return expr_contains_symbol(dep->left.expr, sym);
-  default:;
+  default:
+    break;
   }
   return 0;
 }
@@ -808,17 +876,20 @@ bool expr_depends_symbol(struct expr *dep, struct symbol *sym) {
     return dep->left.sym == sym;
   case E_EQUAL:
     if (dep->left.sym == sym) {
-      if (dep->right.sym == &symbol_yes || dep->right.sym == &symbol_mod)
+      if (dep->right.sym == &symbol_yes || dep->right.sym == &symbol_mod) {
         return true;
+      }
     }
     break;
   case E_UNEQUAL:
     if (dep->left.sym == sym) {
-      if (dep->right.sym == &symbol_no)
+      if (dep->right.sym == &symbol_no) {
         return true;
+      }
     }
     break;
-  default:;
+  default:
+    break;
   }
   return false;
 }
@@ -878,30 +949,37 @@ struct expr *expr_trans_compare(struct expr *e, enum expr_type type,
 
   if (!e) {
     e = expr_alloc_symbol(sym);
-    if (type == E_UNEQUAL)
+    if (type == E_UNEQUAL) {
       e = expr_alloc_one(E_NOT, e);
+    }
     return e;
   }
   switch (e->type) {
   case E_AND:
     e1 = expr_trans_compare(e->left.expr, E_EQUAL, sym);
     e2 = expr_trans_compare(e->right.expr, E_EQUAL, sym);
-    if (sym == &symbol_yes)
+    if (sym == &symbol_yes) {
       e = expr_alloc_two(E_AND, e1, e2);
-    if (sym == &symbol_no)
+    }
+    if (sym == &symbol_no) {
       e = expr_alloc_two(E_OR, e1, e2);
-    if (type == E_UNEQUAL)
+    }
+    if (type == E_UNEQUAL) {
       e = expr_alloc_one(E_NOT, e);
+    }
     return e;
   case E_OR:
     e1 = expr_trans_compare(e->left.expr, E_EQUAL, sym);
     e2 = expr_trans_compare(e->right.expr, E_EQUAL, sym);
-    if (sym == &symbol_yes)
+    if (sym == &symbol_yes) {
       e = expr_alloc_two(E_OR, e1, e2);
-    if (sym == &symbol_no)
+    }
+    if (sym == &symbol_no) {
       e = expr_alloc_two(E_AND, e1, e2);
-    if (type == E_UNEQUAL)
+    }
+    if (type == E_UNEQUAL) {
       e = expr_alloc_one(E_NOT, e);
+    }
     return e;
   case E_NOT:
     return expr_trans_compare(e->left.expr,
@@ -909,19 +987,25 @@ struct expr *expr_trans_compare(struct expr *e, enum expr_type type,
   case E_UNEQUAL:
   case E_EQUAL:
     if (type == E_EQUAL) {
-      if (sym == &symbol_yes)
+      if (sym == &symbol_yes) {
         return expr_copy(e);
-      if (sym == &symbol_mod)
+      }
+      if (sym == &symbol_mod) {
         return expr_alloc_symbol(&symbol_no);
-      if (sym == &symbol_no)
+      }
+      if (sym == &symbol_no) {
         return expr_alloc_one(E_NOT, expr_copy(e));
+      }
     } else {
-      if (sym == &symbol_yes)
+      if (sym == &symbol_yes) {
         return expr_alloc_one(E_NOT, expr_copy(e));
-      if (sym == &symbol_mod)
+      }
+      if (sym == &symbol_mod) {
         return expr_alloc_symbol(&symbol_yes);
-      if (sym == &symbol_no)
+      }
+      if (sym == &symbol_no) {
         return expr_copy(e);
+      }
     }
     break;
   case E_SYMBOL:
@@ -929,7 +1013,9 @@ struct expr *expr_trans_compare(struct expr *e, enum expr_type type,
   case E_LIST:
   case E_RANGE:
   case E_NONE:
+  default:
       /* panic */;
+    break;
   }
   return NULL;
 }
@@ -938,8 +1024,9 @@ tristate expr_calc_value(struct expr *e) {
   tristate val1, val2;
   const char *str1, *str2;
 
-  if (!e)
+  if (!e) {
     return yes;
+  }
 
   switch (e->type) {
   case E_SYMBOL:
@@ -978,25 +1065,36 @@ int expr_compare_type(enum expr_type t1, enum expr_type t2) {
 #if 0
 	return 1;
 #else
-  if (t1 == t2)
+  if (t1 == t2) {
     return 0;
+  }
   switch (t1) {
   case E_EQUAL:
   case E_UNEQUAL:
-    if (t2 == E_NOT)
+    if (t2 == E_NOT) {
       return 1;
+    }
+    /* falls through */
   case E_NOT:
-    if (t2 == E_AND)
+    if (t2 == E_AND) {
       return 1;
+    }
+    /* falls through */
   case E_AND:
-    if (t2 == E_OR)
+    if (t2 == E_OR) {
       return 1;
+    }
+    /* falls through */
   case E_OR:
-    if (t2 == E_LIST)
+    if (t2 == E_LIST) {
       return 1;
+    }
+    /* falls through */
   case E_LIST:
-    if (t2 == 0)
+    if (t2 == 0) {
       return 1;
+    }
+    /* falls through */
   default:
     return -1;
   }
@@ -1013,32 +1111,36 @@ void expr_print(struct expr *e,
     return;
   }
 
-  if (expr_compare_type(prevtoken, e->type) > 0)
+  if (expr_compare_type(prevtoken, e->type) > 0) {
     fn(data, NULL, "(");
+  }
   switch (e->type) {
   case E_SYMBOL:
-    if (e->left.sym->name)
+    if (e->left.sym->name) {
       fn(data, e->left.sym, e->left.sym->name);
-    else
+    } else {
       fn(data, NULL, "<choice>");
+    }
     break;
   case E_NOT:
     fn(data, NULL, "!");
     expr_print(e->left.expr, fn, data, E_NOT);
     break;
   case E_EQUAL:
-    if (e->left.sym->name)
+    if (e->left.sym->name) {
       fn(data, e->left.sym, e->left.sym->name);
-    else
+    } else {
       fn(data, NULL, "<choice>");
+    }
     fn(data, NULL, "=");
     fn(data, e->right.sym, e->right.sym->name);
     break;
   case E_UNEQUAL:
-    if (e->left.sym->name)
+    if (e->left.sym->name) {
       fn(data, e->left.sym, e->left.sym->name);
-    else
+    } else {
       fn(data, NULL, "<choice>");
+    }
     fn(data, NULL, "!=");
     fn(data, e->right.sym, e->right.sym->name);
     break;
@@ -1070,11 +1172,11 @@ void expr_print(struct expr *e,
     char buf[32];
     sprintf(buf, "<unknown type %d>", e->type);
     fn(data, NULL, buf);
-    break;
+  } break;
   }
-  }
-  if (expr_compare_type(prevtoken, e->type) > 0)
+  if (expr_compare_type(prevtoken, e->type) > 0) {
     fn(data, NULL, ")");
+  }
 }
 
 static void expr_print_file_helper(void *data, struct symbol *sym,

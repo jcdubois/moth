@@ -20,8 +20,10 @@
 static void conf_warning(const char *fmt, ...)
     __attribute__((format(printf, 1, 2)));
 
-static const char *conf_filename;
-static int conf_lineno, conf_warnings, conf_unsaved;
+static const char *conf_filename = NULL;
+static int conf_lineno = 0;
+static int conf_warnings = 0;
+static int conf_unsaved = 0;
 
 const char conf_defname[] = "extra/Configs/defconfigs/$ARCH";
 
@@ -53,8 +55,9 @@ static char *conf_expand_value(const char *in) {
     strncat(res_value, in, src - in);
     src++;
     dst = name;
-    while (isalnum(*src) || *src == '_')
+    while (isalnum(*src) || *src == '_') {
       *dst++ = *src++;
+    }
     *dst = 0;
     sym = sym_lookup(name, 0);
     sym_calc_value(sym);
@@ -75,8 +78,9 @@ char *conf_get_default_confname(void) {
   env = getenv(OPENCONF_SRCTREE_ENVNAME);
   if (env) {
     sprintf(fullname, "%s/%s", env, name);
-    if (!stat(fullname, &buf))
+    if (!stat(fullname, &buf)) {
       return fullname;
+    }
   }
   return name;
 }
@@ -92,6 +96,7 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags,
       sym->flags |= def_flags;
       break;
     }
+    /* falls through */
   case S_BOOLEAN:
     if (p[0] == 'y') {
       sym->def[def].tri = yes;
@@ -112,9 +117,11 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags,
       sym->type = S_STRING;
       goto done;
     }
+    /* falls through */
   case S_STRING:
-    if (*p++ != '"')
+    if (*p++ != '"') {
       break;
+    }
     for (p2 = p; (p2 = strpbrk(p2, "\"\\")); p2++) {
       if (*p2 == '"') {
         *p2 = 0;
@@ -137,7 +144,8 @@ static int conf_set_sym_val(struct symbol *sym, int def, int def_flags,
       return 1;
     }
     break;
-  default:;
+  default:
+    break;
   }
   return 0;
 }
@@ -156,16 +164,19 @@ int conf_read_simple(const char *name, int def) {
 
     name = conf_get_configname();
     in = zconf_fopen(name);
-    if (in)
+    if (in) {
       goto load;
+    }
     sym_add_change_count(1);
-    if (!sym_defconfig_list)
+    if (!sym_defconfig_list) {
       return 1;
+    }
 
     for_all_defaults(sym_defconfig_list, prop) {
       if (expr_calc_value(prop->visible.expr) == no ||
-          prop->expr->type != E_SYMBOL)
+          prop->expr->type != E_SYMBOL) {
         continue;
+      }
       name = conf_expand_value(prop->expr->left.sym->name);
       in = zconf_fopen(name);
       if (in) {
@@ -177,8 +188,9 @@ int conf_read_simple(const char *name, int def) {
       }
     }
   }
-  if (!in)
+  if (!in) {
     return 1;
+  }
 
 load:
   conf_filename = name;
@@ -190,17 +202,21 @@ load:
   for_all_symbols(i, sym) {
     sym->flags |= SYMBOL_CHANGED;
     sym->flags &= ~(def_flags | SYMBOL_VALID);
-    if (sym_is_choice(sym))
+    if (sym_is_choice(sym)) {
       sym->flags |= def_flags;
+    }
     switch (sym->type) {
     case S_INT:
     case S_HEX:
     case S_STRING:
-      if (sym->def[def].val)
+      if (sym->def[def].val) {
         free(sym->def[def].val);
+      }
+      /* falls through */
     default:
       sym->def[def].val = NULL;
       sym->def[def].tri = no;
+      break;
     }
   }
 
@@ -209,14 +225,17 @@ load:
     sym = NULL;
     switch (line[0]) {
     case '#':
-      if (line[1] != ' ')
+      if (line[1] != ' ') {
         continue;
+      }
       p = strchr(line + 2, ' ');
-      if (!p)
+      if (!p) {
         continue;
+      }
       *p++ = 0;
-      if (strncmp(p, "is not set", 10))
+      if (strncmp(p, "is not set", 10)) {
         continue;
+      }
       if (def == S_DEF_USER) {
         sym = sym_find(line + 2);
         if (!sym) {
@@ -225,8 +244,9 @@ load:
         }
       } else {
         sym = sym_lookup(line + 2, 0);
-        if (sym->type == S_UNKNOWN)
+        if (sym->type == S_UNKNOWN) {
           sym->type = S_BOOLEAN;
+        }
       }
       if (sym->flags & def_flags) {
         conf_warning("override: reassigning to symbol %s", sym->name);
@@ -237,7 +257,8 @@ load:
         sym->def[def].tri = no;
         sym->flags |= def_flags;
         break;
-      default:;
+      default:
+        break;
       }
       break;
     case 'A':
@@ -275,8 +296,9 @@ load:
       p2 = strchr(p, '\n');
       if (p2) {
         *p2-- = 0;
-        if (*p2 == '\r')
+        if (*p2 == '\r') {
           *p2 = 0;
+        }
       }
       if (def == S_DEF_USER) {
         sym = sym_find(line);
@@ -286,14 +308,16 @@ load:
         }
       } else {
         sym = sym_lookup(line, 0);
-        if (sym->type == S_UNKNOWN)
+        if (sym->type == S_UNKNOWN) {
           sym->type = S_OTHER;
+        }
       }
       if (sym->flags & def_flags) {
         conf_warning("override: reassigning to symbol %s", sym->name);
       }
-      if (conf_set_sym_val(sym, def, def_flags, p))
+      if (conf_set_sym_val(sym, def, def_flags, p)) {
         continue;
+      }
       break;
     case '\r':
     case '\n':
@@ -314,8 +338,9 @@ load:
         }
         break;
       case yes:
-        if (cs->def[def].tri != no)
+        if (cs->def[def].tri != no) {
           conf_warning("override: %s changes choice state", sym->name);
+        }
         cs->def[def].val = sym;
         break;
       }
@@ -324,8 +349,9 @@ load:
   }
   fclose(in);
 
-  if (modules_sym)
+  if (modules_sym) {
     sym_calc_value(modules_sym);
+  }
   return 0;
 }
 
@@ -337,35 +363,43 @@ int conf_read(const char *name) {
 
   sym_set_change_count(0);
 
-  if (conf_read_simple(name, S_DEF_USER))
+  if (conf_read_simple(name, S_DEF_USER)) {
     return 1;
+  }
 
   for_all_symbols(i, sym) {
     sym_calc_value(sym);
-    if (sym_is_choice(sym) || (sym->flags & SYMBOL_AUTO))
+    if (sym_is_choice(sym) || (sym->flags & SYMBOL_AUTO)) {
       goto sym_ok;
+    }
     if (sym_has_value(sym) && (sym->flags & SYMBOL_WRITE)) {
       /* check that calculated value agrees with saved value */
       switch (sym->type) {
       case S_BOOLEAN:
       case S_TRISTATE:
-        if (sym->def[S_DEF_USER].tri != sym_get_tristate_value(sym))
+        if (sym->def[S_DEF_USER].tri != sym_get_tristate_value(sym)) {
           break;
-        if (!sym_is_choice(sym))
+        }
+        if (!sym_is_choice(sym)) {
           goto sym_ok;
+        }
+        /* falls through */
       default:
-        if (!strcmp(sym->curr.val, sym->def[S_DEF_USER].val))
+        if (!strcmp(sym->curr.val, sym->def[S_DEF_USER].val)) {
           goto sym_ok;
+        }
         break;
       }
-    } else if (!sym_has_value(sym) && !(sym->flags & SYMBOL_WRITE))
+    } else if (!sym_has_value(sym) && !(sym->flags & SYMBOL_WRITE)) {
       /* no previous value and not saved */
       goto sym_ok;
+    }
     conf_unsaved++;
     /* maybe print value in verbose mode... */
   sym_ok:
-    if (!sym_is_choice(sym))
+    if (!sym_is_choice(sym)) {
       continue;
+    }
     /* The choice symbol only has a set value (and thus is not new)
      * if all its visible childs have values.
      */
@@ -384,15 +418,17 @@ int conf_read(const char *name) {
        * doesn't quite work if the openconf and the saved
        * configuration disagree.
        */
-      if (sym->visible == no && !conf_unsaved)
+      if (sym->visible == no && !conf_unsaved) {
         sym->flags &= ~SYMBOL_DEF_USER;
+      }
       switch (sym->type) {
       case S_STRING:
       case S_INT:
       case S_HEX:
         /* Reset a string value if it's out of range */
-        if (sym_string_within_range(sym, sym->def[S_DEF_USER].val))
+        if (sym_string_within_range(sym, sym->def[S_DEF_USER].val)) {
           break;
+        }
         sym->flags &= ~(SYMBOL_VALID | SYMBOL_DEF_USER);
         conf_unsaved++;
         break;
@@ -419,8 +455,9 @@ int conf_write_defconfig(const char *filename) {
   const char *str;
 
   out = fopen(filename, "w");
-  if (!out)
+  if (!out) {
     return 1;
+  }
 
   sym_clear_all_valid();
 
@@ -428,25 +465,30 @@ int conf_write_defconfig(const char *filename) {
   while (menu) {
     sym = menu->sym;
     if (!sym) {
-      if (!menu_is_visible(menu))
+      if (!menu_is_visible(menu)) {
         goto next;
+      }
     } else if (!(sym->flags & SYMBOL_CHOICE)) {
       sym_calc_value(sym);
-      if (!(sym->flags & SYMBOL_WRITE))
+      if (!(sym->flags & SYMBOL_WRITE)) {
         goto next;
+      }
       sym->flags &= ~SYMBOL_WRITE;
       /* If we cannot change the symbol - skip */
-      if (!sym_is_changable(sym))
+      if (!sym_is_changable(sym)) {
         goto next;
+      }
       /* If symbol equals to default value - skip */
-      if (strcmp(sym_get_string_value(sym), sym_get_string_default(sym)) == 0)
+      if (strcmp(sym_get_string_value(sym), sym_get_string_default(sym)) == 0) {
         goto next;
+      }
 
       type = sym->type;
       if (type == S_TRISTATE) {
         sym_calc_value(modules_sym);
-        if (modules_sym->curr.tri == no)
+        if (modules_sym->curr.tri == no) {
           type = S_BOOLEAN;
+        }
       }
       switch (type) {
       case S_BOOLEAN:
@@ -472,8 +514,9 @@ int conf_write_defconfig(const char *filename) {
             fwrite(str, l, 1, out);
             str += l;
           }
-          if (!*str)
+          if (!*str) {
             break;
+          }
           fprintf(out, "\\%c", *str++);
         }
         fputs("\"\n", out);
@@ -484,6 +527,7 @@ int conf_write_defconfig(const char *filename) {
           fprintf(out, "%s=%s\n", sym->name, str);
           break;
         }
+        /* falls through */
       case S_INT:
         str = sym_get_string_value(sym);
         fprintf(out, "%s=%s\n", sym->name, str);
@@ -496,15 +540,16 @@ int conf_write_defconfig(const char *filename) {
       menu = menu->list;
       continue;
     }
-    if (menu->next)
+    if (menu->next) {
       menu = menu->next;
-    else
+    } else {
       while ((menu = menu->parent)) {
         if (menu->next) {
           menu = menu->next;
           break;
         }
       }
+    }
   }
   fclose(out);
 
@@ -541,14 +586,17 @@ int conf_write(const char *name) {
       int size = slash - name + 1;
       memcpy(dirname, name, size);
       dirname[size] = 0;
-      if (slash[1])
+      if (slash[1]) {
         basename = slash + 1;
-      else
+      } else {
         basename = conf_get_configname();
-    } else
+      }
+    } else {
       basename = name;
-  } else
+    }
+  } else {
     basename = conf_get_configname();
+  }
 
   snprintf(newname, sizeof(newname), "%s%s", dirname, basename);
   env = getenv(OPENCONF_OVERWRITECONFIG_ENVNAME);
@@ -560,19 +608,23 @@ int conf_write(const char *name) {
     *tmpname = 0;
     out = fopen(newname, "w");
   }
-  if (!out)
+  if (!out) {
     return 1;
+  }
 
   project = getenv(OPENCONF_PROJECT_ENVNAME);
-  if (!project)
+  if (!project) {
     project = OPENCONF_PROJECT_DEFAULT;
+  }
   version = getenv(OPENCONF_VERSION_ENVNAME);
-  if (!version)
+  if (!version) {
     version = OPENCONF_VERSION_DEFAULT;
+  }
   time(&now);
   env = getenv(OPENCONF_NOTIMESTAMP_ENVNAME);
-  if (env && *env)
+  if (env && *env) {
     use_timestamp = 0;
+  }
 
   fprintf(out,
           _("#\n"
@@ -584,15 +636,17 @@ int conf_write(const char *name) {
           project, version, use_timestamp ? "# " : "",
           use_timestamp ? ctime(&now) : "");
 
-  if (!conf_get_changed())
+  if (!conf_get_changed()) {
     sym_clear_all_valid();
+  }
 
   menu = rootmenu.list;
   while (menu) {
     sym = menu->sym;
     if (!sym) {
-      if (!menu_is_visible(menu))
+      if (!menu_is_visible(menu)) {
         goto next;
+      }
       str = menu_get_prompt(menu);
       fprintf(out,
               "\n"
@@ -602,14 +656,16 @@ int conf_write(const char *name) {
               str);
     } else if (!(sym->flags & SYMBOL_CHOICE)) {
       sym_calc_value(sym);
-      if (!(sym->flags & SYMBOL_WRITE))
+      if (!(sym->flags & SYMBOL_WRITE)) {
         goto next;
+      }
       sym->flags &= ~SYMBOL_WRITE;
       type = sym->type;
       if (type == S_TRISTATE) {
         sym_calc_value(modules_sym);
-        if (modules_sym->curr.tri == no)
+        if (modules_sym->curr.tri == no) {
           type = S_BOOLEAN;
+        }
       }
       switch (type) {
       case S_BOOLEAN:
@@ -635,8 +691,9 @@ int conf_write(const char *name) {
             fwrite(str, l, 1, out);
             str += l;
           }
-          if (!*str)
+          if (!*str) {
             break;
+          }
           fprintf(out, "\\%c", *str++);
         }
         fputs("\"\n", out);
@@ -659,15 +716,16 @@ int conf_write(const char *name) {
       menu = menu->list;
       continue;
     }
-    if (menu->next)
+    if (menu->next) {
       menu = menu->next;
-    else
+    } else {
       while ((menu = menu->parent)) {
         if (menu->next) {
           menu = menu->next;
           break;
         }
       }
+    }
   }
   fclose(out);
 
@@ -675,8 +733,9 @@ int conf_write(const char *name) {
     strcat(dirname, basename);
     strcat(dirname, ".old");
     rename(newname, dirname);
-    if (rename(tmpname, newname))
+    if (rename(tmpname, newname)) {
       return 1;
+    }
   }
 
   printf(_("#\n"
@@ -697,27 +756,31 @@ int conf_split_config(void) {
   int res, i, fd;
 
   name = getenv(OPENCONF_TMPDIR_ENVNAME);
-  if (name)
+  if (name) {
     strcpy(tmppath, name);
-  else
+  } else {
     strcpy(tmppath, OPENCONF_TMPDIR_DEFAULT);
+  }
   name = getenv(OPENCONF_AUTOCONFIG_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_AUTOCONFIG_DEFAULT;
+  }
   strcpy(path, tmppath);
   strcat(path, "/");
   strcat(path, name);
   conf_read_simple(path, S_DEF_AUTO);
 
   name = getcwd(oldpath, PATH_MAX);
-  if (chdir(tmppath))
+  if (chdir(tmppath)) {
     return 1;
+  }
 
   res = 0;
   for_all_symbols(i, sym) {
     sym_calc_value(sym);
-    if ((sym->flags & SYMBOL_AUTO) || !sym->name)
+    if ((sym->flags & SYMBOL_AUTO) || !sym->name) {
       continue;
+    }
     if (sym->flags & SYMBOL_WRITE) {
       if (sym->flags & SYMBOL_DEF_AUTO) {
         /*
@@ -727,14 +790,16 @@ int conf_split_config(void) {
         switch (sym->type) {
         case S_BOOLEAN:
         case S_TRISTATE:
-          if (sym_get_tristate_value(sym) == sym->def[S_DEF_AUTO].tri)
+          if (sym_get_tristate_value(sym) == sym->def[S_DEF_AUTO].tri) {
             continue;
+          }
           break;
         case S_STRING:
         case S_HEX:
         case S_INT:
-          if (!strcmp(sym_get_string_value(sym), sym->def[S_DEF_AUTO].val))
+          if (!strcmp(sym_get_string_value(sym), sym->def[S_DEF_AUTO].val)) {
             continue;
+          }
           break;
         default:
           break;
@@ -747,16 +812,18 @@ int conf_split_config(void) {
         switch (sym->type) {
         case S_BOOLEAN:
         case S_TRISTATE:
-          if (sym_get_tristate_value(sym) == no)
+          if (sym_get_tristate_value(sym) == no) {
             continue;
+          }
           break;
         default:
           break;
         }
       }
-    } else if (!(sym->flags & SYMBOL_DEF_AUTO))
+    } else if (!(sym->flags & SYMBOL_DEF_AUTO)) {
       /* There is neither an old nor a new value. */
       continue;
+    }
     /* else
      *	There is an old value, but no new value ('no' (unset)
      *	isn't saved in auto.conf, so the old value is always
@@ -802,8 +869,9 @@ int conf_split_config(void) {
     close(fd);
   }
 out:
-  if (chdir(oldpath))
+  if (chdir(oldpath)) {
     return 1;
+  }
 
   return res;
 }
@@ -817,28 +885,32 @@ int conf_write_autoconf(void) {
   int i, l;
 
   name = getenv(OPENCONF_TMPDIR_ENVNAME);
-  if (name)
+  if (name) {
     strcpy(tmppath, name);
-  else
+  } else {
     strcpy(tmppath, OPENCONF_TMPDIR_DEFAULT);
+  }
 
   sym_clear_all_valid();
 
   strcpy(path, tmppath);
   strcat(path, "/");
   name = getenv(OPENCONF_AUTOCONFIG_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_AUTOCONFIG_DEFAULT;
+  }
   strcat(path, name);
   strcat(path, ".cmd");
   file_write_dep(path);
 
-  if (conf_split_config())
+  if (conf_split_config()) {
     return 1;
+  }
 
   out = fopen(".tmpconfig", "w");
-  if (!out)
+  if (!out) {
     return 1;
+  }
 
   out_h = fopen(".tmpconfig.h", "w");
   if (!out_h) {
@@ -854,11 +926,13 @@ int conf_write_autoconf(void) {
   }
 
   name = getenv(OPENCONF_PROJECT_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_PROJECT_DEFAULT;
+  }
   version = getenv(OPENCONF_VERSION_ENVNAME);
-  if (!version)
+  if (!version) {
     version = OPENCONF_VERSION_DEFAULT;
+  }
   time(&now);
   fprintf(out,
           "#\n"
@@ -890,8 +964,9 @@ int conf_write_autoconf(void) {
 
   for_all_symbols(i, sym) {
     sym_calc_value(sym);
-    if (!(sym->flags & SYMBOL_WRITE) || !sym->name)
+    if (!(sym->flags & SYMBOL_WRITE) || !sym->name) {
       continue;
+    }
     switch (sym->type) {
     case S_BOOLEAN:
       switch (sym_get_tristate_value(sym)) {
@@ -945,8 +1020,9 @@ int conf_write_autoconf(void) {
           fwrite(str, l, 1, out_ada);
           str += l;
         }
-        if (!*str)
+        if (!*str) {
           break;
+        }
         fprintf(out, "\\%c", *str);
         fprintf(out_h, "\\%c", *str);
         fprintf(out_ada, "\\%c", *str);
@@ -986,31 +1062,37 @@ int conf_write_autoconf(void) {
   strcpy(path, tmppath);
   strcat(path, "/");
   name = getenv(OPENCONF_AUTOADS_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_AUTOADS_DEFAULT;
+  }
   strcat(path, name);
-  if (rename(".tmpconfig.ads", path))
+  if (rename(".tmpconfig.ads", path)) {
     return 1;
+  }
   strcpy(path, tmppath);
   strcat(path, "/");
   name = getenv(OPENCONF_AUTOHEADER_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_AUTOHEADER_DEFAULT;
+  }
   strcat(path, name);
-  if (rename(".tmpconfig.h", path))
+  if (rename(".tmpconfig.h", path)) {
     return 1;
+  }
   strcpy(path, tmppath);
   strcat(path, "/");
   name = getenv(OPENCONF_AUTOCONFIG_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_AUTOCONFIG_DEFAULT;
+  }
   strcat(path, name);
   /*
    * This must be the last step, build will have dependency on AUTOCONFIG file
    * and this marks the successful completion of the previous steps.
    */
-  if (rename(".tmpconfig", path))
+  if (rename(".tmpconfig", path)) {
     return 1;
+  }
 
   return 0;
 }
@@ -1021,8 +1103,9 @@ static void (*conf_changed_callback)(void);
 void sym_set_change_count(int count) {
   int _sym_change_count = sym_change_count;
   sym_change_count = count;
-  if (conf_changed_callback && (bool)_sym_change_count != (bool)count)
+  if (conf_changed_callback && (bool)_sym_change_count != (bool)count) {
     conf_changed_callback();
+  }
 }
 
 void sym_add_change_count(int count) {
@@ -1040,8 +1123,9 @@ void conf_set_all_new_symbols(enum conf_def_mode mode) {
   int i, cnt, def;
 
   for_all_symbols(i, sym) {
-    if (sym_has_value(sym))
+    if (sym_has_value(sym)) {
       continue;
+    }
     switch (sym_get_type(sym)) {
     case S_BOOLEAN:
     case S_TRISTATE:
@@ -1061,23 +1145,27 @@ void conf_set_all_new_symbols(enum conf_def_mode mode) {
       default:
         continue;
       }
-      if (!sym_is_choice(sym) || mode != def_random)
+      if (!sym_is_choice(sym) || mode != def_random) {
         sym->flags |= SYMBOL_DEF_USER;
+      }
       break;
     default:
       break;
     }
   }
 
-  if (modules_sym)
+  if (modules_sym) {
     sym_calc_value(modules_sym);
+  }
 
-  if (mode != def_random)
+  if (mode != def_random) {
     return;
+  }
 
   for_all_symbols(i, csym) {
-    if (sym_has_value(csym) || !sym_is_choice(csym))
+    if (sym_has_value(csym) || !sym_is_choice(csym)) {
       continue;
+    }
 
     sym_calc_value(csym);
     prop = sym_get_choice_prop(csym);
@@ -1085,15 +1173,17 @@ void conf_set_all_new_symbols(enum conf_def_mode mode) {
     while (1) {
       cnt = 0;
       expr_list_for_each_sym(prop->expr, e, sym) {
-        if (sym->visible == no)
+        if (sym->visible == no) {
           continue;
+        }
         if (def == cnt++) {
           csym->def[S_DEF_USER].val = sym;
           break;
         }
       }
-      if (def >= 0 || cnt < 2)
+      if (def >= 0 || cnt < 2) {
         break;
+      }
       def = (rand() % cnt) + 1;
     }
     csym->flags |= SYMBOL_DEF_USER;

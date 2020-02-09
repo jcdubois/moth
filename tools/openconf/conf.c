@@ -29,47 +29,54 @@ enum {
   set_no,
   set_random
 } input_mode = ask_all;
-char *defconfig_file;
+
+static char *defconfig_file = NULL;
 
 static int indent = 1;
 static int valid_stdin = 1;
-static int sync_openconf;
-static int conf_cnt;
-static char line[128];
-static struct menu *rootEntry;
+static int sync_openconf = 0;
+static int conf_cnt = 0;
+static char line[128] = {0};
+static struct menu *rootEntry = NULL;
 
 static char nohelp_text[] =
     N_("Sorry, no help available for this option yet.\n");
 
 static const char *get_help(struct menu *menu) {
-  if (menu_has_help(menu))
+  if (menu_has_help(menu)) {
     return _(menu_get_help(menu));
-  else
+  } else {
     return nohelp_text;
+  }
 }
 
 static void strip(char *str) {
   char *p = str;
   int l;
 
-  while ((isspace(*p)))
+  while ((isspace(*p))) {
     p++;
+  }
   l = strlen(p);
-  if (p != str)
+  if (p != str) {
     memmove(str, p, l + 1);
-  if (!l)
+  }
+  if (!l) {
     return;
+  }
   p = str + l - 1;
-  while ((isspace(*p)))
+  while ((isspace(*p))) {
     *p-- = 0;
+  }
 }
 
 static int conf_askvalue(struct symbol *sym, const char *def) {
   char *ret;
   enum symbol_type type = sym_get_type(sym);
 
-  if (!sym_has_value(sym))
+  if (!sym_has_value(sym)) {
     printf("(NEW) ");
+  }
 
   line[0] = '\n';
   line[1] = 0;
@@ -88,7 +95,7 @@ static int conf_askvalue(struct symbol *sym, const char *def) {
       printf("%s\n", def);
       return 0;
     }
-    /* Falls through. */
+    /* falls through */
   case ask_all:
     fflush(stdout);
     ret = fgets(line, 128, stdin);
@@ -104,7 +111,8 @@ static int conf_askvalue(struct symbol *sym, const char *def) {
   case S_STRING:
     printf("%s\n", def);
     return 1;
-  default:;
+  default:
+    break;
   }
   printf("%s", line);
   return 1;
@@ -118,10 +126,12 @@ int conf_string(struct menu *menu) {
     printf("%*s%s ", indent - 1, "", _(menu->prompt->text));
     printf("(%s) ", sym->name);
     def = sym_get_string_value(sym);
-    if (sym_get_string_value(sym))
+    if (sym_get_string_value(sym)) {
       printf("[%s] ", def);
-    if (!conf_askvalue(sym, def))
+    }
+    if (!conf_askvalue(sym, def)) {
       return 0;
+    }
     switch (line[0]) {
     case '\n':
       break;
@@ -132,12 +142,15 @@ int conf_string(struct menu *menu) {
         def = NULL;
         break;
       }
+      /* falls through */
     default:
       line[strlen(line) - 1] = 0;
       def = line;
+      break;
     }
-    if (def && sym_set_string_value(sym, def))
+    if (def && sym_set_string_value(sym, def)) {
       return 0;
+    }
   }
 }
 
@@ -148,8 +161,9 @@ static int conf_sym(struct menu *menu) {
 
   while (1) {
     printf("%*s%s ", indent - 1, "", _(menu->prompt->text));
-    if (sym->name)
+    if (sym->name) {
       printf("(%s) ", sym->name);
+    }
     type = sym_get_type(sym);
     (void)type;
     putchar('[');
@@ -164,38 +178,48 @@ static int conf_sym(struct menu *menu) {
     case yes:
       putchar('Y');
       break;
+    default:
+      break;
     }
-    if (oldval != no && sym_tristate_within_range(sym, no))
+    if (oldval != no && sym_tristate_within_range(sym, no)) {
       printf("/n");
-    if (oldval != mod && sym_tristate_within_range(sym, mod))
+    }
+    if (oldval != mod && sym_tristate_within_range(sym, mod)) {
       printf("/m");
-    if (oldval != yes && sym_tristate_within_range(sym, yes))
+    }
+    if (oldval != yes && sym_tristate_within_range(sym, yes)) {
       printf("/y");
-    if (menu_has_help(menu))
+    }
+    if (menu_has_help(menu)) {
       printf("/?");
+    }
     printf("] ");
-    if (!conf_askvalue(sym, sym_get_string_value(sym)))
+    if (!conf_askvalue(sym, sym_get_string_value(sym))) {
       return 0;
+    }
     strip(line);
 
     switch (line[0]) {
     case 'n':
     case 'N':
       newval = no;
-      if (!line[1] || !strcmp(&line[1], "o"))
+      if (!line[1] || !strcmp(&line[1], "o")) {
         break;
+      }
       continue;
     case 'm':
     case 'M':
       newval = mod;
-      if (!line[1])
-        break;
-      continue;
+      if (line[1]) {
+        continue;
+      }
+      break;
     case 'y':
     case 'Y':
       newval = yes;
-      if (!line[1] || !strcmp(&line[1], "es"))
+      if (!line[1] || !strcmp(&line[1], "es")) {
         break;
+      }
       continue;
     case 0:
       newval = oldval;
@@ -205,8 +229,9 @@ static int conf_sym(struct menu *menu) {
     default:
       continue;
     }
-    if (sym_set_tristate_value(sym, newval))
+    if (sym_set_tristate_value(sym, newval)) {
       return 0;
+    }
   help:
     printf("\n%s\n", get_help(menu));
   }
@@ -233,6 +258,8 @@ static int conf_choice(struct menu *menu) {
       return 0;
     case yes:
       break;
+    default:
+      break;
     }
   } else {
     switch (sym_get_tristate_value(sym)) {
@@ -242,6 +269,8 @@ static int conf_choice(struct menu *menu) {
       printf("%*s%s\n", indent - 1, "", _(menu_get_prompt(menu)));
       return 0;
     case yes:
+      break;
+    default:
       break;
     }
   }
@@ -254,8 +283,9 @@ static int conf_choice(struct menu *menu) {
     cnt = def = 0;
     line[0] = 0;
     for (child = menu->list; child; child = child->next) {
-      if (!menu_is_visible(child))
+      if (!menu_is_visible(child)) {
         continue;
+      }
       if (!child->sym) {
         printf("%*c %s\n", indent, '*', _(menu_get_prompt(child)));
         continue;
@@ -264,13 +294,16 @@ static int conf_choice(struct menu *menu) {
       if (child->sym == def_sym) {
         def = cnt;
         printf("%*c", indent, '>');
-      } else
+      } else {
         printf("%*c", indent, ' ');
+      }
       printf(" %d. %s", cnt, _(menu_get_prompt(child)));
-      if (child->sym->name)
+      if (child->sym->name) {
         printf(" (%s)", child->sym->name);
-      if (!sym_has_value(child->sym))
+      }
+      if (!sym_has_value(child->sym)) {
         printf(" (NEW)");
+      }
       printf("\n");
     }
     printf(_("%*schoice"), indent - 1, "");
@@ -279,8 +312,9 @@ static int conf_choice(struct menu *menu) {
       goto conf_childs;
     }
     printf("[1-%d", cnt);
-    if (menu_has_help(menu))
+    if (menu_has_help(menu)) {
       printf("?");
+    }
     printf("]: ");
     switch (input_mode) {
     case ask_new:
@@ -290,6 +324,7 @@ static int conf_choice(struct menu *menu) {
         printf("%d\n", cnt);
         break;
       }
+      /* falls through */
     case ask_all:
       fflush(stdout);
       ret = fgets(line, 128, stdin);
@@ -299,12 +334,13 @@ static int conf_choice(struct menu *menu) {
         printf("\n%s\n", get_help(menu));
         continue;
       }
-      if (!line[0])
+      if (!line[0]) {
         cnt = def;
-      else if (isdigit(line[0]))
+      } else if (isdigit(line[0])) {
         cnt = atoi(line);
-      else
+      } else {
         continue;
+      }
       break;
     default:
       break;
@@ -312,13 +348,16 @@ static int conf_choice(struct menu *menu) {
 
   conf_childs:
     for (child = menu->list; child; child = child->next) {
-      if (!child->sym || !menu_is_visible(child))
+      if (!child->sym || !menu_is_visible(child)) {
         continue;
-      if (!--cnt)
+      }
+      if (!--cnt) {
         break;
+      }
     }
-    if (!child)
+    if (!child) {
       continue;
+    }
     if (line[strlen(line) - 1] == '?') {
       printf("\n%s\n", get_help(child));
       continue;
@@ -338,8 +377,9 @@ static void conf(struct menu *menu) {
   struct property *prop;
   struct menu *child;
 
-  if (!menu_is_visible(menu))
+  if (!menu_is_visible(menu)) {
     return;
+  }
 
   sym = menu->sym;
   prop = menu->prompt;
@@ -354,20 +394,24 @@ static void conf(struct menu *menu) {
       }
     case P_COMMENT:
       prompt = menu_get_prompt(menu);
-      if (prompt)
+      if (prompt) {
         printf("%*c\n%*c %s\n%*c\n", indent, '*', indent, '*', _(prompt),
                indent, '*');
-    default:;
+      }
+    default:
+      break;
     }
   }
 
-  if (!sym)
+  if (!sym) {
     goto conf_childs;
+  }
 
   if (sym_is_choice(sym)) {
     conf_choice(menu);
-    if (sym->curr.tri != mod)
+    if (sym->curr.tri != mod) {
       return;
+    }
     goto conf_childs;
   }
 
@@ -383,34 +427,40 @@ static void conf(struct menu *menu) {
   }
 
 conf_childs:
-  if (sym)
+  if (sym) {
     indent += 2;
-  for (child = menu->list; child; child = child->next)
+  }
+  for (child = menu->list; child; child = child->next) {
     conf(child);
-  if (sym)
+  }
+  if (sym) {
     indent -= 2;
+  }
 }
 
 static void check_conf(struct menu *menu) {
   struct symbol *sym;
   struct menu *child;
 
-  if (!menu_is_visible(menu))
+  if (!menu_is_visible(menu)) {
     return;
+  }
 
   sym = menu->sym;
   if (sym && !sym_has_value(sym)) {
     if (sym_is_changable(sym) ||
         (sym_is_choice(sym) && sym_get_tristate_value(sym) == yes)) {
-      if (!conf_cnt++)
+      if (!conf_cnt++) {
         printf("*\n* Restart config...\n*\n");
+      }
       rootEntry = menu_get_parent_menu(menu);
       conf(rootEntry);
     }
   }
 
-  for (child = menu->list; child; child = child->next)
+  for (child = menu->list; child; child = child->next) {
     check_conf(child);
+  }
 }
 
 int main(int ac, char **av) {
@@ -462,6 +512,7 @@ int main(int ac, char **av) {
     default:
       fprintf(stderr, "See README for usage info\n");
       exit(1);
+      break;
     }
   }
   if (ac == optind) {
@@ -488,8 +539,9 @@ int main(int ac, char **av) {
 
   switch (input_mode) {
   case set_default:
-    if (!defconfig_file)
+    if (!defconfig_file) {
       defconfig_file = conf_get_default_confname();
+    }
     if (conf_read(defconfig_file)) {
       printf("***\n"
              "*** Can't find default configuration \"%s\"!\n"
@@ -529,10 +581,11 @@ int main(int ac, char **av) {
     default:
       break;
     }
-    if (!stat(name, &tmpstat))
+    if (!stat(name, &tmpstat)) {
       conf_read_simple(name, S_DEF_USER);
-    else if (!stat(OPENCONF_ALLCONFIG_ALL, &tmpstat))
+    } else if (!stat(OPENCONF_ALLCONFIG_ALL, &tmpstat)) {
       conf_read_simple(OPENCONF_ALLCONFIG_ALL, S_DEF_USER);
+    }
     break;
   default:
     break;
@@ -570,7 +623,7 @@ int main(int ac, char **av) {
     rootEntry = &rootmenu;
     conf(&rootmenu);
     input_mode = ask_silent;
-    /* Falls through. */
+    /* falls through */
   case ask_silent:
     /* Update until a loop caused no more changes */
     do {
@@ -579,6 +632,8 @@ int main(int ac, char **av) {
     } while (conf_cnt);
     break;
   case ask_savedefconf:
+    break;
+  default:
     break;
   }
 

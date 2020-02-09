@@ -33,26 +33,31 @@ static gboolean show_all = FALSE;
 static gboolean show_debug = FALSE;
 static gboolean resizeable = FALSE;
 
-GtkWidget *main_wnd = NULL;
-GtkWidget *tree1_w = NULL; // left  frame
-GtkWidget *tree2_w = NULL; // right frame
-GtkWidget *text_w = NULL;
-GtkWidget *hpaned = NULL;
-GtkWidget *vpaned = NULL;
-GtkWidget *back_btn = NULL;
-GtkWidget *save_btn = NULL;
-GtkWidget *save_menu_item = NULL;
+static GtkWidget *main_wnd = NULL;
+static GtkWidget *tree1_w = NULL; // left  frame
+static GtkWidget *tree2_w = NULL; // right frame
+static GtkWidget *text_w = NULL;
+static GtkWidget *hpaned = NULL;
+static GtkWidget *vpaned = NULL;
+static GtkWidget *back_btn = NULL;
+static GtkWidget *save_btn = NULL;
+static GtkWidget *save_menu_item = NULL;
 
-GtkTextTag *tag1, *tag2;
-GdkColor color;
+static GtkTextTag *tag1 = NULL;
+static GtkTextTag *tag2 = NULL;
 
-GtkTreeStore *tree1, *tree2, *tree;
-GtkTreeModel *model1, *model2;
-static GtkTreeIter *parents[256];
-static gint indent;
+static GdkColor color;
 
-static struct menu *current; // current node for SINGLE view
-static struct menu *browsed; // browsed node for SPLIT view
+static GtkTreeStore *tree1 = NULL;
+static GtkTreeStore *tree2 = NULL;
+static GtkTreeStore *tree = NULL;
+static GtkTreeModel *model1 = NULL;
+static GtkTreeModel *model2 = NULL;
+static GtkTreeIter *parents[256] = {NULL};
+static gint indent = 0;
+
+static struct menu *current = NULL; // current node for SINGLE view
+static struct menu *browsed = NULL; // browsed node for SPLIT view
 
 enum {
   COL_OPTION,
@@ -84,24 +89,35 @@ static void conf_changed(void);
 /* Helping/Debugging Functions */
 
 const char *dbg_print_stype(int val) {
-  static char buf[256];
+  static char buf[16];
 
-  bzero(buf, 256);
+  bzero(buf, sizeof(buf));
 
-  if (val == S_UNKNOWN)
+  switch (val) {
+  case S_UNKNOWN:
     strcpy(buf, "unknown");
-  if (val == S_BOOLEAN)
+    break;
+  case S_BOOLEAN:
     strcpy(buf, "boolean");
-  if (val == S_TRISTATE)
+    break;
+  case S_TRISTATE:
     strcpy(buf, "tristate");
-  if (val == S_INT)
+    break;
+  case S_INT:
     strcpy(buf, "int");
-  if (val == S_HEX)
+    break;
+  case S_HEX:
     strcpy(buf, "hex");
-  if (val == S_STRING)
+    break;
+  case S_STRING:
     strcpy(buf, "string");
-  if (val == S_OTHER)
+    break;
+  case S_OTHER:
     strcpy(buf, "other");
+    break;
+  default:
+    break;
+  }
 
 #ifdef DEBUG
   printf("%s", buf);
@@ -113,28 +129,40 @@ const char *dbg_print_stype(int val) {
 const char *dbg_print_flags(int val) {
   static char buf[256];
 
-  bzero(buf, 256);
+  bzero(buf, sizeof(buf));
 
-  if (val & SYMBOL_CONST)
+  if (val & SYMBOL_CONST) {
     strcat(buf, "const/");
-  if (val & SYMBOL_CHECK)
+  }
+  if (val & SYMBOL_CHECK) {
     strcat(buf, "check/");
-  if (val & SYMBOL_CHOICE)
+  }
+  if (val & SYMBOL_CHOICE) {
     strcat(buf, "choice/");
-  if (val & SYMBOL_CHOICEVAL)
+  }
+  if (val & SYMBOL_CHOICEVAL) {
     strcat(buf, "choiceval/");
-  if (val & SYMBOL_VALID)
+  }
+  if (val & SYMBOL_VALID) {
     strcat(buf, "valid/");
-  if (val & SYMBOL_OPTIONAL)
+  }
+  if (val & SYMBOL_OPTIONAL) {
     strcat(buf, "optional/");
-  if (val & SYMBOL_WRITE)
+  }
+  if (val & SYMBOL_WRITE) {
     strcat(buf, "write/");
-  if (val & SYMBOL_CHANGED)
+  }
+  if (val & SYMBOL_CHANGED) {
     strcat(buf, "changed/");
-  if (val & SYMBOL_AUTO)
+  }
+  if (val & SYMBOL_AUTO) {
     strcat(buf, "auto/");
+  }
 
-  buf[strlen(buf) - 1] = '\0';
+  if (strlen(buf)) {
+    /* remove last / */
+    buf[strlen(buf) - 1] = '\0';
+  }
 #ifdef DEBUG
   printf("%s", buf);
 #endif
@@ -143,22 +171,31 @@ const char *dbg_print_flags(int val) {
 }
 
 const char *dbg_print_ptype(int val) {
-  static char buf[256];
+  static char buf[16];
 
-  bzero(buf, 256);
+  bzero(buf, sizeof(buf));
 
-  if (val == P_UNKNOWN)
+  switch (val) {
+  case P_UNKNOWN:
     strcpy(buf, "unknown");
-  if (val == P_PROMPT)
+    break;
+  case P_PROMPT:
     strcpy(buf, "prompt");
-  if (val == P_COMMENT)
+    break;
+  case P_COMMENT:
     strcpy(buf, "comment");
-  if (val == P_MENU)
+    break;
+  case P_MENU:
     strcpy(buf, "menu");
-  if (val == P_DEFAULT)
+    break;
+  case P_DEFAULT:
     strcpy(buf, "default");
-  if (val == P_CHOICE)
+    break;
+  case P_CHOICE:
     strcpy(buf, "choice");
+  default:
+    break;
+  }
 
 #ifdef DEBUG
   printf("%s", buf);
@@ -192,8 +229,9 @@ void init_main_window(const gchar *glade_file) {
   GtkStyle *style;
 
   xml = glade_xml_new(glade_file, "window1", NULL);
-  if (!xml)
+  if (!xml) {
     g_error(_("GUI loading failed !\n"));
+  }
   glade_xml_signal_autoconnect(xml);
 
   main_wnd = glade_xml_get_widget(xml, "window1");
@@ -251,6 +289,8 @@ void init_main_window(const gchar *glade_file) {
 		widget = glade_xml_get_widget(xml, "button6");
 		g_signal_emit_by_name(widget, "clicked");
 		break;
+        default:
+		break;
 	}
 #endif
   txtbuf = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_w));
@@ -261,12 +301,14 @@ void init_main_window(const gchar *glade_file) {
                                     NULL);
 
   name = getenv(OPENCONF_PROJECT_ENVNAME);
-  if (!name)
+  if (!name) {
     name = OPENCONF_PROJECT_DEFAULT;
+  }
   version = getenv(OPENCONF_VERSION_ENVNAME);
-  if (!version)
+  if (!version) {
     version = OPENCONF_VERSION_DEFAULT;
-  sprintf(title, _("%s v%s Configuration"), name, version);
+  }
+  sprintf(title, sizeof(title), _("%s v%s Configuration"), name, version);
   gtk_window_set_title(GTK_WINDOW(main_wnd), title);
 
   gtk_widget_show(main_wnd);
@@ -282,8 +324,9 @@ void init_tree_model(void) {
       G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN);
   model2 = GTK_TREE_MODEL(tree2);
 
-  for (parents[0] = NULL, i = 1; i < 256; i++)
+  for (parents[0] = NULL, i = 1; i < 256; i++) {
     parents[i] = (GtkTreeIter *)g_malloc(sizeof(GtkTreeIter));
+  }
 
   tree1 = gtk_tree_store_new(
       COL_NUMBER, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,
@@ -425,13 +468,15 @@ static void text_insert_help(struct menu *menu) {
   help = menu_get_help(menu);
 
   /* Gettextize if the help text not empty */
-  if ((help != 0) && (help[0] != 0))
+  if ((help != 0) && (help[0] != 0)) {
     help = _(help);
+  }
 
-  if (menu->sym && menu->sym->name)
+  if (menu->sym && menu->sym->name) {
     name = g_strdup_printf(menu->sym->name);
-  else
+  } else {
     name = g_strdup("");
+  }
 
   buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_w));
   gtk_text_buffer_get_bounds(buffer, &start, &end);
@@ -473,8 +518,9 @@ gboolean on_window1_delete_event(GtkWidget *widget, GdkEvent *event,
   GtkWidget *dialog, *label;
   gint result;
 
-  if (!conf_get_changed())
+  if (!conf_get_changed()) {
     return FALSE;
+  }
 
   dialog = gtk_dialog_new_with_buttons(
       _("Warning !"), GTK_WINDOW(main_wnd),
@@ -498,10 +544,10 @@ gboolean on_window1_delete_event(GtkWidget *widget, GdkEvent *event,
   case GTK_RESPONSE_DELETE_EVENT:
   default:
     gtk_widget_destroy(dialog);
-    return TRUE;
+    break;
   }
 
-  return FALSE;
+  return TRUE;
 }
 
 void on_window1_destroy(GtkObject *object, gpointer user_data) {
@@ -513,13 +559,15 @@ void on_window1_size_request(GtkWidget *widget, GtkRequisition *requisition,
   static gint old_h;
   gint w, h;
 
-  if (widget->window == NULL)
+  if (widget->window == NULL) {
     gtk_window_get_default_size(GTK_WINDOW(main_wnd), &w, &h);
-  else
+  } else {
     gdk_window_get_size(widget->window, &w, &h);
+  }
 
-  if (h == old_h)
+  if (h == old_h) {
     return;
+  }
   old_h = h;
 
   gtk_paned_set_position(GTK_PANED(vpaned), 2 * h / 3);
@@ -532,10 +580,11 @@ static void load_filename(GtkFileSelection *file_selector, gpointer user_data) {
 
   fn = gtk_file_selection_get_filename(GTK_FILE_SELECTION(user_data));
 
-  if (conf_read(fn))
+  if (conf_read(fn)) {
     text_insert_msg(_("Error"), _("Unable to load configuration !"));
-  else
+  } else {
     display_tree(&rootmenu);
+  }
 }
 
 void on_load1_activate(GtkMenuItem *menuitem, gpointer user_data) {
@@ -554,8 +603,9 @@ void on_load1_activate(GtkMenuItem *menuitem, gpointer user_data) {
 }
 
 void on_save_activate(GtkMenuItem *menuitem, gpointer user_data) {
-  if (conf_write(NULL))
+  if (conf_write(NULL)) {
     text_insert_msg(_("Error"), _("Unable to save configuration !"));
+  }
 }
 
 static void store_filename(GtkFileSelection *file_selector,
@@ -564,8 +614,9 @@ static void store_filename(GtkFileSelection *file_selector,
 
   fn = gtk_file_selection_get_filename(GTK_FILE_SELECTION(user_data));
 
-  if (conf_write(fn))
+  if (conf_write(fn)) {
     text_insert_msg(_("Error"), _("Unable to save configuration !"));
+  }
 
   gtk_widget_destroy(GTK_WIDGET(user_data));
 }
@@ -586,8 +637,9 @@ void on_save_as1_activate(GtkMenuItem *menuitem, gpointer user_data) {
 }
 
 void on_quit1_activate(GtkMenuItem *menuitem, gpointer user_data) {
-  if (!on_window1_delete_event(NULL, NULL, NULL))
+  if (!on_window1_delete_event(NULL, NULL, NULL)) {
     gtk_widget_destroy(GTK_WIDGET(main_wnd));
+  }
 }
 
 void on_show_name1_activate(GtkMenuItem *menuitem, gpointer user_data) {
@@ -595,8 +647,9 @@ void on_show_name1_activate(GtkMenuItem *menuitem, gpointer user_data) {
 
   show_name = GTK_CHECK_MENU_ITEM(menuitem)->active;
   col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), COL_NAME);
-  if (col)
+  if (col) {
     gtk_tree_view_column_set_visible(col, show_name);
+  }
 }
 
 void on_show_range1_activate(GtkMenuItem *menuitem, gpointer user_data) {
@@ -604,14 +657,17 @@ void on_show_range1_activate(GtkMenuItem *menuitem, gpointer user_data) {
 
   show_range = GTK_CHECK_MENU_ITEM(menuitem)->active;
   col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), COL_NO);
-  if (col)
+  if (col) {
     gtk_tree_view_column_set_visible(col, show_range);
+  }
   col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), COL_MOD);
-  if (col)
+  if (col) {
     gtk_tree_view_column_set_visible(col, show_range);
+  }
   col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), COL_YES);
-  if (col)
+  if (col) {
     gtk_tree_view_column_set_visible(col, show_range);
+  }
 }
 
 void on_show_data1_activate(GtkMenuItem *menuitem, gpointer user_data) {
@@ -619,8 +675,9 @@ void on_show_data1_activate(GtkMenuItem *menuitem, gpointer user_data) {
 
   show_value = GTK_CHECK_MENU_ITEM(menuitem)->active;
   col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), COL_VALUE);
-  if (col)
+  if (col) {
     gtk_tree_view_column_set_visible(col, show_value);
+  }
 }
 
 void on_show_all_options1_activate(GtkMenuItem *menuitem, gpointer user_data) {
@@ -697,12 +754,14 @@ void on_back_clicked(GtkButton *button, gpointer user_data) {
 
   current = current->parent;
   ptype = current->prompt ? current->prompt->type : P_UNKNOWN;
-  if (ptype != P_MENU)
+  if (ptype != P_MENU) {
     current = current->parent;
+  }
   display_tree_part();
 
-  if (current == &rootmenu)
+  if (current == &rootmenu) {
     gtk_widget_set_sensitive(back_btn, FALSE);
+  }
 }
 
 void on_load_clicked(GtkButton *button, gpointer user_data) {
@@ -723,8 +782,9 @@ void on_split_clicked(GtkButton *button, gpointer user_data) {
   gtk_widget_show(tree1_w);
   gtk_window_get_default_size(GTK_WINDOW(main_wnd), &w, &h);
   gtk_paned_set_position(GTK_PANED(hpaned), w / 2);
-  if (tree2)
+  if (tree2) {
     gtk_tree_store_clear(tree2);
+  }
   display_list();
 
   /* Disable back btn, like in full mode. */
@@ -735,8 +795,9 @@ void on_full_clicked(GtkButton *button, gpointer user_data) {
   view_mode = FULL_VIEW;
   gtk_paned_set_position(GTK_PANED(hpaned), 0);
   gtk_widget_hide(tree1_w);
-  if (tree2)
+  if (tree2) {
     gtk_tree_store_clear(tree2);
+  }
   display_tree(&rootmenu);
   gtk_widget_set_sensitive(back_btn, FALSE);
 }
@@ -760,8 +821,9 @@ static void renderer_edited(GtkCellRendererText *cell, const gchar *path_string,
   struct menu *menu;
   struct symbol *sym;
 
-  if (!gtk_tree_model_get_iter(model2, &iter, path))
+  if (!gtk_tree_model_get_iter(model2, &iter, path)) {
     return;
+  }
 
   gtk_tree_model_get(model2, &iter, COL_MENU, &menu, -1);
   sym = menu->sym;
@@ -781,32 +843,36 @@ static void change_sym_value(struct menu *menu, gint col) {
   struct symbol *sym = menu->sym;
   tristate oldval, newval;
 
-  if (!sym)
+  if (!sym) {
     return;
+  }
 
-  if (col == COL_NO)
+  if (col == COL_NO) {
     newval = no;
-  else if (col == COL_MOD)
+  } else if (col == COL_MOD) {
     newval = mod;
-  else if (col == COL_YES)
+  } else if (col == COL_YES) {
     newval = yes;
-  else
+  } else {
     return;
+  }
 
   switch (sym_get_type(sym)) {
   case S_BOOLEAN:
   case S_TRISTATE:
     oldval = sym_get_tristate_value(sym);
-    if (!sym_tristate_within_range(sym, newval))
+    if (!sym_tristate_within_range(sym, newval)) {
       newval = yes;
+    }
     sym_set_tristate_value(sym, newval);
-    if (view_mode == FULL_VIEW)
+    if (view_mode == FULL_VIEW) {
       update_tree(&rootmenu, NULL);
-    else if (view_mode == SPLIT_VIEW) {
+    } else if (view_mode == SPLIT_VIEW) {
       update_tree(browsed, NULL);
       display_list();
-    } else if (view_mode == SINGLE_VIEW)
+    } else if (view_mode == SINGLE_VIEW) {
       display_tree_part(); // fixme: keep exp/coll
+    }
     break;
   case S_INT:
   case S_HEX:
@@ -817,17 +883,19 @@ static void change_sym_value(struct menu *menu, gint col) {
 }
 
 static void toggle_sym_value(struct menu *menu) {
-  if (!menu->sym)
+  if (!menu->sym) {
     return;
+  }
 
   sym_toggle_tristate_value(menu->sym);
-  if (view_mode == FULL_VIEW)
+  if (view_mode == FULL_VIEW) {
     update_tree(&rootmenu, NULL);
-  else if (view_mode == SPLIT_VIEW) {
+  } else if (view_mode == SPLIT_VIEW) {
     update_tree(browsed, NULL);
     display_list();
-  } else if (view_mode == SINGLE_VIEW)
+  } else if (view_mode == SINGLE_VIEW) {
     display_tree_part(); // fixme: keep exp/coll
+  }
 }
 
 static void renderer_toggled(GtkCellRendererToggle *cell, gchar *path_string,
@@ -838,16 +906,20 @@ static void renderer_toggled(GtkCellRendererToggle *cell, gchar *path_string,
   struct menu *menu;
 
   path = gtk_tree_path_new_from_string(path_string);
-  if (!gtk_tree_model_get_iter(model2, &iter, path))
+  if (!gtk_tree_model_get_iter(model2, &iter, path)) {
     return;
+  }
 
   sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree2_w));
-  if (gtk_tree_selection_get_selected(sel, NULL, &sel_iter))
+  if (gtk_tree_selection_get_selected(sel, NULL, &sel_iter)) {
     sel_path = gtk_tree_model_get_path(model2, &sel_iter);
-  if (!sel_path)
+  }
+  if (!sel_path) {
     goto out1;
-  if (gtk_tree_path_compare(path, sel_path))
+  }
+  if (gtk_tree_path_compare(path, sel_path)) {
     goto out2;
+  }
 
   gtk_tree_model_get(model2, &iter, COL_MENU, &menu, -1);
   toggle_sym_value(menu);
@@ -865,8 +937,9 @@ static gint column2index(GtkTreeViewColumn *column) {
     GtkTreeViewColumn *col;
 
     col = gtk_tree_view_get_column(GTK_TREE_VIEW(tree2_w), i);
-    if (col == column)
+    if (col == column) {
       return i;
+    }
   }
 
   return -1;
@@ -892,11 +965,13 @@ gboolean on_treeview2_button_press_event(GtkWidget *widget,
 #else
   gtk_tree_view_get_cursor(view, &path, &column);
 #endif
-  if (path == NULL)
+  if (path == NULL) {
     return FALSE;
+  }
 
-  if (!gtk_tree_model_get_iter(model2, &iter, path))
+  if (!gtk_tree_model_get_iter(model2, &iter, path)) {
     return FALSE;
+  }
   gtk_tree_model_get(model2, &iter, COL_MENU, &menu, -1);
 
   col = column2index(column);
@@ -937,32 +1012,37 @@ gboolean on_treeview2_key_press_event(GtkWidget *widget, GdkEventKey *event,
   gint col;
 
   gtk_tree_view_get_cursor(view, &path, &column);
-  if (path == NULL)
+  if (path == NULL) {
     return FALSE;
+  }
 
   if (event->keyval == GDK_space) {
-    if (gtk_tree_view_row_expanded(view, path))
+    if (gtk_tree_view_row_expanded(view, path)) {
       gtk_tree_view_collapse_row(view, path);
-    else
+    } else {
       gtk_tree_view_expand_row(view, path, FALSE);
+    }
     return TRUE;
   }
   if (event->keyval == GDK_KP_Enter) {
+    /* ?? */
   }
-  if (widget == tree1_w)
+  if (widget == tree1_w) {
     return FALSE;
+  }
 
   gtk_tree_model_get_iter(model2, &iter, path);
   gtk_tree_model_get(model2, &iter, COL_MENU, &menu, -1);
 
-  if (!strcasecmp(event->string, "n"))
+  if (!strcasecmp(event->string, "n")) {
     col = COL_NO;
-  else if (!strcasecmp(event->string, "m"))
+  } else if (!strcasecmp(event->string, "m")) {
     col = COL_MOD;
-  else if (!strcasecmp(event->string, "y"))
+  } else if (!strcasecmp(event->string, "y")) {
     col = COL_YES;
-  else
+  } else {
     col = -1;
+  }
   change_sym_value(menu, col);
 
   return FALSE;
@@ -996,8 +1076,9 @@ gboolean on_treeview1_button_press_event(GtkWidget *widget,
   gint cx, cy;
 
   gtk_tree_view_get_path_at_pos(view, tx, ty, &path, &column, &cx, &cy);
-  if (path == NULL)
+  if (path == NULL) {
     return FALSE;
+  }
 
   gtk_tree_model_get_iter(model1, &iter, path);
   gtk_tree_model_get(model1, &iter, COL_MENU, &menu, -1);
@@ -1028,24 +1109,27 @@ static gchar **fill_row(struct menu *menu) {
   enum prop_type ptype;
   int i;
 
-  for (i = COL_OPTION; i <= COL_COLOR; i++)
+  for (i = COL_OPTION; i <= COL_COLOR; i++) {
     g_free(row[i]);
+  }
   bzero(row, sizeof(row));
 
   row[COL_OPTION] = g_strdup_printf("%s %s", _(menu_get_prompt(menu)),
                                     sym && sym_has_value(sym) ? "(NEW)" : "");
 
-  if (show_all && !menu_is_visible(menu))
+  if (show_all && !menu_is_visible(menu)) {
     row[COL_COLOR] = g_strdup("DarkGray");
-  else
+  } else {
     row[COL_COLOR] = g_strdup("Black");
+  }
 
   ptype = menu->prompt ? menu->prompt->type : P_UNKNOWN;
   switch (ptype) {
   case P_MENU:
     row[COL_PIXBUF] = (gchar *)xpm_menu;
-    if (view_mode == SINGLE_VIEW)
+    if (view_mode == SINGLE_VIEW) {
       row[COL_PIXVIS] = GINT_TO_POINTER(TRUE);
+    }
     row[COL_BTNVIS] = GINT_TO_POINTER(FALSE);
     break;
   case P_COMMENT:
@@ -1060,8 +1144,9 @@ static gchar **fill_row(struct menu *menu) {
     break;
   }
 
-  if (!sym)
+  if (!sym) {
     return row;
+  }
   row[COL_NAME] = g_strdup(sym->name);
 
   sym_calc_value(sym);
@@ -1075,23 +1160,28 @@ static gchar **fill_row(struct menu *menu) {
     row[COL_BTNVIS] = GINT_TO_POINTER(FALSE);
 
     for (child = menu->list; child; child = child->next) {
-      if (menu_is_visible(child) && child->sym == def_sym)
+      if (menu_is_visible(child) && child->sym == def_sym) {
         def_menu = child;
+      }
     }
 
-    if (def_menu)
+    if (def_menu) {
       row[COL_VALUE] = g_strdup(_(menu_get_prompt(def_menu)));
+    }
   }
-  if (sym->flags & SYMBOL_CHOICEVAL)
+  if (sym->flags & SYMBOL_CHOICEVAL) {
     row[COL_BTNRAD] = GINT_TO_POINTER(TRUE);
+  }
 
   stype = sym_get_type(sym);
   switch (stype) {
   case S_BOOLEAN:
-    if (GPOINTER_TO_INT(row[COL_PIXVIS]) == FALSE)
+    if (GPOINTER_TO_INT(row[COL_PIXVIS]) == FALSE) {
       row[COL_BTNVIS] = GINT_TO_POINTER(TRUE);
-    if (sym_is_choice(sym))
+    }
+    if (sym_is_choice(sym)) {
       break;
+    }
   case S_TRISTATE:
     val = sym_get_tristate_value(sym);
     switch (val) {
@@ -1114,12 +1204,15 @@ static gchar **fill_row(struct menu *menu) {
       break;
     }
 
-    if (val != no && sym_tristate_within_range(sym, no))
+    if (val != no && sym_tristate_within_range(sym, no)) {
       row[COL_NO] = g_strdup("_");
-    if (val != mod && sym_tristate_within_range(sym, mod))
+    }
+    if (val != mod && sym_tristate_within_range(sym, mod)) {
       row[COL_MOD] = g_strdup("_");
-    if (val != yes && sym_tristate_within_range(sym, yes))
+    }
+    if (val != yes && sym_tristate_within_range(sym, yes)) {
       row[COL_YES] = g_strdup("_");
+    }
     break;
   case S_INT:
   case S_HEX:
@@ -1128,6 +1221,8 @@ static gchar **fill_row(struct menu *menu) {
     row[COL_VALUE] = g_strdup(def);
     row[COL_EDIT] = GINT_TO_POINTER(TRUE);
     row[COL_BTNVIS] = GINT_TO_POINTER(FALSE);
+    break;
+  default:
     break;
   }
 
@@ -1193,8 +1288,9 @@ GtkTreeIter *gtktree_iter_find_node(GtkTreeIter *parent, struct menu *tofind) {
     }
 
     ret = gtktree_iter_find_node(child, tofind);
-    if (ret)
+    if (ret) {
       return ret;
+    }
 
     valid = gtk_tree_model_iter_next(model2, child);
   }
@@ -1216,8 +1312,9 @@ static void update_tree(struct menu *src, GtkTreeIter *dst) {
   struct property *prop;
   struct menu *menu1, *menu2;
 
-  if (src == &rootmenu)
+  if (src == &rootmenu) {
     indent = 1;
+  }
 
   valid = gtk_tree_model_iter_children(model2, child2, dst);
   for (child1 = src->list; child1; child1 = child1->next) {
@@ -1227,10 +1324,11 @@ static void update_tree(struct menu *src, GtkTreeIter *dst) {
 
   reparse:
     menu1 = child1;
-    if (valid)
+    if (valid) {
       gtk_tree_model_get(model2, child2, COL_MENU, &menu2, -1);
-    else
+    } else {
       menu2 = NULL; // force adding of a first child
+    }
 
 #ifdef DEBUG
     printf("%*c%s | %s\n", indent, ' ', menu1 ? menu_get_prompt(menu1) : "nil",
@@ -1242,32 +1340,37 @@ static void update_tree(struct menu *src, GtkTreeIter *dst) {
         memcpy(&tmp, child2, sizeof(GtkTreeIter));
         valid = gtk_tree_model_iter_next(model2, child2);
         gtk_tree_store_remove(tree2, &tmp);
-        if (!valid)
+        if (!valid) {
           return; // next parent
-        else
+        } else {
           goto reparse; // next child
-      } else
+        }
+      } else {
         continue;
+      }
     }
 
     if (menu1 != menu2) {
       if (gtktree_iter_find_node(dst, menu1) == NULL) { // add node
-        if (!valid && !menu2)
+        if (!valid && !menu2) {
           sibling = NULL;
-        else
+        } else {
           sibling = child2;
+        }
         gtk_tree_store_insert_before(tree2, child2, dst, sibling);
         set_node(child2, menu1, fill_row(menu1));
-        if (menu2 == NULL)
+        if (menu2 == NULL) {
           valid = TRUE;
+        }
       } else { // remove node
         memcpy(&tmp, child2, sizeof(GtkTreeIter));
         valid = gtk_tree_model_iter_next(model2, child2);
         gtk_tree_store_remove(tree2, &tmp);
-        if (!valid)
+        if (!valid) {
           return; // next parent
-        else
+        } else {
           goto reparse; // next child
+        }
       }
     } else if (sym && (sym->flags & SYMBOL_CHANGED)) {
       set_node(child2, menu1, fill_row(menu1));
@@ -1298,19 +1401,23 @@ static void display_tree(struct menu *menu) {
     sym = child->sym;
     ptype = prop ? prop->type : P_UNKNOWN;
 
-    if (sym)
+    if (sym) {
       sym->flags &= ~SYMBOL_CHANGED;
+    }
 
     if ((view_mode == SPLIT_VIEW) && !(child->flags & MENU_ROOT) &&
-        (tree == tree1))
+        (tree == tree1)) {
       continue;
+    }
 
     if ((view_mode == SPLIT_VIEW) && (child->flags & MENU_ROOT) &&
-        (tree == tree2))
+        (tree == tree2)) {
       continue;
+    }
 
-    if (menu_is_visible(child) || show_all)
+    if (menu_is_visible(child) || show_all) {
       place_node(child, fill_row(child));
+    }
 #ifdef DEBUG
     printf("%*c%s: ", indent, ' ', menu_get_prompt(child));
     printf("%s", child->flags & MENU_ROOT ? "rootmenu | " : "");
@@ -1321,15 +1428,17 @@ static void display_tree(struct menu *menu) {
       printf(" | ");
       dbg_print_flags(sym->flags);
       printf("\n");
-    } else
+    } else {
       printf("\n");
+    }
 #endif
-    if ((view_mode != FULL_VIEW) && (ptype == P_MENU) && (tree == tree2))
+    if ((view_mode != FULL_VIEW) && (ptype == P_MENU) && (tree == tree2)) {
       continue;
+    }
     /*
                     if (((menu != &rootmenu) && !(menu->flags & MENU_ROOT))
                         || (view_mode == FULL_VIEW)
-                        || (view_mode == SPLIT_VIEW))*/
+                        || (view_mode == SPLIT_VIEW)) {*/
     if (((view_mode == SINGLE_VIEW) && (menu->flags & MENU_ROOT)) ||
         (view_mode == FULL_VIEW) || (view_mode == SPLIT_VIEW)) {
       indent++;
@@ -1341,19 +1450,22 @@ static void display_tree(struct menu *menu) {
 
 /* Display a part of the tree starting at current node (single/split view) */
 static void display_tree_part(void) {
-  if (tree2)
+  if (tree2) {
     gtk_tree_store_clear(tree2);
-  if (view_mode == SINGLE_VIEW)
+  }
+  if (view_mode == SINGLE_VIEW) {
     display_tree(current);
-  else if (view_mode == SPLIT_VIEW)
+  } else if (view_mode == SPLIT_VIEW) {
     display_tree(browsed);
+  }
   gtk_tree_view_expand_all(GTK_TREE_VIEW(tree2_w));
 }
 
 /* Display the list in the left frame (split view) */
 static void display_list(void) {
-  if (tree1)
+  if (tree1) {
     gtk_tree_store_clear(tree1);
+  }
 
   tree = tree1;
   display_tree(&rootmenu);
@@ -1371,8 +1483,9 @@ void fixup_rootmenu(struct menu *menu) {
       menu_cnt++;
       fixup_rootmenu(child);
       menu_cnt--;
-    } else if (!menu_cnt)
+    } else if (!menu_cnt) {
       fixup_rootmenu(child);
+    }
   }
 }
 
@@ -1400,12 +1513,13 @@ int main(int ac, char *av[]) {
 
   /* Determine GUI path */
   env = getenv(OPENCONF_SRCTREE_ENVNAME);
-  if (env)
+  if (env) {
     glade_file = g_strconcat(env, "gconf.glade", NULL);
-  else if (av[0][0] == '/')
+  } else if (av[0][0] == '/') {
     glade_file = g_strconcat(av[0], ".glade", NULL);
-  else
+  } else {
     glade_file = g_strconcat(g_get_current_dir(), "/", av[0], ".glade", NULL);
+  }
 
   /* Load the interface and connect signals */
   init_main_window(glade_file);
@@ -1423,10 +1537,13 @@ int main(int ac, char *av[]) {
     case '?':
       printf("%s <config>\n", av[0]);
       exit(0);
+    default:
+      break;
     }
     name = av[2];
-  } else
+  } else {
     name = av[1];
+  }
 
   conf_parse(name);
   fixup_rootmenu(&rootmenu);
@@ -1441,6 +1558,8 @@ int main(int ac, char *av[]) {
     break;
   case FULL_VIEW:
     display_tree(&rootmenu);
+    break;
+  default:
     break;
   }
 

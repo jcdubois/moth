@@ -58,20 +58,23 @@ int dialog_textbox(const char *title, const char *tbuf, int initial_height,
 
 do_resize:
   getmaxyx(stdscr, height, width);
-  if (height < 8 || width < 8)
+  if (height < 8 || width < 8) {
     return -ERRDISPLAYTOOSMALL;
-  if (initial_height != 0)
+  }
+  if (initial_height != 0) {
     height = initial_height;
-  else if (height > 4)
+  } else if (height > 4) {
     height -= 4;
-  else
+  } else {
     height = 0;
-  if (initial_width != 0)
+  }
+  if (initial_width != 0) {
     width = initial_width;
-  else if (width > 5)
+  } else if (width > 5) {
     width -= 5;
-  else
+  } else {
     width = 0;
+  }
 
   /* center dialog box on screen */
   x = (COLS - width) / 2;
@@ -96,8 +99,9 @@ do_resize:
 
   wattrset(dialog, dlg.border.atr);
   mvwaddch(dialog, height - 3, 0, ACS_LTEE);
-  for (i = 0; i < width - 2; i++)
+  for (i = 0; i < width - 2; i++) {
     waddch(dialog, ACS_HLINE);
+  }
   wattrset(dialog, dlg.dialog.atr);
   wbkgdset(dialog, dlg.dialog.atr & A_COLOR);
   waddch(dialog, ACS_RTEE);
@@ -162,13 +166,16 @@ do_resize:
             /* print first line of page */
             print_line(box, 0, boxw);
             wnoutrefresh(box);
-          } else
+          } else {
             /* Called to update 'end_reached' and 'page' */
             get_line();
-          if (!passed_end)
+          }
+          if (!passed_end) {
             page_length++;
-          if (end_reached && !passed_end)
+          }
+          if (end_reached && !passed_end) {
             passed_end = 1;
+          }
         }
 
         print_position(dialog);
@@ -179,8 +186,9 @@ do_resize:
     case 'B': /* Previous page */
     case 'b':
     case KEY_PPAGE:
-      if (begin_reached)
+      if (begin_reached) {
         break;
+      }
       back_lines(page_length + boxh);
       refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x);
       break;
@@ -201,8 +209,9 @@ do_resize:
       break;
     case KEY_NPAGE: /* Next page */
     case ' ':
-      if (end_reached)
+      if (end_reached) {
         break;
+      }
 
       begin_reached = 0;
       refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x);
@@ -211,13 +220,15 @@ do_resize:
     case 'H': /* Scroll left */
     case 'h':
     case KEY_LEFT:
-      if (hscroll <= 0)
+      if (hscroll <= 0) {
         break;
+      }
 
-      if (key == '0')
+      if (key == '0') {
         hscroll = 0;
-      else
+      } else {
         hscroll--;
+      }
       /* Reprint current page to scroll horizontally */
       back_lines(page_length);
       refresh_text_box(dialog, box, boxh, boxw, cur_y, cur_x);
@@ -225,8 +236,9 @@ do_resize:
     case 'L': /* Scroll right */
     case 'l':
     case KEY_RIGHT:
-      if (hscroll >= MAX_LEN)
+      if (hscroll >= MAX_LEN) {
         break;
+      }
       hscroll++;
       /* Reprint current page to scroll horizontally */
       back_lines(page_length);
@@ -241,6 +253,8 @@ do_resize:
       delwin(dialog);
       on_key_resize();
       goto do_resize;
+    default:
+      break;
     }
   }
   delwin(box);
@@ -289,10 +303,12 @@ static void print_page(WINDOW *win, int height, int width) {
   page_length = 0;
   for (i = 0; i < height; i++) {
     print_line(win, i, width);
-    if (!passed_end)
+    if (!passed_end) {
       page_length++;
-    if (end_reached && !passed_end)
+    }
+    if (end_reached && !passed_end) {
       passed_end = 1;
+    }
   }
   wnoutrefresh(win);
 }
@@ -317,8 +333,9 @@ static void print_line(WINDOW *win, int row, int width) {
 #if OLD_NCURSES
   {
     int i;
-    for (i = 0; i < width - x; i++)
+    for (i = 0; i < width - x; i++) {
       waddch(win, ' ');
+    }
   }
 #else
   wclrtoeol(win);
@@ -341,19 +358,22 @@ static char *get_line(void) {
         end_reached = 1;
         break;
       }
-    } else if (i < MAX_LEN)
+    } else if (i < MAX_LEN) {
       line[i++] = *(page++);
-    else {
+    } else {
       /* Truncate lines longer than MAX_LEN characters */
-      if (i == MAX_LEN)
+      if (i == MAX_LEN) {
         line[i++] = '\0';
+      }
       page++;
     }
   }
-  if (i <= MAX_LEN)
+  if (i <= MAX_LEN) {
     line[i] = '\0';
-  if (!end_reached)
+  }
+  if (!end_reached) {
     page++; /* move pass '\n' */
+  }
 
   return line;
 }
