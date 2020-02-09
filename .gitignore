@@ -16,10 +16,6 @@ cov-int/
 test_*objs/
 cscope.*
 *~
-tools/openconf/lex.zconf.c
-tools/openconf/conf
-tools/openconf/mconf
-tools/openconf/zconf.hash.c
 #
 # Exceptions
 #
