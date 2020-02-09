@@ -707,13 +707,15 @@ void zconfdump(FILE *out)
       menu = menu->list;
     } else if (menu->next) {
       menu = menu->next;
-    } else while ((menu = menu->parent)) {
-      if (menu->prompt && menu->prompt->type == P_MENU) {
-        fputs("\nendmenu\n", out);
-      }
-      if (menu->next) {
-        menu = menu->next;
-        break;
+    } else {
+      while ((menu = menu->parent)) {
+        if (menu->prompt && menu->prompt->type == P_MENU) {
+          fputs("\nendmenu\n", out);
+        }
+        if (menu->next) {
+          menu = menu->next;
+          break;
+        }
       }
     }
   }
