@@ -135,7 +135,17 @@ is
       Pre  => ((not mbx_is_full (dest_id)) and then
                mbx_are_well_formed),
       Post => ((not mbx_is_empty (dest_id)) and then
-               (mbx_fifo = mbx_fifo'Old'Update (dest_id => mbx_fifo'Old (dest_id)'Update (count => mbx_fifo'Old (dest_id).count + 1, head => mbx_fifo'Old (dest_id).head, mbx_array => mbx_fifo'Old (dest_id).mbx_array'Update (get_mbx_tail (dest_id) => mbx_fifo'Old (dest_id).mbx_array (get_mbx_tail (dest_id))'Update (sender_id => src_id, msg => mbx_msg))))) and then
+               (mbx_fifo =
+                  mbx_fifo'Old'Update
+                    (dest_id =>
+                      mbx_fifo'Old (dest_id)'Update
+                        (count =>
+                          mbx_fifo'Old (dest_id).count + 1,
+                         head =>
+                          mbx_fifo'Old (dest_id).head,
+                         mbx_array => mbx_fifo'Old (dest_id).mbx_array'Update
+                           (get_mbx_tail (dest_id) => (sender_id => src_id,
+                                                       msg => mbx_msg))))) and then
                mbx_are_well_formed)
    is
       mbx_index : constant os_mbx_index_t := get_mbx_head (dest_id) + get_mbx_count (dest_id);
@@ -170,7 +180,7 @@ is
    begin
 
       if not mbx_is_empty (task_id) then
-         for iterator in 0 ..
+         for iterator in os_mbx_count_t'First ..
                          os_mbx_count_t'Pred (get_mbx_count (task_id))
          loop
              mbx_mask := mbx_mask or
@@ -290,9 +300,19 @@ is
    function mbx_are_well_formed return Boolean is
       (for all task_id in os_task_id_param_t'Range =>
          (for all index in os_mbx_index_t'Range =>
-            (if (os_mbx_count_t(index) >= get_mbx_count (task_id))
-               then (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id = OS_TASK_ID_NONE)
-               else (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index).sender_id in os_task_id_param_t))));
+            (if (get_mbx_count(task_id) = 0) then
+               (mbx_fifo (task_id).mbx_array (index).sender_id = OS_TASK_ID_NONE)
+             elsif (get_mbx_count(task_id) = os_mbx_count_t'Last) then
+               (mbx_fifo (task_id).mbx_array (index).sender_id in os_task_id_param_t)
+             elsif (get_mbx_head(task_id) <= (get_mbx_head(task_id) + os_mbx_count_t'Pred (get_mbx_count(task_id)))) then
+               (if (index >= get_mbx_head(task_id) and index <= (get_mbx_head(task_id) + os_mbx_count_t'Pred (get_mbx_count(task_id)))) then
+                  (mbx_fifo (task_id).mbx_array (index).sender_id in os_task_id_param_t)
+                else
+                  (mbx_fifo (task_id).mbx_array (index).sender_id = OS_TASK_ID_NONE))
+             elsif (index < get_mbx_head(task_id) and index >= (get_mbx_head(task_id) + get_mbx_count(task_id))) then
+               (mbx_fifo (task_id).mbx_array (index).sender_id = OS_TASK_ID_NONE)
+             else
+                  (mbx_fifo (task_id).mbx_array (index).sender_id in os_task_id_param_t))));
 
    ----------------
    -- Public API --
@@ -306,7 +326,19 @@ is
       (task_id    : in os_task_id_param_t)
    with
       Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
-      Post => (mbx_fifo = mbx_fifo'Old'Update (task_id => mbx_fifo'Old (task_id)'Update (count => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count), head => os_mbx_index_t'Succ (mbx_fifo'Old (task_id).head), mbx_array => mbx_fifo'Old (task_id).mbx_array'Update (os_mbx_index_t'Pred (get_mbx_head (task_id)) => (sender_id => OS_TASK_ID_NONE, msg => 0)))))
+      Post => (mbx_fifo =
+                mbx_fifo'Old'Update
+                 (task_id =>
+                   mbx_fifo'Old (task_id)'Update
+                    (count =>
+                      os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count),
+                     head =>
+                      os_mbx_index_t'Succ (mbx_fifo'Old (task_id).head),
+                     mbx_array =>
+                      mbx_fifo'Old (task_id).mbx_array'Update
+                       (mbx_fifo'Old (task_id).head =>
+                         (sender_id => OS_TASK_ID_NONE, msg => 0)))))
+              and (not mbx_is_full(task_id))
               and mbx_are_well_formed
    is
       mbx_index   : constant os_mbx_index_t := get_mbx_head (task_id);
@@ -345,7 +377,7 @@ is
    with
       Pre => (not mbx_is_empty (task_id)) and
              mbx_are_well_formed and
-             (index > 0) and
+             (index > os_mbx_count_t'First) and
              (index < os_mbx_count_t'Pred (get_mbx_count (task_id))),
       Post => mbx_are_well_formed and
               mbx_fifo (task_id).count = mbx_fifo'Old (task_id).count and
@@ -388,11 +420,11 @@ is
          status := OS_ERROR_RECEIVE;
 
          --  go through received mbx for the current task
-         for iterator in 0 ..
+         for iterator in os_mbx_count_t'First ..
                          os_mbx_count_t'Pred (get_mbx_count (current)) loop
 
-            pragma Loop_Invariant (mbx_are_well_formed and
-                                   (not mbx_is_empty (current)));
+            pragma Loop_Invariant (mbx_are_well_formed);
+            pragma Loop_Invariant (not mbx_is_empty (current));
 
             -- This Loop Invariant is a work arround. The prover is unable
             -- to see that the code under the os_mbx_is_waiting_mbx_entry()
@@ -403,13 +435,16 @@ is
             pragma Loop_Invariant (mbx_fifo =
                                          mbx_fifo'Loop_Entry);
 
+            pragma assert (get_mbx_entry_sender (current, iterator)
+                           in os_task_id_param_t);
+
             --  is this a mbx we are waiting for
             if is_waiting_mbx_entry (current, iterator) then
 
                --  copy the mbx into the task mbx entry
                mbx_entry := get_mbx_entry (current, iterator);
 
-               if iterator = 0 then
+               if iterator = os_mbx_count_t'First then
                   --  This was the first mbx (aka mbx head )
 
                   --  Clear the first entry and increment the mbx head
