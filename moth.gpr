@@ -12,7 +12,7 @@ project Moth is
    end Compiler;
 
    package Prove is
-      for Switches use ("--level=4", "--report=all");
+      for Proof_Switches ("Ada") use ("--prover=all", "--report=all");
    end Prove;
 
    package Pretty_Printer is
