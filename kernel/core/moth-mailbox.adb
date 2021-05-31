@@ -129,21 +129,16 @@ is
    procedure mbx_add_message
      (dest_id : os_task_id_param_t; src_id : os_task_id_param_t;
       mbx_msg : os_mbx_msg_t) with
-      Pre  => ((not mbx_is_full (dest_id)) and then mbx_are_well_formed),
-      Post =>
-      ((not mbx_is_empty (dest_id))
-       and then
-       (mbx_fifo =
-        mbx_fifo'Old'Update
-          (dest_id =>
-             mbx_fifo'Old (dest_id)'Update
-               (count     => mbx_fifo'Old (dest_id).count + 1,
-                head      => mbx_fifo'Old (dest_id).head,
-                mbx_array =>
-                  mbx_fifo'Old (dest_id).mbx_array'Update
-                    (get_mbx_tail (dest_id) =>
+      Pre  => (not mbx_is_full (dest_id)) and then mbx_are_well_formed,
+      Post => (not mbx_is_empty (dest_id)) and then
+       (mbx_fifo = (mbx_fifo'Old with delta
+          dest_id => (mbx_fifo'Old(dest_id)  with delta
+               count     => mbx_fifo'Old(dest_id).count + 1,
+               head      => mbx_fifo'Old(dest_id).head,
+               mbx_array => (mbx_fifo'Old(dest_id).mbx_array with delta
+                    get_mbx_tail (dest_id) =>
                        (sender_id => src_id, msg => mbx_msg)))))
-       and then mbx_are_well_formed)
+       and then mbx_are_well_formed
    is
       mbx_index : constant os_mbx_index_t :=
         get_mbx_head (dest_id) + get_mbx_count (dest_id);
@@ -337,19 +332,15 @@ is
    ----------------------
 
    procedure remove_first_mbx (task_id : in os_task_id_param_t) with
-      Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
-      Post =>
-      (mbx_fifo =
-       mbx_fifo'Old'Update
-         (task_id =>
-            mbx_fifo'Old (task_id)'Update
-              (count     => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count),
+      Pre  => (not mbx_is_empty (task_id)) and then mbx_are_well_formed,
+      Post => (mbx_fifo = (mbx_fifo'Old with delta
+         task_id => (mbx_fifo'Old(task_id) with delta
+               count     => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count),
                head      => os_mbx_index_t'Succ (mbx_fifo'Old (task_id).head),
-               mbx_array =>
-                 mbx_fifo'Old (task_id).mbx_array'Update
-                   (mbx_fifo'Old (task_id).head =>
-                      (sender_id => OS_TASK_ID_NONE, msg => 0))))) and
-      (not mbx_is_full (task_id)) and mbx_are_well_formed
+               mbx_array => (mbx_fifo'Old(task_id).mbx_array with delta
+                   mbx_fifo'Old(task_id).head =>
+                      (sender_id => OS_TASK_ID_NONE, msg => 0))))) and then
+      (not mbx_is_full (task_id)) and then mbx_are_well_formed
    is
       mbx_index : constant os_mbx_index_t := get_mbx_head (task_id);
    begin
@@ -366,17 +357,13 @@ is
 
    procedure remove_last_mbx (task_id : in os_task_id_param_t) with
       Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
-      Post =>
-      (mbx_fifo =
-       mbx_fifo'Old'Update
-         (task_id =>
-            mbx_fifo'Old (task_id)'Update
-              (count     => os_mbx_count_t'Pred (mbx_fifo'Old (task_id).count),
-               head      => mbx_fifo'Old (task_id).head,
-               mbx_array =>
-                 mbx_fifo'Old (task_id).mbx_array'Update
-                   (mbx_fifo (task_id).head + mbx_fifo (task_id).count =>
-                      (sender_id => OS_TASK_ID_NONE, msg => 0))))) and
+      Post => (mbx_fifo = (mbx_fifo'Old with delta
+         task_id => (mbx_fifo'Old(task_id) with delta
+               count     => os_mbx_count_t'Pred (mbx_fifo'Old(task_id).count),
+               head      => mbx_fifo'Old(task_id).head,
+               mbx_array => (mbx_fifo'Old(task_id).mbx_array with delta
+                   mbx_fifo(task_id).head + mbx_fifo(task_id).count =>
+                      (sender_id => OS_TASK_ID_NONE, msg => 0))))) and then
       mbx_are_well_formed
    is
       mbx_index : constant os_mbx_index_t := get_mbx_tail (task_id);
