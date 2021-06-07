@@ -8,7 +8,7 @@ project Moth is
    end Builder;
 
    package Compiler is
-      for Default_Switches ("ada") use ("-gnatw.eH.YD", "-gnatf", "-Wall");
+      for Default_Switches ("ada") use ("-gnatw.eH.YD", "-gnatf", "-Wall", "-gnat2020");
    end Compiler;
 
    package Prove is

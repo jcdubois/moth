@@ -38,42 +38,43 @@
  * Syscalls handlers.
  */
 
-os_task_id_t os_arch_init(void) {
+uint32_t *os_arch_init(void) {
   os_task_id_t task_id;
   os_init(&task_id);
-  return task_id;
+  return os_arch_context_restore(task_id);
 }
 
 /**
  * Wait function handler.
  */
-static void os_arch_sched_wait(void) {
-  uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
+static uint32_t *os_arch_sched_wait(uint32_t *ctx) {
   os_task_id_t current_task_id;
   os_task_id_t new_task_id;
-  os_mbx_mask_t mbx_mask = (os_mbx_mask_t)(*(uint32_t *)(ctx - I0_OFFSET));
+  os_mbx_mask_t mbx_mask = (os_mbx_mask_t)(*(ctx - I0_OFFSET/4));
 
   syslog("%s: \n", __func__);
 
   current_task_id = os_sched_get_current_task_id();
   os_sched_wait(&new_task_id, mbx_mask);
 
-  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+  *(ctx - I0_OFFSET/4) = OS_SUCCESS;
+  *(ctx - PC_OFFSET/4) += 4; // skip "ta" instruction
+  *(ctx - NPC_OFFSET/4) += 4;
 
   if (current_task_id != new_task_id) {
+    os_arch_context_save(current_task_id, ctx);
     os_arch_space_switch(current_task_id, new_task_id);
-    os_arch_context_switch(current_task_id, new_task_id);
+    ctx = os_arch_context_restore(new_task_id);
   }
+
+  return ctx;
 }
 
 /**
  * Yield function handler.
  * Release the processor and give another task the opportunity to run.
  */
-static void os_arch_sched_yield(void) {
-  uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
+static uint32_t *os_arch_sched_yield(uint32_t *ctx) {
   os_task_id_t current_task_id;
   os_task_id_t new_task_id;
 
@@ -82,22 +83,24 @@ static void os_arch_sched_yield(void) {
   current_task_id = os_sched_get_current_task_id();
   os_sched_yield(&new_task_id);
 
-  *(uint32_t *)(ctx - I0_OFFSET) = OS_SUCCESS;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+  *(ctx - I0_OFFSET/4) = OS_SUCCESS;
+  *(ctx - PC_OFFSET/4) += 4; // skip "ta" instruction
+  *(ctx - NPC_OFFSET/4) += 4;
 
   if (current_task_id != new_task_id) {
+    os_arch_context_save(current_task_id, ctx);
     os_arch_space_switch(current_task_id, new_task_id);
-    os_arch_context_switch(current_task_id, new_task_id);
+    ctx = os_arch_context_restore(new_task_id);
   }
+
+  return ctx;
 }
 
 /**
  * Mailbox receive function handler.
  * We get the arguments from the stack and we call the os_mbx_receive function.
  */
-static void os_arch_mbx_receive(void) {
-  uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
+static uint32_t *os_arch_mbx_receive(uint32_t *ctx) {
   os_status_t status;
   os_mbx_entry_t *entry =
       (os_mbx_entry_t *)os_task_ro[os_sched_get_current_task_id()]
@@ -111,17 +114,18 @@ static void os_arch_mbx_receive(void) {
 
   os_mbx_receive(&status, entry);
 
-  *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+  *(ctx - I0_OFFSET/4) = (uint32_t)status;
+  *(ctx - PC_OFFSET/4) += 4; // skip "ta" instruction
+  *(ctx - NPC_OFFSET/4) += 4;
+
+  return ctx;
 }
 
 /**
  * Mailbox send function handler.
  * We get the arguments from the stack and we call the os_mbx_send function.
  */
-static void os_arch_mbx_send(void) {
-  uint8_t *ctx = (uint8_t *)os_arch_stack_pointer;
+static uint32_t *os_arch_mbx_send(uint32_t *ctx) {
   os_status_t status;
   os_mbx_entry_t *entry =
       (os_mbx_entry_t *)os_task_ro[os_sched_get_current_task_id()]
@@ -135,16 +139,18 @@ static void os_arch_mbx_send(void) {
   entry->sender_id = OS_TASK_ID_NONE;
   entry->msg = 0;
 
-  *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)status;
-  *(uint32_t *)(ctx - PC_OFFSET) += 4; // skip "ta" instruction
-  *(uint32_t *)(ctx - NPC_OFFSET) += 4;
+  *(ctx - I0_OFFSET/4) = (uint32_t)status;
+  *(ctx - PC_OFFSET/4) += 4; // skip "ta" instruction
+  *(ctx - NPC_OFFSET/4) += 4;
+
+  return ctx;
 }
 
 /**
  * Exit function handler.
  * Handle the case when a task ends.
  */
-static void os_arch_sched_exit(void) {
+static uint32_t *os_arch_sched_exit(uint32_t *ctx) {
   os_task_id_t current_task_id;
   os_task_id_t new_task_id;
 
@@ -156,9 +162,12 @@ static void os_arch_sched_exit(void) {
   os_arch_context_create(current_task_id);
 
   if (current_task_id != new_task_id) {
+    os_arch_context_save(current_task_id, ctx);
     os_arch_space_switch(current_task_id, new_task_id);
-    os_arch_context_switch(current_task_id, new_task_id);
-  }
+    ctx = os_arch_context_restore(new_task_id);
+  } 
+
+  return ctx;
 }
 
 /**
@@ -166,37 +175,34 @@ static void os_arch_sched_exit(void) {
  * Call the correct handler for the given trap number.
  * @param trap_nb The number of the current trap. (cf SPARC V8 Manual, page 76)
  * @param stack_pointer Adress of the interrupted stack.
- * @see os_arch_stack_pointer
  */
-void os_arch_trap_handler(uint32_t pc, uint32_t npc, uint32_t psr,
-                          uint32_t trap_nb, uint32_t restore_counter,
-                          uint32_t stack_pointer) {
+uint32_t *os_arch_trap_handler(uint32_t *pc, uint32_t *npc, uint32_t psr,
+                               uint32_t trap_nb, uint32_t restore_counter,
+                               uint32_t *stack_pointer) {
   (void)restore_counter;
   (void)pc;
   (void)npc;
   (void)psr;
 
-  os_arch_stack_pointer = stack_pointer;
-
   switch (trap_nb) {
   case (SPARC_TRAP_SYSCALL_BASE + 0):
-    os_arch_sched_wait();
+    return os_arch_sched_wait(stack_pointer);
     break;
   case (SPARC_TRAP_SYSCALL_BASE + 1):
-    os_arch_sched_yield();
+    return os_arch_sched_yield(stack_pointer);
     break;
   case (SPARC_TRAP_SYSCALL_BASE + 2):
-    os_arch_mbx_send();
+    return os_arch_mbx_send(stack_pointer);
     break;
   case (SPARC_TRAP_SYSCALL_BASE + 3):
-    os_arch_mbx_receive();
+    return os_arch_mbx_receive(stack_pointer);
     break;
   case (SPARC_TRAP_SYSCALL_BASE + 4):
-    os_arch_sched_exit();
+    return os_arch_sched_exit(stack_pointer);
     break;
   default:
-    printf("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%x %%nPC=%x "
-           "%%sp=0x%x\n",
+    printf("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%p %%nPC=%p "
+           "%%sp=0x%p\n",
            trap_nb, psr, pc, npc, stack_pointer);
     printf("%%psr : impl:0x%x ver:%x nzvc:%u%u%u%u EC:%u EF:%u PIL:0x%x S:%u "
            "PS:%u ET:%u CWP:%u\n\r",

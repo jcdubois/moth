@@ -41,16 +41,6 @@ package os_arch is
       Global => null;
    pragma Import (C, context_create, "os_arch_context_create");
 
-   procedure context_switch
-     (prev_id : Moth.os_task_id_param_t;
-      next_id : Moth.os_task_id_param_t) with
-      Global => null;
-   pragma Import (C, context_switch, "os_arch_context_switch");
-
-   procedure context_set (task_id : Moth.os_task_id_param_t) with
-      Global => null;
-   pragma Import (C, context_set, "os_arch_context_set");
-
    procedure space_init with
       Global => null;
    pragma Import (C, space_init, "os_arch_space_init");

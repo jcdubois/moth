@@ -345,7 +345,7 @@ _os_arch_reset_prehandler:
 	/* Init IU */
 
 	/* set PSR : Processor State Register */
-	/* We are in supervisor state and trap are anabled */
+	/* We are in supervisor state and trap are enabled */
 	/* interrupts are disabled */
 	set   (PSR_S | PSR_ET | PSR_PIL_MASK), %l0
 	mov   %l0, %psr
@@ -455,8 +455,7 @@ __os_arch_clean_win_loop:
 	nop                           /* delay slot */
 
 	/* retreive the stack pointer of the current task */
-	set   os_arch_stack_pointer, %g6
-	ld    [%g6], %g2
+    mov   %o0, %g2
 
 	call  _os_arch_context_restore
 	nop                           /* delay slot */
@@ -530,8 +529,7 @@ _os_arch_trap_prehandler:
 	mov   %l5, %o5                /* stack pointer - 6th arg */
 
 	/* retreive the stack pointer of the current task */
-	set   os_arch_stack_pointer, %g6
-	ld    [%g6], %g2
+    mov   %o0, %g2
 
 	/* restore the selected task register set */
 	call  _os_arch_context_restore

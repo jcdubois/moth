@@ -105,8 +105,9 @@ is
          Ghost,
          Initializes       => Model,
          Initial_Condition =>
-         (Is_Empty (Model.Ready) and then Length (Model.Idle) = OS_MAX_TASK_CNT
-          and then
+         (Is_Empty (Model.Ready)
+         and then Length (Model.Idle) = OS_MAX_TASK_CNT
+         and then
           (for all task_id in os_task_id_param_t =>
              Contains (Model.Idle, task_id)))
       is
@@ -114,13 +115,15 @@ is
            (Left, Right : os_task_id_param_t) return Boolean;
 
          package ready_list_t is new Ada.Containers.Formal_Doubly_Linked_Lists
-           (Element_Type => os_task_id_param_t, "=" => ready_equal);
+           (Element_Type => os_task_id_param_t,
+            "=" => ready_equal);
          use ready_list_t;
 
          function idle_lt (Left, Right : os_task_id_param_t) return Boolean;
 
          package idle_list_t is new Ada.Containers.Formal_Ordered_Sets
-           (Element_Type => os_task_id_param_t, "<" => idle_lt);
+           (Element_Type => os_task_id_param_t,
+            "<" => idle_lt);
          use idle_list_t;
 
          type T is record
