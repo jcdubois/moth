@@ -219,95 +219,22 @@ is
    is
       index_id : os_task_id_t := task_list_head;
    begin
-      pragma Assert (task_list_is_well_formed);
 
       if (not ready_task (task_id)) then
 
-         pragma Assert (not task_is_ready (task_id));
-
          if index_id = OS_TASK_ID_NONE then
-
-            pragma Assert (Is_Empty (Model.Ready));
-            pragma Assert
-              (for all id in os_task_id_param_t =>
-                 (Contains (Model.Idle, id) and
-                  not Contains (Model.Ready, id) and not ready_task (id) and
-                  next_task (id) = OS_TASK_ID_NONE and
-                  prev_task (id) = OS_TASK_ID_NONE));
 
             Delete (Model.Idle, task_id);
             Prepend (Model.Ready, task_id);
 
             ready_task (task_id) := True;
 
-            pragma Assert (task_is_ready (task_id));
-
             --  task_id is now the only element of the ready_list.
             task_list_head := task_id;
 
-            pragma Assert
-              (for all id of Model.Idle =>
-                 (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-                  next_task (id) = OS_TASK_ID_NONE and
-                  not Contains (Model.Ready, id)));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = First_Element (Model.Ready) then
-                    (id = task_list_head and prev_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (prev_task (id) =
-                     Element
-                       (Model.Ready,
-                        Previous (Model.Ready, Find (Model.Ready, id)))
-                     and then Moth.Config.get_task_priority (prev_task (id)) >=
-                       Moth.Config.get_task_priority (id))));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = Last_Element (Model.Ready) then
-                    (next_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (next_task (id) =
-                     Element
-                       (Model.Ready,
-                        Next (Model.Ready, Find (Model.Ready, id)))
-                     and then Moth.Config.get_task_priority (next_task (id)) <=
-                       Moth.Config.get_task_priority (id))));
-
-            pragma Assert (for all id in os_task_id_param_t =>
-            ((Contains (Model.Idle, id) and not Contains (Model.Ready, id) and
-              not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-              next_task (id) = OS_TASK_ID_NONE)
-             or else
-             (Contains (Model.Ready, id) and not Contains (Model.Idle, id) and
-              ready_task (id))));
-
-            pragma Assert (for all id of Model.Idle =>
-            (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-             next_task (id) = OS_TASK_ID_NONE and
-             not Contains (Model.Ready, id)));
-
-            pragma Assert (task_list_is_well_formed);
          else
 
-            pragma Assert (not Is_Empty (Model.Ready));
-            pragma Assert (index_id /= OS_TASK_ID_NONE);
-            pragma Assert (index_id = First_Element (Model.Ready));
-            pragma Assert (prev_task (index_id) = OS_TASK_ID_NONE);
-            pragma Assert (not Contains (Model.Idle, index_id));
-            pragma Assert (Contains (Model.Ready, index_id));
-
             while index_id /= OS_TASK_ID_NONE loop
-
-               pragma Loop_Invariant (not Contains (Model.Idle, index_id));
-               pragma Loop_Invariant (Contains (Model.Ready, index_id));
-               pragma Loop_Invariant (prev_task = prev_task'Loop_Entry);
-               pragma Loop_Invariant (next_task = next_task'Loop_Entry);
-               pragma Loop_Invariant (ready_task = ready_task'Loop_Entry);
-               pragma Loop_Invariant (Model.Ready = Model.Ready'Loop_Entry);
-               pragma Loop_Invariant (Model.Idle = Model.Idle'Loop_Entry);
-               pragma Loop_Invariant (task_list_is_well_formed);
 
                if Moth.Config.get_task_priority (task_id) >
                  Moth.Config.get_task_priority (index_id)
@@ -318,82 +245,26 @@ is
                      prev_id : constant os_task_id_t := prev_task (index_id);
                   begin
 
-                     pragma Assert
-                       (for all id of Model.Idle =>
-                          (not ready_task (id) and
-                           prev_task (id) = OS_TASK_ID_NONE and
-                           next_task (id) = OS_TASK_ID_NONE and
-                           not Contains (Model.Ready, id)));
-
                      Delete (Model.Idle, task_id);
                      Insert
                        (Model.Ready, Find (Model.Ready, index_id), task_id);
-
-                     pragma Assert
-                       (for all id of Model.Idle =>
-                          (not ready_task (id) and
-                           prev_task (id) = OS_TASK_ID_NONE and
-                           next_task (id) = OS_TASK_ID_NONE and
-                           not Contains (Model.Ready, id)));
 
                      prev_task (index_id) := task_id;
                      next_task (task_id)  := index_id;
                      ready_task (task_id) := True;
 
-                     pragma Assert (task_is_ready (task_id));
-                     pragma Assert (not Contains (Model.Idle, index_id));
-                     pragma Assert (Contains (Model.Ready, index_id));
-                     pragma Assert (not Contains (Model.Idle, task_id));
-                     pragma Assert (Contains (Model.Ready, task_id));
-
-                     pragma Assert
-                       (for all id of Model.Idle =>
-                          (not ready_task (id) and
-                           prev_task (id) = OS_TASK_ID_NONE and
-                           next_task (id) = OS_TASK_ID_NONE and
-                           not Contains (Model.Ready, id)));
-
                      if prev_id = OS_TASK_ID_NONE then
                         task_list_head := task_id;
-
-                        pragma Assert (prev_task (task_id) = OS_TASK_ID_NONE);
-
                      else
-                        pragma Assert (not Contains (Model.Idle, prev_id));
-                        pragma Assert (Contains (Model.Ready, prev_id));
                         next_task (prev_id) := task_id;
                         prev_task (task_id) := prev_id;
                      end if;
 
-                     pragma Assert
-                       (for all id of Model.Idle =>
-                          (not ready_task (id) and
-                           prev_task (id) = OS_TASK_ID_NONE and
-                           next_task (id) = OS_TASK_ID_NONE and
-                           not Contains (Model.Ready, id)));
-
                   end;
 
-                  pragma Assert
-                    (for all id of Model.Idle =>
-                       (not ready_task (id) and
-                        prev_task (id) = OS_TASK_ID_NONE and
-                        next_task (id) = OS_TASK_ID_NONE and
-                        not Contains (Model.Ready, id)));
-
-                  pragma Assert (task_list_is_well_formed);
                   exit;
                elsif next_task (index_id) = OS_TASK_ID_NONE then
                   --  we are at the last element of the ready list.
-
-                  pragma Assert (index_id = Last_Element (Model.Ready));
-
-                  pragma Assert
-                    (for all id of Model.Idle =>
-                       (not ready_task (id) and
-                        prev_task (id) = OS_TASK_ID_NONE and
-                        next_task (id) = OS_TASK_ID_NONE and
-                        not Contains (Model.Ready, id)));
 
                   --  Let's delete task_id from the idle list.
                   Delete (Model.Idle, task_id);
@@ -406,45 +277,14 @@ is
 
                   --  We don't need to update next_task as it is already set to
                   --  OS_TASK_ID_NONE
-                  pragma Assert (next_task (task_id) = OS_TASK_ID_NONE);
-
                   ready_task (task_id) := True;
 
-                  pragma Assert (task_is_ready (task_id));
-
-                  pragma Assert
-                    (for all id of Model.Idle =>
-                       (not ready_task (id) and
-                        prev_task (id) = OS_TASK_ID_NONE and
-                        next_task (id) = OS_TASK_ID_NONE and
-                        not Contains (Model.Ready, id)));
-
-                  pragma Assert (task_list_is_well_formed);
                   exit;
                end if;
-
-               pragma Assert
-                 (next_task (index_id) =
-                  Element
-                    (Model.Ready,
-                     Next (Model.Ready, Find (Model.Ready, index_id))));
 
                index_id := next_task (index_id);
             end loop;
 
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = First_Element (Model.Ready) then
-                    (id = task_list_head and prev_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (prev_task (id) =
-                     Element
-                       (Model.Ready,
-                        Previous (Model.Ready, Find (Model.Ready, id)))
-                     and then Moth.Config.get_task_priority (prev_task (id)) >=
-                       Moth.Config.get_task_priority (id))));
-
-            pragma Assert (task_list_is_well_formed);
          end if;
       end if;
 
@@ -455,9 +295,10 @@ is
    ---------------------------------
 
    procedure remove_task_from_ready_list (task_id : os_task_id_param_t) with
-      Pre => task_is_ready (task_id) and then ready_task (task_id) = True
+      Pre => task_is_ready (task_id)
       and then task_list_is_well_formed,
-      Post => not task_is_ready (task_id)
+      Post => not Contains (Model.Ready, task_id)
+      and then Contains (Model.Idle, task_id) 
       and then ready_task = (ready_task'Old with delta task_id => False)
       and then task_list_is_well_formed
    is
@@ -467,172 +308,36 @@ is
          Ghost;
    begin
 
-      if ready_task (task_id) then
+      --  Disconnect task_id from the ready list
+      next_task (task_id)  := OS_TASK_ID_NONE;
+      prev_task (task_id)  := OS_TASK_ID_NONE;
+      ready_task (task_id) := False;
+      Delete (Model.Ready, position);
+      Insert (Model.Idle, task_id);
 
-         pragma Assert (task_list_is_well_formed);
-         pragma Assert (task_list_head /= OS_TASK_ID_NONE);
+      if task_id = task_list_head then
 
-         pragma Assert
-           (for all id of Model.Ready =>
-              (ready_task (id) and
-               Find (Model.Ready, id) = Reverse_Find (Model.Ready, id) and
-               not Contains (Model.Idle, id)));
+         --  Set the new list head (the next from the removed task)
+         --  Note:
+         task_list_head := next_id;
 
-         pragma Assert
-           (for all id of Model.Idle =>
-              (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-               next_task (id) = OS_TASK_ID_NONE and
-               not Contains (Model.Ready, id)));
+         if next_id /= OS_TASK_ID_NONE then
 
-         pragma Assert
-           (for all id of Model.Ready =>
-              (if id = First_Element (Model.Ready) then
-                 (id = task_list_head and prev_task (id) = OS_TASK_ID_NONE)
-               else
-                 (prev_task (id) =
-                  Element
-                    (Model.Ready,
-                     Previous (Model.Ready, Find (Model.Ready, id))) and
-                  Moth.Config.get_task_priority (prev_task (id)) >=
-                    Moth.Config.get_task_priority (id))));
-
-         pragma Assert
-           (for all id of Model.Ready =>
-              (if id = Last_Element (Model.Ready) then
-                 (next_task (id) = OS_TASK_ID_NONE)
-               else
-                 (next_task (id) =
-                  Element
-                    (Model.Ready,
-                     Next (Model.Ready, Find (Model.Ready, id))) and
-                  Moth.Config.get_task_priority (next_task (id)) <=
-                    Moth.Config.get_task_priority (id))));
-
-         --  Disconnect task_id from the ready list
-         next_task (task_id)  := OS_TASK_ID_NONE;
-         prev_task (task_id)  := OS_TASK_ID_NONE;
-         ready_task (task_id) := False;
-         Delete (Model.Ready, position);
-         Insert (Model.Idle, task_id);
-
-         pragma Assert (not Contains (Model.Ready, task_id));
-
-         pragma Assert
-           (for all id of Model.Ready =>
-              (ready_task (id) and
-               Find (Model.Ready, id) = Reverse_Find (Model.Ready, id) and
-               not Contains (Model.Idle, id)));
-
-         pragma Assert
-           (for all id of Model.Idle =>
-              (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-               next_task (id) = OS_TASK_ID_NONE and
-               not Contains (Model.Ready, id)));
-
-         if task_id = task_list_head then
-
-            --  Set the new list head (the next from the removed task)
-            --  Note:
-            task_list_head := next_id;
-
-            if next_id /= OS_TASK_ID_NONE then
-
-               pragma Assert (next_id = First_Element (Model.Ready));
-               pragma Assert (ready_task (next_id));
-
-               --  The new list head [next_id] should have no prev
-               prev_task (next_id) := OS_TASK_ID_NONE;
-
-            end if;
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (ready_task (id) and
-                  Find (Model.Ready, id) = Reverse_Find (Model.Ready, id) and
-                  not Contains (Model.Idle, id)));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = First_Element (Model.Ready) then
-                    (id = task_list_head and prev_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (prev_task (id) =
-                     Element
-                       (Model.Ready,
-                        Previous (Model.Ready, Find (Model.Ready, id))))));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = Last_Element (Model.Ready) then
-                    (next_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (next_task (id) =
-                     Element
-                       (Model.Ready,
-                        Next (Model.Ready, Find (Model.Ready, id))))));
-
-            pragma Assert
-              (for all id of Model.Idle =>
-                 (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-                  next_task (id) = OS_TASK_ID_NONE and
-                  not Contains (Model.Ready, id)));
-
-            pragma Assert (task_list_is_well_formed);
-
-         else
-            pragma Assert (task_list_head = First_Element (Model.Ready));
-            pragma Assert (ready_task (task_list_head));
-            pragma Assert (ready_task (prev_id));
-
-            --  link next from prev task to our next
-            next_task (prev_id) := next_id;
-
-            if next_id /= OS_TASK_ID_NONE then
-
-               --  link prev from next task to our prev
-               prev_task (next_id) := prev_id;
-
-               pragma Assert (ready_task (next_id));
-
-            end if;
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (ready_task (id) and
-                  Find (Model.Ready, id) = Reverse_Find (Model.Ready, id) and
-                  not Contains (Model.Idle, id)));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = First_Element (Model.Ready) then
-                    (id = task_list_head and prev_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (prev_task (id) =
-                     Element
-                       (Model.Ready,
-                        Previous (Model.Ready, Find (Model.Ready, id))))));
-
-            pragma Assert
-              (for all id of Model.Ready =>
-                 (if id = Last_Element (Model.Ready) then
-                    (next_task (id) = OS_TASK_ID_NONE)
-                  else
-                    (next_task (id) =
-                     Element
-                       (Model.Ready,
-                        Next (Model.Ready, Find (Model.Ready, id))))));
-
-            pragma Assert
-              (for all id of Model.Idle =>
-                 (not ready_task (id) and prev_task (id) = OS_TASK_ID_NONE and
-                  next_task (id) = OS_TASK_ID_NONE and
-                  not Contains (Model.Ready, id)));
-
-            pragma Assert (task_list_is_well_formed);
+            --  The new list head [next_id] should have no prev
+            prev_task (next_id) := OS_TASK_ID_NONE;
 
          end if;
 
-         pragma Assert (task_list_is_well_formed);
+      else
+         --  link next from prev task to our next
+         next_task (prev_id) := next_id;
+
+         if next_id /= OS_TASK_ID_NONE then
+
+            --  link prev from next task to our prev
+            prev_task (next_id) := prev_id;
+
+         end if;
 
       end if;
 
