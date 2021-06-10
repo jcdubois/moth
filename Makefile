@@ -454,3 +454,6 @@ savedefconfig:
 
 documentation:
 	doxygen doc/moth.dox
+
+proof:
+	gnatprove -P./moth.gpr -j0 --level=4
