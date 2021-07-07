@@ -38,7 +38,7 @@
 /* keep the trap number, PSR, WIM and call the trap handler */
 # define os_trap_handle(handler)          \
     set handler, %l0;                     \
-    b   _os_arch_trap_prehandler;         \
+    b   _os_arch_service_handler;         \
     nop;
 
 /* start kernel */
@@ -216,12 +216,11 @@ _os_arch_trap_vector_table:
     unexpected_trap_handle(0x7f)
 
     /* Software traps */
-
-    os_trap_handle(os_arch_sched_wait)  /* sched_wait()  */
-    os_trap_handle(os_arch_sched_yield) /* sched_yield() */
-    os_trap_handle(os_arch_mbx_send)    /* mbx_send()    */
-    os_trap_handle(os_arch_mbx_receive) /* mbx_receive() */
-    os_trap_handle(os_arch_sched_exit)  /* sched_exit() */
+    os_trap_handle(os_arch_sched_wait)  /* 0x80 = sched_wait()  */
+    os_trap_handle(os_arch_sched_yield) /* 0x81 = sched_yield() */
+    os_trap_handle(os_arch_mbx_send)    /* 0x82 = mbx_send()    */
+    os_trap_handle(os_arch_mbx_receive) /* 0x83 = mbx_receive() */
+    os_trap_handle(os_arch_sched_exit)  /* 0x84 = sched_exit() */
 
     unexpected_trap_handle(0x85)
     unexpected_trap_handle(0x86)
@@ -532,7 +531,7 @@ _os_arch_error_handler:
                                   /* We should not return */
     b     .                       /* If we do, we hang there */
 
-_os_arch_trap_prehandler:
+_os_arch_service_handler:
 
     /*
      * input:
