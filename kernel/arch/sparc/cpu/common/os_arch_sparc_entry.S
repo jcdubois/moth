@@ -36,11 +36,10 @@
 # define PSR_PIL_MASK  PSR_PIL(0xf)
 
 /* keep the trap number, PSR, WIM and call the trap handler */
-# define os_trap_handle(trap_nbr)         \
-    mov %wim, %l0;                        \
-    mov %psr, %l3;                        \
+# define os_trap_handle(handler)          \
+    set handler, %l0;                     \
     b   _os_arch_trap_prehandler;         \
-    mov trap_nbr, %l4;
+    nop;
 
 /* start kernel */
 # define reset_trap_handle()              \
@@ -218,11 +217,11 @@ _os_arch_trap_vector_table:
 
     /* Software traps */
 
-    os_trap_handle(0x80) /* sched_wait()  */
-    os_trap_handle(0x81) /* sched_yield() */
-    os_trap_handle(0x82) /* mbx_send()    */
-    os_trap_handle(0x83) /* mbx_receive() */
-    os_trap_handle(0x84) /* exit() */
+    os_trap_handle(os_arch_sched_wait)  /* sched_wait()  */
+    os_trap_handle(os_arch_sched_yield) /* sched_yield() */
+    os_trap_handle(os_arch_mbx_send)    /* mbx_send()    */
+    os_trap_handle(os_arch_mbx_receive) /* mbx_receive() */
+    os_trap_handle(os_arch_sched_exit)  /* sched_exit() */
 
     unexpected_trap_handle(0x85)
     unexpected_trap_handle(0x86)
@@ -537,11 +536,9 @@ _os_arch_trap_prehandler:
 
     /*
      * input:
-     *   %l0 = %wim
+     *   %l0 = @ of moth service
      *   %l1 = %pc
      *   %l2 = %npc
-     *   %l3 = %psr
-     *   %l4 = trap_nbr
      */
 
     /*
@@ -565,19 +562,15 @@ _os_arch_trap_prehandler:
     nop                           /* delay slot */
     /* %g6 = restore counter from context_save */
 
-    mov   %fp, %o5                /* stack pointer - 6th arg */
+    mov   %fp, %o0                /* stack pointer - 1st arg */
 
     /* return on kernel stack */
     set   __stack_end, %fp        /* This should already be aligned */
     andn  %fp, 0x0f, %fp          /* align stack on 16-byte boundary */
     sub   %fp, 0x80, %sp          /* move %sp 128 bytes from %fp */
 
-    mov   %l1, %o0                /* %pc - 1st arg */
-    mov   %l2, %o1                /* %npc - 2nd arg */
-    mov   %l3, %o2                /* %psr - 3rd arg */
-    mov   %l4, %o3                /* trap_nbr - 4th arg */
-    call  os_arch_trap_handler
-    mov   %g6, %o4                /* restore counter - 5th arg */
+    call  %l0                     /* call the function for os service */
+    nop
 
     /* retreive the stack pointer of the current task */
     mov   %o0, %g2
