@@ -217,3 +217,31 @@ uint32_t *os_arch_trap_handler(uint32_t *pc, uint32_t *npc, uint32_t psr,
     break;
   }
 }
+
+/**
+ * Function called by asm error handler.
+ * @param trap_nb The number of the current trap. (cf SPARC V8 Manual, page 76)
+ * @param stack_pointer Adress of the interrupted stack.
+ */
+uint32_t *os_arch_error_handler(uint32_t *pc, uint32_t *npc, uint32_t psr,
+                                uint32_t trap_nb, uint32_t restore_counter,
+                                uint32_t *stack_pointer) {
+  (void)restore_counter;
+  (void)pc;
+  (void)npc;
+  (void)psr;
+
+  printf("[KERNEL] [ERROR] Unhandled trap: 0x%x %%PSR=%x %%PC=%p %%nPC=%p "
+         "%%sp=0x%p\n",
+         trap_nb, psr, pc, npc, stack_pointer);
+  printf("%%psr : impl:0x%x ver:%x nzvc:%u%u%u%u EC:%u EF:%u PIL:0x%x S:%u "
+         "PS:%u ET:%u CWP:%u\n\r",
+         (psr >> 28) & 0xF, (psr >> 24) & 0xF, (psr >> 23) & 0x1,
+         (psr >> 22) & 0x1c, (psr >> 21) & 0x1, (psr >> 20) & 0x1,
+         (psr >> 23) & 0x1, (psr >> 12) & 0x1, (psr >> 8) & 0xF,
+         (psr >> 7) & 0x1, (psr >> 6) & 0x1, (psr >> 5) & 0x1, psr & 0xF);
+  // infinite loop
+  while (1) {
+    os_arch_idle();
+  }
+}
