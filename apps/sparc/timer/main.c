@@ -88,8 +88,8 @@ static void putc(void *opaque, char car) {
 }
 
 int main(int argc, char **argv, char **argp) {
-  uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
-  uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER_DEVICE_OFFSET]);
+  const uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
+  const uint32_t timer_addr = (uint32_t)(&__TIMER_begin[TIMER_DEVICE_OFFSET]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
   os_task_id_t tmp_id;

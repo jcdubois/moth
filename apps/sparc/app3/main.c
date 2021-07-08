@@ -59,11 +59,11 @@ static void putc(void *opaque, char car) {
 }
 
 int main(int argc, char **argv, char **argp) {
-  uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
+  const uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
   os_status_t cr;
   os_task_id_t tmp_id;
   os_mbx_msg_t msg;
-  os_task_id_t task_id = getpid();
+  const os_task_id_t task_id = getpid();
 
   (void)argc;
   (void)argv;

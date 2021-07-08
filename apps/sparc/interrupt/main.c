@@ -61,7 +61,7 @@ static void putc(void *opaque, char car) {
   io_write8(uart_addr + UART_DATA_OFFSET, (uint8_t)car);
 }
 
-static os_task_id_t interrupt_dest[14] = {
+static const os_task_id_t interrupt_dest[14] = {
     OS_TASK_ID_NONE,  // interrupt 0
     OS_TASK_ID_NONE,  // interrupt 1
     OS_TASK_ID_NONE,  // interrupt 2
@@ -78,8 +78,8 @@ static os_task_id_t interrupt_dest[14] = {
     OS_TASK_ID_NONE,  // interrupt 13
 };
 
-static uint32_t interrupt_dest_size = sizeof(interrupt_dest)
-                                      / sizeof(os_task_id_t);
+static const uint32_t interrupt_dest_size = sizeof(interrupt_dest)
+                                            / sizeof(os_task_id_t);
 
 static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
   if (interrupt >= interrupt_dest_size) {
@@ -90,8 +90,8 @@ static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
 }
 
 int main(int argc, char **argv, char **argp) {
-  uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
-  uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
+  const uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
+  const uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
   uint32_t i;
