@@ -35,7 +35,8 @@
 # define PSR_PIL(pil)  (((pil)&0xf) << 8) /**< Proc Interrupt Level */
 # define PSR_PIL_MASK  PSR_PIL(0xf)
 
-/* keep the trap number, PSR, WIM and call the trap handler */
+/* Set the function addr for the service and call the trap handler */
+/* The "set" instruction is an intrinsic that takes 2 instructions */
 # define os_trap_handle(handler)          \
     set handler, %l0;                     \
     b   _os_arch_service_handler;         \
@@ -49,13 +50,14 @@
     nop;
 
 /* only branch to special handler */
-# define trap_special_handle(handler)     \
+# define special_trap_handle(handler)     \
     b   handler;                          \
     nop;                                  \
     nop;                                  \
     nop;
 
 /* unexpected trap */
+/* keep the trap number, PSR, WIM and call the trap handler */
 # define unexpected_trap_handle(trap_nbr) \
     mov %wim, %l0;                        \
     mov %psr, %l3;                        \
@@ -63,6 +65,7 @@
     mov trap_nbr, %l4;
 
 /* error trap */
+/* keep the trap number, PSR, WIM and call the trap handler */
 # define error_trap_handle(trap_nbr)      \
     mov %wim, %l0;                        \
     mov %psr, %l3;                        \
@@ -80,8 +83,8 @@ _os_arch_trap_vector_table:
     error_trap_handle(0x02) /* illegal_instruction */
     error_trap_handle(0x03) /* privileged_instruction */
     error_trap_handle(0x04) /* fp_disabled */
-    trap_special_handle(_os_arch_window_overflow_trap_handler)   /* 0x05 window_overflow */
-    trap_special_handle(_os_arch_window_underflow_trap_handler)  /* 0x06 window_underflow */
+    special_trap_handle(_os_arch_window_overflow_trap_handler)   /* 0x05 window_overflow */
+    special_trap_handle(_os_arch_window_underflow_trap_handler)  /* 0x06 window_underflow */
     error_trap_handle(0x07) /* mem_address_not_aligned */
     error_trap_handle(0x08) /* fp_exception */
     error_trap_handle(0x09) /* data_access_exception */
@@ -603,11 +606,9 @@ _os_arch_context_save:
 
     /*
      * input:
-     *   %l0 = %wim
+     *   %l0 = @ of service function
      *   %l1 = %pc
      *   %l2 = %npc
-     *   %l3 = %psr
-     *   %l4 = trap_nbr
      * output:
      *   %g6 = restore counter
      *
