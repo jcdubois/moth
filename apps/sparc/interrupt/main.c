@@ -78,8 +78,11 @@ static os_task_id_t interrupt_dest[14] = {
     OS_TASK_ID_NONE,  // interrupt 13
 };
 
+static uint32_t interrupt_dest_size = sizeof(interrupt_dest)
+                                      / sizeof(os_task_id_t);
+
 static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
-  if (interrupt >= 32) {
+  if (interrupt >= interrupt_dest_size) {
     return OS_TASK_ID_NONE;
   } else {
     return interrupt_dest[interrupt];
@@ -91,7 +94,7 @@ int main(int argc, char **argv, char **argp) {
   uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
-  int i;
+  uint32_t i;
 
   (void)argc;
   (void)argv;
@@ -116,7 +119,7 @@ int main(int argc, char **argv, char **argp) {
     if (irq_pending) {
       printf("interrupt: pending mask = 0x%08x\n", irq_pending);
 
-      for (i = 0; i < 14; i++) {
+      for (i = 0; i < interrupt_dest_size; i++) {
         if ((1 << i) & irq_pending) {
           os_task_id_t dest_id = get_interrupt_dest_id(i);
 
