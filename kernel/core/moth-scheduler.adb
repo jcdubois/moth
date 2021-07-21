@@ -85,13 +85,16 @@ is
 
    package body M is
 
-      function idle_lt (Left, Right : os_task_id_param_t) return Boolean is
+      function idle_lt (Left, Right : os_task_id_param_t) return Boolean
+      is
         (Left < Right);
 
-      function ready_equal (Left, Right : os_task_id_param_t) return Boolean is
+      function ready_equal (Left, Right : os_task_id_param_t) return Boolean
+      is
         (Left = Right);
 
-      function os_ghost_task_list_is_well_formed return Boolean is
+      function os_ghost_task_list_is_well_formed return Boolean
+      is
         (
       --  Relationship between the lists sizes
          (
@@ -189,7 +192,8 @@ is
    -- task_is_ready --
    -------------------
 
-   function task_is_ready (task_id : os_task_id_param_t) return Boolean is
+   function task_is_ready (task_id : os_task_id_param_t) return Boolean
+   is
      (Contains (M.Model.Ready, task_id) and
       not Contains (M.Model.Idle, task_id) and
       ready_task (task_id));
@@ -198,24 +202,28 @@ is
    -- current_task_is_ready --
    ---------------------------
 
-   function current_task_is_ready return Boolean is
+   function current_task_is_ready return Boolean
+   is
      (task_is_ready (current_task));
 
    ------------------------------
    -- task_list_is_well_formed --
    ------------------------------
 
-   function task_list_is_well_formed return Boolean is
+   function task_list_is_well_formed return Boolean
+   is
      (M.os_ghost_task_list_is_well_formed);
 
    ----------------------------
    -- add_task_to_ready_list --
    ----------------------------
 
-   procedure add_task_to_ready_list (task_id : os_task_id_param_t) with
+   procedure add_task_to_ready_list (task_id : os_task_id_param_t)
+   with
       Refined_Post => task_is_ready (task_id)
-      and then ready_task = (ready_task'Old with delta task_id => True)
-      and then task_list_is_well_formed
+                      and then ready_task = (ready_task'Old with delta
+                                                            task_id => True)
+                      and then task_list_is_well_formed
    is
       index_id : os_task_id_t := task_list_head;
    begin
@@ -294,13 +302,15 @@ is
    -- remove_task_from_ready_list --
    ---------------------------------
 
-   procedure remove_task_from_ready_list (task_id : os_task_id_param_t) with
-      Pre => task_is_ready (task_id)
-      and then task_list_is_well_formed,
+   procedure remove_task_from_ready_list (task_id : os_task_id_param_t)
+   with
+      Pre  => task_is_ready (task_id)
+              and then task_list_is_well_formed,
       Post => not Contains (Model.Ready, task_id)
-      and then Contains (Model.Idle, task_id) 
-      and then ready_task = (ready_task'Old with delta task_id => False)
-      and then task_list_is_well_formed
+              and then Contains (Model.Idle, task_id)
+              and then ready_task = (ready_task'Old with delta
+                                                        task_id => False)
+              and then task_list_is_well_formed
    is
       next_id  : constant os_task_id_t := next_task (task_id);
       prev_id  : constant os_task_id_t := prev_task (task_id);
@@ -347,7 +357,8 @@ is
    -- schedule --
    --------------
 
-   procedure schedule (task_id : out os_task_id_param_t) with
+   procedure schedule (task_id : out os_task_id_param_t)
+   with
       Pre  => task_list_is_well_formed,
       Post => task_is_ready (task_id) and then task_list_head = task_id
       and then task_list_is_well_formed
@@ -391,21 +402,24 @@ is
    -- get_current_task_id --
    -------------------------
 
-   function get_current_task_id return os_task_id_param_t is (current_task);
+   function get_current_task_id return os_task_id_param_t
+   is
+     (current_task);
 
    ------------------
    -- get_mbx_mask --
    ------------------
 
-   function get_mbx_mask (task_id : os_task_id_param_t) return os_mbx_mask_t is
+   function get_mbx_mask (task_id : os_task_id_param_t) return os_mbx_mask_t
+   is
      (mbx_mask (task_id));
 
    ----------
    -- wait --
    ----------
 
-   procedure wait
-     (task_id : out os_task_id_param_t; waiting_mask : in os_mbx_mask_t)
+   procedure wait (task_id      : out os_task_id_param_t;
+                   waiting_mask : in os_mbx_mask_t)
    is
       tmp_mask : os_mbx_mask_t;
    begin
@@ -441,7 +455,8 @@ is
    -- yield --
    -----------
 
-   procedure yield (task_id : out os_task_id_param_t) is
+   procedure yield (task_id : out os_task_id_param_t)
+   is
    begin
       task_id := current_task;
 
@@ -459,7 +474,8 @@ is
    -- task_exit --
    ---------------
 
-   procedure task_exit (task_id : out os_task_id_param_t) is
+   procedure task_exit (task_id : out os_task_id_param_t)
+   is
    begin
       task_id := current_task;
 
@@ -474,7 +490,8 @@ is
    -- init --
    ----------
 
-   procedure init (task_id : out os_task_id_param_t) is
+   procedure init (task_id : out os_task_id_param_t)
+   is
       prev_id : os_task_id_param_t := os_task_id_param_t'First;
    begin
 

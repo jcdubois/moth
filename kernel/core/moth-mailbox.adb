@@ -72,8 +72,9 @@ is
    ----------------------
    --  add operator overload for os_mbx_index_t
 
-   function "+"
-     (Left : os_mbx_index_t; Right : os_mbx_count_t) return os_mbx_index_t is
+   function "+" (Left  : os_mbx_index_t;
+                 Right : os_mbx_count_t) return os_mbx_index_t
+   is
      (Left + os_mbx_index_t'Mod (Right));
 
    ---------------------
@@ -81,7 +82,8 @@ is
    ---------------------
    --  Check if the mbx fifo of a given task is empty.
 
-   function mbx_is_empty (task_id : os_task_id_param_t) return Boolean is
+   function mbx_is_empty (task_id : os_task_id_param_t) return Boolean
+   is
      (mbx_fifo (task_id).count = os_mbx_count_t'First);
 
    --------------------
@@ -89,7 +91,8 @@ is
    --------------------
    --  Check if the mbx fifo of a given task is full.
 
-   function mbx_is_full (task_id : os_task_id_param_t) return Boolean is
+   function mbx_is_full (task_id : os_task_id_param_t) return Boolean
+   is
      (mbx_fifo (task_id).count = os_mbx_count_t'Last);
 
    -------------------------
@@ -97,8 +100,8 @@ is
    -------------------------
    --  Retrieve the mbx head index of the given task.
 
-   function get_mbx_head
-     (task_id : os_task_id_param_t) return os_mbx_index_t is
+   function get_mbx_head (task_id : os_task_id_param_t) return os_mbx_index_t
+   is
      (mbx_fifo (task_id).head);
 
    -------------------
@@ -106,8 +109,8 @@ is
    -------------------
    --  Retrieve the mbx count of the given task.
 
-   function get_mbx_count
-     (task_id : os_task_id_param_t) return os_mbx_count_t is
+   function get_mbx_count (task_id : os_task_id_param_t) return os_mbx_count_t
+   is
      (mbx_fifo (task_id).count);
 
    ------------------
@@ -115,20 +118,21 @@ is
    ------------------
    --  Retrieve the mbx tail index of the given task.
 
-   function get_mbx_tail
-     (task_id : os_task_id_param_t) return os_mbx_index_t is
-     (get_mbx_head (task_id) +
-      os_mbx_count_t'Pred (get_mbx_count (task_id))) with
-      Pre => not mbx_is_empty (task_id);
+   function get_mbx_tail (task_id : os_task_id_param_t) return os_mbx_index_t
+   is
+     (get_mbx_head (task_id) + os_mbx_count_t'Pred (get_mbx_count (task_id)))
+   with
+     Pre => not mbx_is_empty (task_id);
 
       ---------------------
       -- mbx_add_message --
       ---------------------
       --  Add a mbx to the mbx fifo of a given task.
 
-   procedure mbx_add_message
-     (dest_id : os_task_id_param_t; src_id : os_task_id_param_t;
-      mbx_msg : os_mbx_msg_t) with
+   procedure mbx_add_message (dest_id : os_task_id_param_t;
+                              src_id  : os_task_id_param_t;
+                              mbx_msg : os_mbx_msg_t)
+   with
       Pre  => (not mbx_is_full (dest_id)) and then mbx_are_well_formed,
       Post => (not mbx_is_empty (dest_id)) and then
        (mbx_fifo = (mbx_fifo'Old with delta
@@ -153,15 +157,16 @@ is
    -- get_mbx_entry_sender --
    --------------------------
 
-   function get_mbx_entry_sender
-     (task_id : os_task_id_param_t; index : os_mbx_count_t)
-      return os_task_id_param_t is
+   function get_mbx_entry_sender (task_id : os_task_id_param_t;
+                                  index : os_mbx_count_t)
+                                  return os_task_id_param_t
+   is
      (os_task_id_param_t
         (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index)
-           .sender_id)) with
+           .sender_id))
+   with
       Pre => mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index)
-        .sender_id in
-        os_task_id_param_t;
+        .sender_id in os_task_id_param_t;
 
       ----------------------------
       -- os_mbx_get_posted_mask --
@@ -172,7 +177,6 @@ is
    is
       mbx_mask : os_mbx_mask_t := 0;
    begin
-
       if not mbx_is_empty (task_id) then
          for iterator in
            os_mbx_count_t'First ..
@@ -194,9 +198,10 @@ is
    -- send_one_task --
    -------------------
 
-   procedure send_one_task
-     (status  :    out os_status_t; dest_id : in os_task_id_param_t;
-      mbx_msg : in     os_mbx_msg_t) with
+   procedure send_one_task (status  : out os_status_t;
+                            dest_id : in os_task_id_param_t;
+                            mbx_msg : in     os_mbx_msg_t)
+   with
       Pre  => Moth.os_ghost_task_list_is_well_formed and mbx_are_well_formed,
       Post => Moth.os_ghost_task_list_is_well_formed and mbx_are_well_formed
    is
@@ -231,8 +236,9 @@ is
    -- send_all_task --
    -------------------
 
-   procedure send_all_task
-     (status : out os_status_t; mbx_msg : in os_mbx_msg_t) with
+   procedure send_all_task (status  : out os_status_t;
+                            mbx_msg : in os_mbx_msg_t)
+   with
       Pre  => Moth.os_ghost_task_list_is_well_formed and mbx_are_well_formed,
       Post => Moth.os_ghost_task_list_is_well_formed and mbx_are_well_formed
    is
@@ -259,26 +265,28 @@ is
    -- get_mbx_entry --
    -------------------
 
-   function get_mbx_entry
-     (task_id : os_task_id_param_t; index : os_mbx_count_t)
-      return os_mbx_entry_t is
+   function get_mbx_entry (task_id : os_task_id_param_t;
+                           index   : os_mbx_count_t) return os_mbx_entry_t
+   is
      (mbx_fifo (task_id).mbx_array (get_mbx_head (task_id) + index));
 
    --------------------------
    -- is_waiting_mbx_entry --
    --------------------------
 
-   function is_waiting_mbx_entry
-     (task_id : os_task_id_param_t; index : os_mbx_count_t) return Boolean is
+   function is_waiting_mbx_entry (task_id : os_task_id_param_t;
+                                  index   : os_mbx_count_t) return Boolean
+   is
      ((Moth.Scheduler.get_mbx_mask (task_id) and
        os_mbx_mask_t
          (Shift_Left
             (Unsigned_32'(1),
-             Natural (get_mbx_entry_sender (task_id, index))))) /=
-      0) with
-      Pre => (not mbx_is_empty (task_id)) and then mbx_are_well_formed
-      and then index < get_mbx_count (task_id)
-      and then get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
+             Natural (get_mbx_entry_sender (task_id, index))))) /= 0)
+   with
+      Pre => (not mbx_is_empty (task_id)) and then
+              mbx_are_well_formed and then
+              index < get_mbx_count (task_id) and then
+              get_mbx_entry_sender (task_id, index) in os_task_id_param_t;
 
       ----------------------
       --  Ghost functions --
@@ -331,7 +339,8 @@ is
    -- remove_first_mbx --
    ----------------------
 
-   procedure remove_first_mbx (task_id : in os_task_id_param_t) with
+   procedure remove_first_mbx (task_id : in os_task_id_param_t)
+   with
       Pre  => (not mbx_is_empty (task_id)) and then mbx_are_well_formed,
       Post => (mbx_fifo = (mbx_fifo'Old with delta
          task_id => (mbx_fifo'Old(task_id) with delta
@@ -355,7 +364,8 @@ is
    -- remove_last_mbx --
    ---------------------
 
-   procedure remove_last_mbx (task_id : in os_task_id_param_t) with
+   procedure remove_last_mbx (task_id : in os_task_id_param_t)
+   with
       Pre  => (not mbx_is_empty (task_id)) and mbx_are_well_formed,
       Post => (mbx_fifo = (mbx_fifo'Old with delta
          task_id => (mbx_fifo'Old(task_id) with delta
@@ -378,8 +388,9 @@ is
    -- mbx_shift_down --
    --------------------
 
-   procedure mbx_shift_down
-     (task_id : in os_task_id_param_t; index : in os_mbx_count_t) with
+   procedure mbx_shift_down (task_id : in os_task_id_param_t;
+                             index   : in os_mbx_count_t)
+   with
       Pre => (not mbx_is_empty (task_id)) and mbx_are_well_formed and
       (index > os_mbx_count_t'First) and
       (index < os_mbx_count_t'Pred (get_mbx_count (task_id))),
@@ -404,7 +415,8 @@ is
    -- receive --
    -------------
 
-   procedure receive (status : out os_status_t; mbx_entry : out os_mbx_entry_t)
+   procedure receive (status    : out os_status_t;
+                      mbx_entry : out os_mbx_entry_t)
    is
       --  retrieve current task id
       current : constant os_task_id_param_t :=
@@ -484,9 +496,9 @@ is
    -- send --
    ----------
 
-   procedure send
-     (status  :    out os_status_t; dest_id : in types.int8_t;
-      mbx_msg : in     os_mbx_msg_t)
+   procedure send (status  : out os_status_t;
+                   dest_id : in types.int8_t;
+                   mbx_msg : in os_mbx_msg_t)
    is
    --  dest_id comes from uncontroled C calls (user space) We don't make
    --  assumptions on its value, so we are testing all cases.
@@ -508,9 +520,11 @@ is
    begin
       mbx_fifo :=
         (others =>
-           (head      => os_mbx_index_t'First, count => os_mbx_count_t'First,
-            mbx_array =>
-              (others => (sender_id => OS_TASK_ID_NONE, msg => 0))));
+           (head      => os_mbx_index_t'First,
+            count     => os_mbx_count_t'First,
+            mbx_array => (others =>
+                            (sender_id => OS_TASK_ID_NONE,
+                             msg       => 0))));
    end init;
 
 end Mailbox;
