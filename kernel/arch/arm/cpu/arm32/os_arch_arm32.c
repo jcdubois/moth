@@ -25,6 +25,4 @@
 /* function prototypes for this file */
 #include <os_arch.h>
 
-void os_arch_idle(void) {
-  asm volatile("dsb; wfi");
-}
+void os_arch_idle(void) { asm volatile("dsb; wfi"); }

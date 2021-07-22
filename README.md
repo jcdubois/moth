@@ -2,9 +2,10 @@ The Moth Separation Kernel
 ==========================
 
 The Moth Separation kernet is a pet project trying to define a very minimal
-microkernel. The goal is for the kernel binary to fit in one or two
-memory pages (4KB to 8KB). So the code needs to be very minimal with only
-mandatory features.
+microkernel where tasks are isolated from each others by MMU. The goal is for
+the kernel binary (not counting MMU tables) to fit in one or two memory pages
+(4KB to 8KB). So the code needs to be very minimal with only mandatory
+features.
 
 Moth has only 5 system calls:
 
@@ -21,9 +22,10 @@ from user space.
 All tasks are linked-in at proper memory location in the Moth binary during
 the build and therefore they are all created/present at start time.
 
-Moth is writen in C but the goal is to move to a formal langage that
-would allow to prove that it does not contain any runtime error. [Frama-C](https://frama-c.com/) and
-[Spark](http://www.spark-2014.org/) are candidate languages for this future phase.
+Moth is writen in [SPARK](http://www.spark-2014.org/), C and assembly language.
+
+[SPARK](http://www.spark-2014.org/) is a formal langage that allow to prove
+that the code does not contain any runtime error.
 
 **Separation Kernel definition borowed from [MUEN](https://muen.codelabs.ch/)**
 
@@ -43,7 +45,7 @@ Features
 
 The following list outlines the most-prominent features of the Moth kernel:
 
-+ Minimal SK for the Sparc architecture written in C
++ Minimal SK for the Sparc architecture written in SPARK, C and assembly
 + Full availability of source code and documentation
 + Static MMU table built at compile time
 + Static Communication policy built at compile time
@@ -75,8 +77,8 @@ environment listed in the following table.
 
 | Software          | Version                                 |
 |:----------------- |:--------------------------------------- |
-| Operating systems | Ubuntu 17.10 (Artful Aardvark), x86_64  |
-| GCC               | 7.2.0                                   |
+| Operating systems | Ubuntu 20.04 (Focal Fossa), x86_64      |
+| GCC               | 10                                      |
 
 The following hardware is used for the development of Moth.
 
@@ -91,7 +93,7 @@ The first step to build Moth is to install the required packages:
 
 **Development tools**
 ```bash
-$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git
+$ sudo apt-get install xsltproc gcc-sparc64-linux-gnu libncurses5 make binutils gcc git gnat-10 gnat-10-sparc64-linux-gnu
 ```
 
 **Qemu**
@@ -155,7 +157,7 @@ License
 -------
 ***
 
-Copyright (C) 2017 Jean-Christophe Dubois <jcd@tribudubois.net>
+Copyright (C) 2020 Jean-Christophe Dubois <jcd@tribudubois.net>
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software

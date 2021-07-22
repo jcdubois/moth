@@ -2,18 +2,17 @@ project Moth is
 
    for Source_Dirs use ("kernel/core/**", "build/openconf");
    for Object_Dir use "obj";
-   for Main use ("os.adb");
-   for Languages use ("Ada", "C", "Asm");
+   for Languages use ("Ada", "C");
 
    package Builder is
    end Builder;
 
    package Compiler is
-      for Default_Switches ("ada") use ("-gnatw.eH.YD", "-gnatf", "-Wall");
+      for Default_Switches ("ada") use ("-gnatw.eH.YD", "-gnatf", "-Wall", "-gnat2020");
    end Compiler;
 
    package Prove is
-      for Switches use ("--level=4", "--report=all");
+      for Proof_Switches ("Ada") use ("--prover=all", "--report=all");
    end Prove;
 
    package Pretty_Printer is

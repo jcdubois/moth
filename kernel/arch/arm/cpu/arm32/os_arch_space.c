@@ -49,11 +49,13 @@ void os_arch_space_switch(os_task_id_t old_context_id,
   syslog("%s: ttbr0 = 0x%08x\n", __func__, ttbr0);
   syslog("%s: contextidr = 0x%08x\n", __func__, contextidr);
 
-  asm volatile ("mcr     p15, 0, %0, c2, c0, 0\n"
-                "isb\n"
-                "mcr     p15, 0, %1, c13, c0, 1\n"
-                "isb\n"
-		 : : "r"(ttbr0), "r"(contextidr) : );
+  asm volatile("mcr     p15, 0, %0, c2, c0, 0\n"
+               "isb\n"
+               "mcr     p15, 0, %1, c13, c0, 1\n"
+               "isb\n"
+               :
+               : "r"(ttbr0), "r"(contextidr)
+               :);
 }
 
 /**
@@ -78,11 +80,13 @@ void os_arch_space_init(void) {
   syslog("%s: MMU table is fixed\n", __func__);
 
   // Set c3, Domain Access Control Register
-  asm volatile ( "mov %0, #0x55\n" // Client for all domains
-                 "orr %0, %0, lsl #8\n"
-	         "orr %0, %0, lsl #16\n"
-	         "mcr p15, 0, %0, c3, c0, 0\n"
-		 : "=r"(temp) : : );
+  asm volatile("mov %0, #0x55\n" // Client for all domains
+               "orr %0, %0, lsl #8\n"
+               "orr %0, %0, lsl #16\n"
+               "mcr p15, 0, %0, c3, c0, 0\n"
+               : "=r"(temp)
+               :
+               :);
 
   // Set the MMU table register
   os_arch_space_switch(0, 0);
@@ -90,11 +94,12 @@ void os_arch_space_init(void) {
   syslog("%s: Switching to context 0 done\n", __func__);
 
   // Enable MMU, set flarg SCTLR_M_MASK at c1, the Control register
-  asm volatile ( "mrc p15, 0, %0, c1, c0, 0\n"
-                 "orr %0, %0, %[flag]\n" // enabling MMU 
-                 "mcr p15, 0, %0, c1, c0, 0\n"
-                 : "=r"(temp) : [flag] "I" (SCTLR_M_MASK) : );
+  asm volatile("mrc p15, 0, %0, c1, c0, 0\n"
+               "orr %0, %0, %[flag]\n" // enabling MMU
+               "mcr p15, 0, %0, c1, c0, 0\n"
+               : "=r"(temp)
+               : [ flag ] "I"(SCTLR_M_MASK)
+               :);
 
   syslog("%s: MMU enabling done\n", __func__);
 }
-

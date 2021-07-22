@@ -59,11 +59,11 @@ static void putc(void *opaque, char car) {
 }
 
 int main(int argc, char **argv, char **argp) {
-  uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
+  const uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
   os_status_t cr;
   os_task_id_t tmp_id;
   os_mbx_msg_t msg;
-  os_task_id_t task_id = getpid();
+  const os_task_id_t task_id = getpid();
 
   (void)argc;
   (void)argv;
@@ -93,8 +93,8 @@ int main(int argc, char **argv, char **argp) {
           cr = mbx_send(tmp_id, msg);
 
           if (cr == OS_SUCCESS) {
-            printf("task %d: mbx %d sent to task %d\n", (int)task_id,
-                   (int)msg, (int)tmp_id);
+            printf("task %d: mbx %d sent to task %d\n", (int)task_id, (int)msg,
+                   (int)tmp_id);
           } else {
             printf("task %d: mbx_send failed, cr = %d\n", (int)task_id,
                    (int)cr);

@@ -136,6 +136,7 @@ adacppflags+=-I$(core_dir)/include
 cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
 cflags+=-Os
+cflags+=-fdata-sections -ffunction-sections
 cflags+=$(board-cflags)
 cflags+=$(cpu-cflags)
 cflags+=$(libs-cflags-y)
@@ -146,7 +147,8 @@ endif
 ada=$(CROSS_COMPILE)gnatgcc
 adaflags=-g -Wall -Wextra
 adaflags+=-Os
-adaflags+=-gnatp
+adaflags+=-fdata-sections -ffunction-sections
+adaflags+=-gnatp -gnat2020
 adaflags+=$(board-cflags)
 adaflags+=$(cpu-cflags)
 adaflags+=$(libs-cflags-y)
@@ -154,7 +156,7 @@ adaflags+=$(adacppflags)
 ifdef CONFIG_PROFILE
 adaflags+=-finstrument-functions
 endif
-as=$(CROSS_COMPILE)gcc
+as=$(cc)
 asflags=-g -Wall -nostdlib -D__ASSEMBLY__ 
 asflags+=$(board-asflags)
 asflags+=$(cpu-asflags)
@@ -162,7 +164,7 @@ asflags+=$(libs-asflags-y)
 asflags+=$(cppflags)
 ar=$(CROSS_COMPILE)ar
 arflags=rcs
-ld=$(CROSS_COMPILE)gcc
+ld=$(cc)
 ldflags=-g -Wall -nostdlib -Wl,--build-id=none
 ldflags+=$(board-ldflags)
 ldflags+=$(cpu-ldflags)
@@ -452,3 +454,6 @@ savedefconfig:
 
 documentation:
 	doxygen doc/moth.dox
+
+proof:
+	gnatprove -P./moth.gpr -j0 --level=4

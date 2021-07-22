@@ -5,7 +5,7 @@
       <address>0x40000000</address>
       <size>0x00300000</size>
       <physical_map name="kernel.text">
-        <size>0x00003000</size>
+        <size>0x00004000</size>
       </physical_map>
       <physical_map name="kernel.mmutable">
         <size>0x00003000</size>

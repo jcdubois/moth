@@ -26,23 +26,16 @@
 /* for syslog() */
 #include <syslog.h>
 
-void os_arch_undefined_instruction() {
-}
+void os_arch_undefined_instruction() {}
 
-void os_arch_software_interrupt() {
-}
+void os_arch_software_interrupt() {}
 
-void os_arch_prefetch_abort() {
-}
+void os_arch_prefetch_abort() {}
 
-void os_arch_data_abort() {
-}
+void os_arch_data_abort() {}
 
-void os_arch_not_used() {
-}
+void os_arch_not_used() {}
 
-void os_arch_irq() {
-}
+void os_arch_irq() {}
 
-void os_arch_fiq() {
-}
+void os_arch_fiq() {}

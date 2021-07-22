@@ -16,7 +16,7 @@
 
 #define syslog(format, ...) printf(format, ##__VA_ARGS__);
 
-#else //CONFIG_VERBOSE_MODE
+#else // CONFIG_VERBOSE_MODE
 
 #define syslog(...)
 
