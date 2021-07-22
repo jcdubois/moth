@@ -1,0 +1,17 @@
+#
+# Files to be excuded
+#
+*.o
+.*.swp
+*~
+
+conf
+mconf
+qconf
+gconf
+gettext
+zconf.hash.c
+zconf.tab.c
+lex.zconf.c
+openconf_defs.h
+lex.backup

@@ -27,8 +27,7 @@
 #include <os.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 uint8_t os_arch_interrupt_is_pending(void);
@@ -37,9 +36,9 @@ void os_arch_idle(void);
 
 void os_arch_context_create(os_task_id_t task_id);
 
-void os_arch_context_switch(os_task_id_t prev_id, os_task_id_t next_id);
+uint32_t *os_arch_context_restore(os_task_id_t task_id);
 
-void os_arch_context_set(os_task_id_t task_id);
+void os_arch_context_save(os_task_id_t task_id, uint32_t *stack_pointer);
 
 void os_arch_space_init(void);
 

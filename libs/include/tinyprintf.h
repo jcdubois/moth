@@ -127,7 +127,7 @@ regs Kusti, 23.10.2004
 
 #if TINYPRINTF_DEFINE_TFP_SPRINTF
 #include <sys/types.h> /* size_t */
-#endif // TINYPRINTF_DEFINE_TFP_SPRINTF
+#endif                 // TINYPRINTF_DEFINE_TFP_SPRINTF
 
 /* Declarations */
 
@@ -161,7 +161,8 @@ int tfp_vsnprintf(const char *str, size_t size, const char *fmt, va_list ap);
 int tfp_snprintf(const char *str, size_t size, const char *fmt, ...)
     _TFP_SPECIFY_PRINTF_FMT(3, 4);
 int tfp_vsprintf(const char *str, const char *fmt, va_list ap);
-int tfp_sprintf(const char *str, const char *fmt, ...) _TFP_SPECIFY_PRINTF_FMT(2, 3);
+int tfp_sprintf(const char *str, const char *fmt, ...)
+    _TFP_SPECIFY_PRINTF_FMT(2, 3);
 #if TINYPRINTF_OVERRIDE_LIBC
 #define vsnprintf tfp_vsnprintf
 #define snprintf tfp_snprintf

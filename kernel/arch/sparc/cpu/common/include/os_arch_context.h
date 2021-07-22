@@ -27,15 +27,4 @@
 /* for basic types */
 #include <types.h>
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
-extern uint32_t os_arch_stack_pointer;
-
-#ifdef __cplusplus
-}
-#endif
-
 #endif /* !__OS_ARCH_CONTEXT_H__ */

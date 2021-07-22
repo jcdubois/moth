@@ -25,6 +25,4 @@
 /* function prototypes for this file */
 #include <os_arch.h>
 
-uint8_t os_arch_interrupt_is_pending(void) {
-	return 0;
-}
+uint8_t os_arch_interrupt_is_pending(void) { return 0; }

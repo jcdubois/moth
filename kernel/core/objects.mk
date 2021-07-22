@@ -21,6 +21,7 @@
 # @brief list of objects for core kernel interface.
 # */
 
-core-objs-y += os.o
+core-objs-y += moth.o
+core-objs-y += moth-config.o
 core-objs-$(CONFIG_NONE_UART) += os_device_console_none.o
 

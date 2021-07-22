@@ -20,16 +20,16 @@
 #define START_STRSIZE	16
 
 static struct {
-	struct file *file;
-	int lineno;
+  struct file *file;
+  int lineno;
 } current_pos;
 
 static char *text;
 static int text_size, text_asize;
 
 struct buffer {
-        struct buffer *parent;
-        YY_BUFFER_STATE state;
+  struct buffer *parent;
+  YY_BUFFER_STATE state;
 };
 
 struct buffer *current_buf;
@@ -41,31 +41,31 @@ static void zconf_endfile(void);
 
 void new_string(void)
 {
-	text = malloc(START_STRSIZE);
-	text_asize = START_STRSIZE;
-	text_size = 0;
-	*text = 0;
+  text = malloc(START_STRSIZE);
+  text_asize = START_STRSIZE;
+  text_size = 0;
+  *text = 0;
 }
 
 void append_string(const char *str, int size)
 {
-	int new_size = text_size + size + 1;
-	if (new_size > text_asize) {
-		new_size += START_STRSIZE - 1;
-		new_size &= -START_STRSIZE;
-		text = realloc(text, new_size);
-		text_asize = new_size;
-	}
-	memcpy(text + text_size, str, size);
-	text_size += size;
-	text[text_size] = 0;
+  int new_size = text_size + size + 1;
+  if (new_size > text_asize) {
+    new_size += START_STRSIZE - 1;
+    new_size &= -START_STRSIZE;
+    text = realloc(text, new_size);
+    text_asize = new_size;
+  }
+  memcpy(text + text_size, str, size);
+  text_size += size;
+  text[text_size] = 0;
 }
 
 void alloc_string(const char *str, int size)
 {
-	text = malloc(size + 1);
-	memcpy(text, str, size);
-	text[size] = 0;
+  text = malloc(size + 1);
+  memcpy(text, str, size);
+  text[size] = 0;
 }
 %}
 
@@ -171,8 +171,9 @@ n	[A-Za-z0-9_]
 			BEGIN(PARAM);
 			zconflval.string = text;
 			return T_WORD_QUOTE;
-		} else
+		} else {
 			append_string(yytext, 1);
+		}
 	}
 	\n	{
 		printf("%s:%d:warning: multi-line strings not supported\n", zconf_curname(), zconf_lineno());
@@ -189,10 +190,11 @@ n	[A-Za-z0-9_]
 	[ \t]+	{
 		ts = 0;
 		for (i = 0; i < yyleng; i++) {
-			if (yytext[i] == '\t')
+			if (yytext[i] == '\t') {
 				ts = (ts & ~7) + 8;
-			else
+			} else {
 				ts++;
+			}
 		}
 		last_ts = ts;
 		if (first_ts) {
@@ -219,13 +221,15 @@ n	[A-Za-z0-9_]
 	}
 	[^ \t\n].* {
 		while (yyleng) {
-			if ((yytext[yyleng-1] != ' ') && (yytext[yyleng-1] != '\t'))
+			if ((yytext[yyleng-1] != ' ') && (yytext[yyleng-1] != '\t')) {
 				break;
+			}
 			yyleng--;
 		}
 		append_string(yytext, yyleng);
-		if (!first_ts)
+		if (!first_ts) {
 			first_ts = last_ts;
+		}
 	}
 	<<EOF>>	{
 		zconf_endhelp();
@@ -245,17 +249,16 @@ n	[A-Za-z0-9_]
 %%
 void zconf_starthelp(void)
 {
-	new_string();
-	last_ts = first_ts = 0;
-	BEGIN(HELP);
+  new_string();
+  last_ts = first_ts = 0;
+  BEGIN(HELP);
 }
 
 static void zconf_endhelp(void)
 {
-	zconflval.string = text;
-	BEGIN(INITIAL);
+  zconflval.string = text;
+  BEGIN(INITIAL);
 }
-
 
 /*
  * Try to open specified file with following names:
@@ -267,91 +270,91 @@ static void zconf_endhelp(void)
  */
 FILE *zconf_fopen(const char *name)
 {
-	char *env, fullname[PATH_MAX+1];
-	FILE *f;
+  char *env, fullname[PATH_MAX+1];
+  FILE *f;
 
-	f = fopen(name, "r");
-	if (!f && name != NULL && name[0] != '/') {
-		env = getenv(OPENCONF_SRCTREE_ENVNAME);
-		if (env) {
-			snprintf(fullname, sizeof(fullname), "%s/%s",
-				 env, name);
-			f = fopen(fullname, "r");
-		}
-	}
-	return f;
+  f = fopen(name, "r");
+  if (!f && name != NULL && name[0] != '/') {
+    env = getenv(OPENCONF_SRCTREE_ENVNAME);
+    if (env) {
+      snprintf(fullname, sizeof(fullname), "%s/%s", env, name);
+      f = fopen(fullname, "r");
+    }
+  }
+  return f;
 }
 
 void zconf_initscan(const char *name)
 {
-	yyin = zconf_fopen(name);
-	if (!yyin) {
-		printf("can't find file %s\n", name);
-		exit(1);
-	}
+  yyin = zconf_fopen(name);
+  if (!yyin) {
+    printf("can't find file %s\n", name);
+    exit(1);
+  }
 
-	current_buf = malloc(sizeof(*current_buf));
-	memset(current_buf, 0, sizeof(*current_buf));
+  current_buf = malloc(sizeof(*current_buf));
+  memset(current_buf, 0, sizeof(*current_buf));
 
-	current_file = file_lookup(name);
-	current_file->lineno = 1;
-	current_file->flags = FILE_BUSY;
+  current_file = file_lookup(name);
+  current_file->lineno = 1;
+  current_file->flags = FILE_BUSY;
 }
 
 void zconf_nextfile(const char *name)
 {
-	struct file *file = file_lookup(name);
-	struct buffer *buf = malloc(sizeof(*buf));
-	memset(buf, 0, sizeof(*buf));
+  struct file *file = file_lookup(name);
+  struct buffer *buf = malloc(sizeof(*buf));
+  memset(buf, 0, sizeof(*buf));
 
-	current_buf->state = YY_CURRENT_BUFFER;
-	yyin = zconf_fopen(name);
-	if (!yyin) {
-		printf("%s:%d: can't open file \"%s\"\n", zconf_curname(), zconf_lineno(), name);
-		exit(1);
-	}
-	yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
-	buf->parent = current_buf;
-	current_buf = buf;
+  current_buf->state = YY_CURRENT_BUFFER;
+  yyin = zconf_fopen(name);
+  if (!yyin) {
+    printf("%s:%d: can't open file \"%s\"\n", zconf_curname(),
+           zconf_lineno(), name);
+    exit(1);
+  }
+  yy_switch_to_buffer(yy_create_buffer(yyin, YY_BUF_SIZE));
+  buf->parent = current_buf;
+  current_buf = buf;
 
-	if (file->flags & FILE_BUSY) {
-		printf("recursive scan (%s)?\n", name);
-		exit(1);
-	}
-	if (file->flags & FILE_SCANNED) {
-		printf("file %s already scanned?\n", name);
-		exit(1);
-	}
-	file->flags |= FILE_BUSY;
-	file->lineno = 1;
-	file->parent = current_file;
-	current_file = file;
+  if (file->flags & FILE_BUSY) {
+    printf("recursive scan (%s)?\n", name);
+    exit(1);
+  }
+  if (file->flags & FILE_SCANNED) {
+    printf("file %s already scanned?\n", name);
+    exit(1);
+  }
+  file->flags |= FILE_BUSY;
+  file->lineno = 1;
+  file->parent = current_file;
+  current_file = file;
 }
 
 static void zconf_endfile(void)
 {
-	struct buffer *parent;
+  struct buffer *parent;
 
-	current_file->flags |= FILE_SCANNED;
-	current_file->flags &= ~FILE_BUSY;
-	current_file = current_file->parent;
+  current_file->flags |= FILE_SCANNED;
+  current_file->flags &= ~FILE_BUSY;
+  current_file = current_file->parent;
 
-	parent = current_buf->parent;
-	if (parent) {
-		fclose(yyin);
-		yy_delete_buffer(YY_CURRENT_BUFFER);
-		yy_switch_to_buffer(parent->state);
-	}
-	free(current_buf);
-	current_buf = parent;
+  parent = current_buf->parent;
+  if (parent) {
+    fclose(yyin);
+    yy_delete_buffer(YY_CURRENT_BUFFER);
+    yy_switch_to_buffer(parent->state);
+  }
+  free(current_buf);
+  current_buf = parent;
 }
 
 int zconf_lineno(void)
 {
-	return current_pos.lineno;
+  return current_pos.lineno;
 }
 
 char *zconf_curname(void)
 {
-	return current_pos.file ? current_pos.file->name : "<none>";
+  return current_pos.file ? current_pos.file->name : "<none>";
 }

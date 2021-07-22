@@ -78,6 +78,7 @@ export OPENCONF_CONFIG = $(CONFIG_FILE)
 export OPENCONF_TMPDIR = $(CONFIG_DIR)
 export OPENCONF_AUTOCONFIG = openconf.conf
 export OPENCONF_AUTOHEADER = openconf.h
+export OPENCONF_AUTOADS = openconf.ads
 
 # Include configuration file if present
 -include $(CONFIG_FILE)
@@ -130,9 +131,12 @@ cppflags+=-I$(build_dir)
 cppflags+=$(cpu-cppflags)
 cppflags+=$(board-cppflags)
 cppflags+=$(libs-cppflags-y)
+adacppflags=-I$(OPENCONF_TMPDIR)
+adacppflags+=-I$(core_dir)/include
 cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
 cflags+=-Os
+cflags+=-fdata-sections -ffunction-sections
 cflags+=$(board-cflags)
 cflags+=$(cpu-cflags)
 cflags+=$(libs-cflags-y)
@@ -140,7 +144,19 @@ cflags+=$(cppflags)
 ifdef CONFIG_PROFILE
 cflags+=-finstrument-functions
 endif
-as=$(CROSS_COMPILE)gcc
+ada=$(CROSS_COMPILE)gnatgcc
+adaflags=-g -Wall -Wextra
+adaflags+=-Os
+adaflags+=-fdata-sections -ffunction-sections
+adaflags+=-gnatp -gnat2020
+adaflags+=$(board-cflags)
+adaflags+=$(cpu-cflags)
+adaflags+=$(libs-cflags-y)
+adaflags+=$(adacppflags)
+ifdef CONFIG_PROFILE
+adaflags+=-finstrument-functions
+endif
+as=$(cc)
 asflags=-g -Wall -nostdlib -D__ASSEMBLY__ 
 asflags+=$(board-asflags)
 asflags+=$(cpu-asflags)
@@ -148,7 +164,7 @@ asflags+=$(libs-asflags-y)
 asflags+=$(cppflags)
 ar=$(CROSS_COMPILE)ar
 arflags=rcs
-ld=$(CROSS_COMPILE)gcc
+ld=$(cc)
 ldflags=-g -Wall -nostdlib -Wl,--build-id=none
 ldflags+=$(board-ldflags)
 ldflags+=$(cpu-ldflags)
@@ -183,6 +199,9 @@ compile_cc_dep = $(V)mkdir -p `dirname $(1)`; \
 compile_cc = $(V)mkdir -p `dirname $(1)`; \
 	     echo " (cc)        $(subst $(build_dir)/,,$(1))"; \
 	     $(cc) $(cflags) $(call dynamic_flags,$(1),$<) -c $(2) -o $(1)
+compile_ada = $(V)mkdir -p `dirname $(1)`; \
+	     echo " (ada)       $(subst $(build_dir)/,,$(1))"; \
+	     $(ada) $(adaflags) $(call dynamic_flags,$(1),$<) -c $(2) -o $(1)
 compile_as_dep = $(V)mkdir -p `dirname $(1)`; \
 	     echo " (as-dep)    $(subst $(build_dir)/,,$(1))"; \
 	     echo -n `dirname $(1)`/ > $(1) && \
@@ -354,6 +373,9 @@ $(build_dir)/%.o: $(build_dir)/%.S
 $(build_dir)/%.o: $(src_dir)/%.c
 	$(call compile_cc,$@,$<)
 
+$(build_dir)/%.o: $(src_dir)/%.adb
+	$(call compile_ada,$@,$<)
+
 $(build_dir)/%.o: $(build_dir)/%.c
 	$(call compile_cc,$@,$<)
 
@@ -432,3 +454,6 @@ savedefconfig:
 
 documentation:
 	doxygen doc/moth.dox
+
+proof:
+	gnatprove -P./moth.gpr -j0 --level=4

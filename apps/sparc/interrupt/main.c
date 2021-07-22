@@ -61,25 +61,28 @@ static void putc(void *opaque, char car) {
   io_write8(uart_addr + UART_DATA_OFFSET, (uint8_t)car);
 }
 
-static os_task_id_t interrupt_dest[14] = {
-  OS_TASK_ID_NONE, // interrupt 0
-  OS_TASK_ID_NONE, // interrupt 1
-  OS_TASK_ID_NONE, // interrupt 2
-  OS_TASK_ID_NONE, // interrupt 3
-  OS_TASK_ID_NONE, // interrupt 4
-  OS_TASK_ID_NONE, // interrupt 5
-  OS_TIMER_TASK_ID, // interrupt 6
-  OS_TASK_ID_NONE, // interrupt 7
-  OS_TIMER_TASK_ID, // interrupt 8
-  OS_TASK_ID_NONE, // interrupt 9
-  OS_TASK_ID_NONE, // interrupt 10
-  OS_TASK_ID_NONE, // interrupt 11
-  OS_TASK_ID_NONE, // interrupt 12
-  OS_TASK_ID_NONE, // interrupt 13
+static const os_task_id_t interrupt_dest[14] = {
+    OS_TASK_ID_NONE,  // interrupt 0
+    OS_TASK_ID_NONE,  // interrupt 1
+    OS_TASK_ID_NONE,  // interrupt 2
+    OS_TASK_ID_NONE,  // interrupt 3
+    OS_TASK_ID_NONE,  // interrupt 4
+    OS_TASK_ID_NONE,  // interrupt 5
+    OS_TIMER_TASK_ID, // interrupt 6
+    OS_TASK_ID_NONE,  // interrupt 7
+    OS_TIMER_TASK_ID, // interrupt 8
+    OS_TASK_ID_NONE,  // interrupt 9
+    OS_TASK_ID_NONE,  // interrupt 10
+    OS_TASK_ID_NONE,  // interrupt 11
+    OS_TASK_ID_NONE,  // interrupt 12
+    OS_TASK_ID_NONE,  // interrupt 13
 };
 
-static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) { 
-  if (interrupt >= 32) {
+static const uint32_t interrupt_dest_size = sizeof(interrupt_dest)
+                                            / sizeof(os_task_id_t);
+
+static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
+  if (interrupt >= interrupt_dest_size) {
     return OS_TASK_ID_NONE;
   } else {
     return interrupt_dest[interrupt];
@@ -87,11 +90,11 @@ static os_task_id_t get_interrupt_dest_id(uint8_t interrupt) {
 }
 
 int main(int argc, char **argv, char **argp) {
-  uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
-  uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
+  const uint32_t uart_addr = (uint32_t)(&__UART_begin[UART1_DEVICE_OFFSET]);
+  const uint32_t pic_addr = (uint32_t)(&__PIC_begin[0x200]);
   os_status_t cr;
   os_mbx_msg_t msg = 0;
-  int i;
+  uint32_t i;
 
   (void)argc;
   (void)argv;
@@ -116,7 +119,7 @@ int main(int argc, char **argv, char **argp) {
     if (irq_pending) {
       printf("interrupt: pending mask = 0x%08x\n", irq_pending);
 
-      for (i = 0; i < 14; i++) {
+      for (i = 0; i < interrupt_dest_size; i++) {
         if ((1 << i) & irq_pending) {
           os_task_id_t dest_id = get_interrupt_dest_id(i);
 
@@ -125,17 +128,17 @@ int main(int argc, char **argv, char **argp) {
             cr = mbx_send(dest_id, msg);
 
             if (cr == OS_SUCCESS) {
-              printf("interrupt: mbx %d sent to task %d\n", (int)msg, (int)dest_id);
+              printf("interrupt: mbx %d sent to task %d\n", (int)msg,
+                     (int)dest_id);
             } else {
               printf("interrupt: failed (cr = %d) to send mbx to task %d\n",
                      (int)cr, (int)dest_id);
             }
 
-	    msg++;
+            msg++;
 
           } else {
-            printf("interrupt: no task to send interrupt %d to\n",
-                   i);
+            printf("interrupt: no task to send interrupt %d to\n", i);
           }
         }
       }

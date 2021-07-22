@@ -27,8 +27,7 @@
 #include <types.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 typedef uint32_t os_mbx_mask_t;
@@ -55,12 +54,6 @@ typedef struct {
 } os_mbx_entry_t;
 
 typedef struct {
-  uint8_t head;
-  uint8_t count;
-  os_mbx_entry_t entry[CONFIG_TASK_MBX_COUNT];
-} os_mbx_t;
-
-typedef struct {
   os_virtual_address_t virtual_address;
   uint32_t size;
 } os_task_section_t;
@@ -72,14 +65,6 @@ typedef struct {
   os_task_section_t bss;
   os_task_section_t stack;
 } os_task_ro_t;
-
-typedef struct {
-  os_task_id_t next;
-  os_task_id_t prev;
-  os_virtual_address_t stack_pointer;
-  os_mbx_mask_t mbx_waiting_mask;
-  os_mbx_t mbx;
-} os_task_rw_t;
 
 #define OS_TASK_ID_NONE -1
 #define OS_TASK_ID_ALL -2
@@ -94,15 +79,14 @@ typedef struct {
 #define OS_ERROR_PARAM -5
 
 os_task_id_t os_sched_get_current_task_id(void);
-os_task_id_t os_sched_wait(os_mbx_mask_t waiting_mask);
-os_task_id_t os_sched_yield(void);
-os_task_id_t os_sched_exit(void);
-os_task_id_t os_init(void);
-os_status_t os_mbx_receive(os_mbx_entry_t *entry);
-os_status_t os_mbx_send(os_task_id_t dest_id, os_mbx_msg_t mbx_msg);
+void os_sched_wait(os_task_id_t *, os_mbx_mask_t);
+void os_sched_yield(os_task_id_t *);
+void os_sched_exit(os_task_id_t *);
+void os_init(os_task_id_t *);
+void os_mbx_receive(os_status_t *, os_mbx_entry_t *);
+void os_mbx_send(os_status_t *, os_task_id_t, os_mbx_msg_t);
 
 extern os_task_ro_t const os_task_ro[CONFIG_MAX_TASK_COUNT];
-extern os_task_rw_t os_task_rw[CONFIG_MAX_TASK_COUNT];
 
 #ifdef __cplusplus
 }

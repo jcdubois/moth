@@ -16,9 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file 
+ * @file
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief 
+ * @brief
  */
 
 #ifndef __MOTH_SPARC_APPS_IOPORTS_H__
@@ -27,8 +27,7 @@
 #include <types.h>
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 static inline void io_write8(uint32_t addr, uint8_t data) {
@@ -48,20 +47,14 @@ static inline void io_write32(uint32_t addr, uint32_t data) {
 static inline uint8_t io_read8(uint32_t addr) {
   uint8_t value = 0;
 
-  asm volatile("ldub [%1], %0;\n"
-               : "=r"(value)
-               : "r"(addr)
-               : "memory");
+  asm volatile("ldub [%1], %0;\n" : "=r"(value) : "r"(addr) : "memory");
   return value;
 }
 
 static inline uint32_t io_read32(uint32_t addr) {
   uint32_t value = 0;
 
-  asm volatile("ld [%1], %0;\n"
-               : "=r"(value)
-               : "r"(addr)
-               : "memory");
+  asm volatile("ld [%1], %0;\n" : "=r"(value) : "r"(addr) : "memory");
   return value;
 }
 

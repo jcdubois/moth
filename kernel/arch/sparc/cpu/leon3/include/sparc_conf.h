@@ -16,9 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * @file 
+ * @file
  * @author Jean-Christophe Dubois (jcd@tribudubois.net)
- * @brief 
+ * @brief
  */
 
 #ifndef __MOTH_SPARC_LEON3_CONF_H_

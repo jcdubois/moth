@@ -38,12 +38,18 @@
 
 #include <os_arch.h>
 
+typedef struct {
+  os_virtual_address_t stack_pointer;
+} os_arch_task_rw_t;
+
+static os_arch_task_rw_t os_arch_task_rw[CONFIG_MAX_TASK_COUNT];
+
 /**
  *
  */
 void os_arch_context_create(os_task_id_t task_id) {
-  char *ctx = (char *)os_task_ro[task_id].stack.virtual_address +
-              os_task_ro[task_id].stack.size - 0x40;
+  uint32_t *ctx = (uint32_t *)(os_task_ro[task_id].stack.virtual_address +
+                               os_task_ro[task_id].stack.size - 0x40);
 
   syslog("%s( task_id = %d )\n", __func__, (int)task_id);
 
@@ -62,34 +68,27 @@ void os_arch_context_create(os_task_id_t task_id) {
          os_task_ro[task_id].bss.size);
 
   /* Only 1 register window needed */
-  *(uint32_t *)(ctx - RESTORE_CNT_OFFSET) = 1;
-  *(uint32_t *)(ctx - PC_OFFSET) = os_task_ro[task_id].text.virtual_address;
-  *(uint32_t *)(ctx - NPC_OFFSET) =
-      os_task_ro[task_id].text.virtual_address + 4;
-  *(uint32_t *)(ctx - I0_OFFSET) = (uint32_t)task_id;
-  ;
+  *(ctx - RESTORE_CNT_OFFSET/4) = 1;
+  *(ctx - PC_OFFSET/4) = os_task_ro[task_id].text.virtual_address;
+  *(ctx - NPC_OFFSET/4) = os_task_ro[task_id].text.virtual_address + 4;
+  *(ctx - I0_OFFSET/4) = (uint32_t)task_id;
 
-  os_task_rw[task_id].stack_pointer = (uint32_t)ctx;
+  os_arch_task_rw[task_id].stack_pointer = (uint32_t)ctx;
 }
 
 /**
- * Global variable for context switch in SPARC.
- * @see os_arch_context_switch()
+ * Save interrupted stack pointer.
  */
-uint32_t os_arch_stack_pointer;
-
-/**
- * Save interrupted stack pointer and set
- * stack pointer for the next context.
- * @see os_arch_stack_pointer
- */
-void os_arch_context_switch(os_task_id_t prev_id, os_task_id_t next_id) {
-  syslog("%s( task_id = %d )\n", __func__, (int)next_id);
-  os_task_rw[prev_id].stack_pointer = os_arch_stack_pointer;
-  os_arch_stack_pointer = os_task_rw[next_id].stack_pointer;
+void os_arch_context_save(os_task_id_t task_id, uint32_t *stack_pointer)
+{
+  syslog("%s( task_id = %d, sp = %p )\n", __func__, (int)task_id, stack_pointer);
+  os_arch_task_rw[task_id].stack_pointer = (os_virtual_address_t)stack_pointer;
 }
 
-void os_arch_context_set(os_task_id_t task_id) {
+/**
+ * Restore a previous task stack pointer
+ */
+uint32_t *os_arch_context_restore(os_task_id_t task_id) {
   syslog("%s( task_id = %d )\n", __func__, (int)task_id);
-  os_arch_stack_pointer = os_task_rw[task_id].stack_pointer;
+  return (uint32_t *)os_arch_task_rw[task_id].stack_pointer;
 }
