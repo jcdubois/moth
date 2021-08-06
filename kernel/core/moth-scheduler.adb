@@ -109,7 +109,33 @@ is
 
    function task_list_is_well_formed return Boolean
    is
-     (true);
+     (if task_list_head = OS_TASK_ID_NONE then
+       (for all id in os_task_id_param_t =>
+          (ready_task (id) = False
+           and next_task (id) = OS_TASK_ID_NONE
+           and prev_task (id) = OS_TASK_ID_NONE))
+      else
+       (task_list_head /= OS_TASK_ID_NONE and then
+        ready_task (task_list_head) = True and then
+        prev_task (task_list_head) = OS_TASK_ID_NONE and then
+        (for all id in os_task_id_param_t =>
+           (if ready_task (id) = False then
+              (next_task (id) = OS_TASK_ID_NONE
+               and prev_task (id) = OS_TASK_ID_NONE)
+            else
+              (next_task (id) /= id 
+               and prev_task (id) /= id
+               and (if next_task (id) /= OS_TASK_ID_NONE then
+                      (ready_task (next_task (id)) = True
+                       and next_task (id) /= prev_task (id)
+                       and Moth.Config.get_task_priority (id) >= 
+                           Moth.Config.get_task_priority (next_task (id))))
+               and (if prev_task (id) /= OS_TASK_ID_NONE then
+                      (ready_task (prev_task (id)) = True
+                       and next_task (id) /= prev_task (id)
+                       and Moth.Config.get_task_priority (id) <= 
+                           Moth.Config.get_task_priority (prev_task (id))))
+                      )))));
 
    ----------------------------
    -- add_task_to_ready_list --
@@ -117,8 +143,7 @@ is
 
    procedure add_task_to_ready_list (task_id : os_task_id_param_t)
    with
-      Refined_Post => task_is_ready (task_id)
-                      and then ready_task = (ready_task'Old with delta
+      Refined_Post => ready_task = (ready_task'Old with delta
                                                             task_id => True)
                       and then task_list_is_well_formed
    is
@@ -233,8 +258,8 @@ is
    procedure schedule (task_id : out os_task_id_param_t)
    with
       Pre  => task_list_is_well_formed,
-      Post => task_is_ready (task_id)
-              and then task_list_head = task_id
+      Post => task_list_head = task_id
+              and then task_is_ready (task_id)
               and then task_list_is_well_formed
    is
    begin
@@ -245,8 +270,6 @@ is
       end if;
 
       while task_list_head = OS_TASK_ID_NONE loop
-
-         pragma Loop_Invariant (task_list_is_well_formed);
 
          --  No task is elected:
          --  Put processor in idle mode and wait for interrupt.
@@ -299,6 +322,7 @@ is
    begin
       task_id := current_task;
 
+      -- restrict the waiting mask to the permited tasks only.
       tmp_mask := waiting_mask and Moth.Config.get_mbx_permission (task_id);
 
       --  We remove the current task from the ready list.
@@ -307,6 +331,7 @@ is
       if tmp_mask /= 0 then
          mbx_mask (task_id) := tmp_mask;
 
+         -- check to see if one of the waited event is already here.
          tmp_mask :=
            tmp_mask and Moth.Mailbox.os_mbx_get_posted_mask (task_id);
 

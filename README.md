@@ -7,6 +7,10 @@ the kernel binary (not counting MMU tables) to fit in one or two memory pages
 (4KB to 8KB). So the code needs to be very minimal with only mandatory
 features.
 
+Moth implements a cooperative scheduler and therefore tasks are not
+preemptible. This means a tasks can keep the CPU as long as it needs and must
+release it explicitely through a system call to allow other tasks to run.
+
 Moth has only 5 system calls:
 
 + yield: to release the processor if another task is ready to run
@@ -20,7 +24,8 @@ These are the only services provided by the Moth kernel. All other features
 from user space.
 
 All tasks are linked-in at proper memory location in the Moth binary during
-the build and therefore they are all created/present at start time.
+the build process and therefore they are all created/present at start time
+(there is no dynamic loading of tasks).
 
 Moth is writen in [SPARK](http://www.spark-2014.org/), C and assembly language.
 

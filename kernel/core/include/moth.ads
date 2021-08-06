@@ -74,22 +74,25 @@ is
    -- Global Ghost functions --
    ----------------------------
 
-   function os_ghost_mbx_are_well_formed return Boolean with
+   function os_ghost_mbx_are_well_formed return Boolean
+   with
       Ghost => True;
 
-   function os_ghost_task_list_is_well_formed return Boolean with
+   function os_ghost_task_list_is_well_formed return Boolean
+   with
       Ghost => True;
 
-   function os_ghost_current_task_is_ready return Boolean with
+   function os_ghost_current_task_is_ready return Boolean
+   with
       Ghost => True;
 
    function os_ghost_task_is_ready
      (task_id : in os_task_id_param_t) return Boolean with
       Ghost => True;
 
-      -----------------------
-      -- Scheduler package --
-      -----------------------
+   -----------------------
+   -- Scheduler package --
+   -----------------------
 
    package Scheduler with
       SPARK_Mode => on
@@ -99,59 +102,66 @@ is
       -- Ghost functions --
       ---------------------
 
-      function task_list_is_well_formed return Boolean with
+      function task_list_is_well_formed return Boolean
+      with
          Ghost => True;
 
-      function current_task_is_ready return Boolean with
+      function current_task_is_ready return Boolean
+      with
          Ghost => True;
 
       function task_is_ready
-        (task_id : in os_task_id_param_t) return Boolean with
+        (task_id : in os_task_id_param_t) return Boolean
+      with
          Ghost => True;
 
-         -------------------------------------
-         -- Function needed in Moth.Mailbox --
-         -------------------------------------
+      -------------------------------------
+      -- Function needed in Moth.Mailbox --
+      -------------------------------------
 
-      procedure add_task_to_ready_list (task_id : in os_task_id_param_t) with
+      procedure add_task_to_ready_list (task_id : in os_task_id_param_t)
+      with
          Pre  => Moth.os_ghost_task_list_is_well_formed,
          Post => Moth.os_ghost_task_is_ready (task_id)
-         and then Moth.os_ghost_task_list_is_well_formed;
+                 and then Moth.os_ghost_task_list_is_well_formed;
 
-         ----------
-         -- wait --
-         ----------
+      ----------
+      -- wait --
+      ----------
 
-      procedure wait
-        (task_id : out os_task_id_param_t; waiting_mask : os_mbx_mask_t) with
-         Pre => Moth.os_ghost_mbx_are_well_formed and
-         (Moth.os_ghost_task_list_is_well_formed
-          and then Moth.os_ghost_current_task_is_ready),
-         Post => Moth.os_ghost_mbx_are_well_formed and
-         (Moth.os_ghost_task_list_is_well_formed
-          and then Moth.os_ghost_task_is_ready (task_id));
+      procedure wait (task_id      : out os_task_id_param_t;
+                      waiting_mask :     os_mbx_mask_t)
+      with
+         Pre  => Moth.os_ghost_mbx_are_well_formed
+                 and (Moth.os_ghost_task_list_is_well_formed
+                      and then Moth.os_ghost_current_task_is_ready),
+         Post => Moth.os_ghost_mbx_are_well_formed
+                 and (Moth.os_ghost_task_list_is_well_formed
+                      and then Moth.os_ghost_task_is_ready (task_id));
       pragma Export (C, wait, "os_sched_wait");
 
       -----------
       -- yield --
       -----------
 
-      procedure yield (task_id : out os_task_id_param_t) with
-         Pre => Moth.os_ghost_task_list_is_well_formed
-         and then Moth.os_ghost_current_task_is_ready,
+      procedure yield (task_id : out os_task_id_param_t)
+      with
+         Pre  => Moth.os_ghost_task_list_is_well_formed
+                 and then Moth.os_ghost_current_task_is_ready,
          Post => Moth.os_ghost_task_list_is_well_formed
-         and then Moth.os_ghost_task_is_ready (task_id);
+                 and then Moth.os_ghost_task_is_ready (task_id);
       pragma Export (C, yield, "os_sched_yield");
 
       ---------------
       -- task_exit --
       ---------------
 
-      procedure task_exit (task_id : out os_task_id_param_t) with
-         Pre => Moth.os_ghost_task_list_is_well_formed
-         and then Moth.os_ghost_current_task_is_ready,
+      procedure task_exit (task_id : out os_task_id_param_t)
+      with
+         Pre  => Moth.os_ghost_task_list_is_well_formed
+                 and then Moth.os_ghost_current_task_is_ready,
          Post => Moth.os_ghost_task_list_is_well_formed
-         and then Moth.os_ghost_task_is_ready (task_id);
+                 and then Moth.os_ghost_task_is_ready (task_id);
       pragma Export (C, task_exit, "os_sched_exit");
 
       -------------------------
@@ -168,11 +178,12 @@ is
       function get_mbx_mask
         (task_id : os_task_id_param_t) return os_mbx_mask_t;
 
-      ----------
-      -- init --
-      ----------
+      ----------------
+      -- Sched init --
+      ----------------
 
-      procedure init (task_id : out os_task_id_param_t) with
+      procedure init (task_id : out os_task_id_param_t)
+      with
          Post => Moth.os_ghost_task_list_is_well_formed;
 
    end Scheduler;
@@ -203,23 +214,26 @@ is
       -- Ghost functions --
       ---------------------
 
-      function mbx_are_well_formed return Boolean with
+      function mbx_are_well_formed return Boolean
+      with
          Ghost => True;
 
-         ----------------------------
-         -- os_mbx_get_posted_mask --
-         ----------------------------
+      ----------------------------
+      -- os_mbx_get_posted_mask --
+      ----------------------------
 
       function os_mbx_get_posted_mask
-        (task_id : os_task_id_param_t) return os_mbx_mask_t with
+        (task_id : os_task_id_param_t) return os_mbx_mask_t
+      with
          Pre => Moth.os_ghost_mbx_are_well_formed;
 
-         -----------------
-         -- mbx_receive --
-         -----------------
+      -----------------
+      -- mbx_receive --
+      -----------------
 
-      procedure receive
-        (status : out os_status_t; mbx_entry : out os_mbx_entry_t) with
+      procedure receive (status    : out os_status_t;
+                         mbx_entry : out os_mbx_entry_t)
+      with
          Pre  => Moth.os_ghost_mbx_are_well_formed,
          Post => Moth.os_ghost_mbx_are_well_formed;
       pragma Export (C, receive, "os_mbx_receive");
@@ -228,27 +242,34 @@ is
       -- mbx_send --
       --------------
 
-      procedure send
-        (status  : out os_status_t; dest_id : types.int8_t;
-         mbx_msg :     os_mbx_msg_t) with
-         Pre => Moth.os_ghost_mbx_are_well_formed and
-         Moth.os_ghost_task_list_is_well_formed,
-         Post => Moth.os_ghost_mbx_are_well_formed and
-         Moth.os_ghost_task_list_is_well_formed;
+      procedure send (status  : out os_status_t;
+                      dest_id :     types.int8_t;
+                      mbx_msg :     os_mbx_msg_t)
+      with
+         Pre  => Moth.os_ghost_mbx_are_well_formed
+                 and Moth.os_ghost_task_list_is_well_formed,
+         Post => Moth.os_ghost_mbx_are_well_formed
+                 and Moth.os_ghost_task_list_is_well_formed;
       pragma Export (C, send, "os_mbx_send");
 
-      ----------
-      -- init --
-      ----------
+      --------------
+      -- Mbx init --
+      --------------
 
-      procedure init with
+      procedure init
+      with
          Post => Moth.os_ghost_mbx_are_well_formed;
 
    end Mailbox;
 
-   procedure init (task_id : out os_task_id_param_t) with
-      Post => Moth.os_ghost_mbx_are_well_formed and
-      Moth.os_ghost_task_list_is_well_formed;
+   -----------------
+   -- Global init --
+   -----------------
+
+   procedure init (task_id : out os_task_id_param_t)
+   with
+      Post => Moth.os_ghost_mbx_are_well_formed
+              and Moth.os_ghost_task_list_is_well_formed;
    pragma Export (C, init, "os_init");
 
 end Moth;
