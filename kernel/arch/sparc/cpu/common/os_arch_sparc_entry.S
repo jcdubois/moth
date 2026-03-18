@@ -836,3 +836,4 @@ __os_arch_end_of_restore_loop:
     mov   %l2, %fp
     jmpl  %l7 + 8, %g0            /* return to caller */
     nop                           /* delay slot */
+.section .note.GNU-stack,"",%progbits

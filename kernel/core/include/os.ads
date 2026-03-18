@@ -100,29 +100,35 @@ is
 
    function os_ghost_mbx_are_well_formed return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_ghost_task_is_linked_to_head (task_id : os_task_id_param_t)
 	                                     return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_ghost_task_is_linked_to_tail (task_id : os_task_id_param_t)
 	                                     return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_ghost_task_list_is_well_formed return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_ghost_task_is_ready (task_id : os_task_id_param_t) return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_ghost_current_task_is_ready return Boolean
    with
-      Ghost => true;
+      Ghost => true,
+      Global => null;
 
    function os_sched_get_current_task_id return os_task_id_param_t;
    pragma Export (C, os_sched_get_current_task_id, "os_sched_get_current_task_id");

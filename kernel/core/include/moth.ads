@@ -95,16 +95,28 @@ is
    -----------------------
 
    package Scheduler with
-      SPARK_Mode => on
+      SPARK_Mode => on,
+      Abstract_State => Scheduler_State
    is
 
       ---------------------
       -- Ghost functions --
       ---------------------
 
+      function task_list_links_ok return Boolean
+      with
+         Ghost => True,
+         Global => (Input => Scheduler_State);
+
+      function task_list_sorted return Boolean
+      with
+         Ghost => True,
+         Global => (Input => Scheduler_State);
+
       function task_list_is_well_formed return Boolean
       with
-         Ghost => True;
+         Ghost => True,
+         Global => (Input => Scheduler_State);
 
       function current_task_is_ready return Boolean
       with
@@ -193,7 +205,8 @@ is
    ---------------------
 
    package Mailbox with
-      SPARK_Mode => on
+      SPARK_Mode => on,
+      Abstract_State => Mailbox_State
    is
       ------------------
       -- Public types --

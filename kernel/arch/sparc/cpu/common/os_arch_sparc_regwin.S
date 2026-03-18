@@ -97,3 +97,5 @@ _os_arch_window_underflow_trap_handler:
 	save
 	jmp  %l1                        ! Re-execute restore.
 	rett  %l2
+
+.section .note.GNU-stack,"",%progbits

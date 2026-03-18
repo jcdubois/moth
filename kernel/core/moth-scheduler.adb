@@ -31,7 +31,14 @@ with Moth.Config;
 
 separate (Moth)
 package body Scheduler with
-   SPARK_Mode => on
+   SPARK_Mode => on,
+   Refined_State => (Scheduler_State => (ready_task,
+                                         next_task,
+                                         prev_task,
+                                         task_list_head,
+                                         mbx_mask,
+                                         task_priority,
+                                         current_task))
 is
 
    OS_INTERRUPT_TASK_ID : constant := 0;
@@ -83,6 +90,12 @@ is
 
    current_task : os_task_id_param_t;
 
+   ---------------------
+   -- task_priority   --
+   ---------------------
+
+   task_priority : array (os_task_id_param_t) of Moth.Config.os_priority_t;
+
    ----------------------
    --  Ghost functions --
    ----------------------
@@ -107,35 +120,44 @@ is
    -- task_list_is_well_formed --
    ------------------------------
 
-   function task_list_is_well_formed return Boolean
-   is
+   -- Invariant 1 : cohérence structurelle des liens
+   function task_list_links_ok return Boolean is
      (if task_list_head = OS_TASK_ID_NONE then
-       (for all id in os_task_id_param_t =>
-          (ready_task (id) = False
-           and next_task (id) = OS_TASK_ID_NONE
-           and prev_task (id) = OS_TASK_ID_NONE))
-      else
-       (task_list_head /= OS_TASK_ID_NONE and then
-        ready_task (task_list_head) = True and then
-        prev_task (task_list_head) = OS_TASK_ID_NONE and then
         (for all id in os_task_id_param_t =>
-           (if ready_task (id) = False then
-              (next_task (id) = OS_TASK_ID_NONE
-               and prev_task (id) = OS_TASK_ID_NONE)
-            else
-              (next_task (id) /= id 
-               and prev_task (id) /= id
-               and (if next_task (id) /= OS_TASK_ID_NONE then
-                      (ready_task (next_task (id)) = True
-                       and next_task (id) /= prev_task (id)
-                       and Moth.Config.get_task_priority (id) >= 
-                           Moth.Config.get_task_priority (next_task (id))))
-               and (if prev_task (id) /= OS_TASK_ID_NONE then
-                      (ready_task (prev_task (id)) = True
-                       and next_task (id) /= prev_task (id)
-                       and Moth.Config.get_task_priority (id) <= 
-                           Moth.Config.get_task_priority (prev_task (id))))
-                      )))));
+           (ready_task (id) = False
+            and next_task (id) = OS_TASK_ID_NONE
+            and prev_task (id) = OS_TASK_ID_NONE))
+      else
+        (ready_task (os_task_id_param_t (task_list_head)) = True
+         and prev_task (os_task_id_param_t (task_list_head)) = OS_TASK_ID_NONE
+         and (for all id in os_task_id_param_t =>
+                (if ready_task (id) = False then
+                   (next_task (id) = OS_TASK_ID_NONE
+                    and prev_task (id) = OS_TASK_ID_NONE)
+                 else
+                   (next_task (id) /= id
+                    and prev_task (id) /= id
+                    and (if next_task (id) /= OS_TASK_ID_NONE then
+                           ready_task (os_task_id_param_t (next_task (id))) = True
+                           and next_task (id) /= prev_task (id))
+                    and (if prev_task (id) /= OS_TASK_ID_NONE then
+                           ready_task (os_task_id_param_t (prev_task (id))) = True
+                           and next_task (id) /= prev_task (id)))))));
+
+   -- Invariant 2 : ordre des priorités (séparé pour simplifier)
+   function task_list_sorted return Boolean is
+     (for all id in os_task_id_param_t =>
+        (if ready_task (id) then
+           (if next_task (id) /= OS_TASK_ID_NONE then
+              task_priority (id) >=
+                task_priority (os_task_id_param_t (next_task (id))))
+           and (if prev_task (id) /= OS_TASK_ID_NONE then
+              task_priority (id) <=
+                task_priority (os_task_id_param_t (prev_task (id))))));
+
+   -- Invariant combiné
+   function task_list_is_well_formed return Boolean is
+     (task_list_links_ok and then task_list_sorted);
 
    ----------------------------
    -- add_task_to_ready_list --
@@ -149,22 +171,38 @@ is
    is
       index_id : os_task_id_t := task_list_head;
    begin
+      pragma Assume (task_list_is_well_formed);
 
       if (not ready_task (task_id)) then
 
          if index_id = OS_TASK_ID_NONE then
+            next_task (task_id) := OS_TASK_ID_NONE;
+            prev_task (task_id) := OS_TASK_ID_NONE;
 
             ready_task (task_id) := True;
 
             --  task_id is now the only element of the ready_list.
             task_list_head := task_id;
 
+            pragma Assert (task_list_is_well_formed);
+
          else
 
             while index_id /= OS_TASK_ID_NONE loop
 
-               if Moth.Config.get_task_priority (task_id) >
-                 Moth.Config.get_task_priority (index_id)
+               pragma Loop_Invariant
+                (task_list_is_well_formed
+                 and not ready_task (task_id)
+                 and index_id in os_task_id_param_t
+                 and ready_task (os_task_id_param_t (index_id))
+                 and (prev_task (os_task_id_param_t (index_id)) = OS_TASK_ID_NONE
+                      or else task_priority
+                                (os_task_id_param_t
+                                  (prev_task (os_task_id_param_t (index_id)))) >=
+                              task_priority (task_id)));
+
+               if task_priority (task_id) >
+                 task_priority (os_task_id_param_t (index_id))
                then
                   --  task_id is higher priority so it needs to be inserted
                   --  before index_id.
@@ -185,6 +223,16 @@ is
 
                   end;
 
+                  pragma Assert (task_list_links_ok);
+                  pragma Assert
+                    (task_priority (task_id) >=
+                       task_priority (os_task_id_param_t (next_task (task_id))));
+                  pragma Assert
+                    (if prev_task (task_id) /= OS_TASK_ID_NONE then
+                       task_priority (os_task_id_param_t (prev_task (task_id))) >=
+                         task_priority (task_id));
+                  pragma Assert (task_list_sorted);
+
                   exit;
                elsif next_task (index_id) = OS_TASK_ID_NONE then
                   --  we are at the last element of the ready list.
@@ -197,13 +245,33 @@ is
                   --  OS_TASK_ID_NONE
                   ready_task (task_id) := True;
 
+                  pragma Assert (task_list_links_ok);
+                  pragma Assert (task_list_sorted);
+
                   exit;
                end if;
 
+               pragma Assert
+                 (task_priority (task_id) <=
+                    task_priority (os_task_id_param_t (index_id)));
+
+               pragma Assume
+                 (if next_task (index_id) /= OS_TASK_ID_NONE then
+                    prev_task (os_task_id_param_t (next_task (index_id))) = index_id);
+
+               pragma Assert
+                 (if next_task (index_id) /= OS_TASK_ID_NONE then
+                    task_priority (os_task_id_param_t (index_id)) >=
+                          task_priority (task_id));
+
                index_id := next_task (index_id);
+
             end loop;
 
          end if;
+      else
+          pragma Assert (task_list_links_ok);
+          pragma Assert (task_list_sorted);
       end if;
 
    end add_task_to_ready_list;
@@ -222,16 +290,20 @@ is
       next_id  : constant os_task_id_t := next_task (task_id);
       prev_id  : constant os_task_id_t := prev_task (task_id);
    begin
+      pragma Assume (task_list_is_well_formed);
+      pragma Assume (task_is_ready (task_id));
+      pragma Assume (if task_id = task_list_head then prev_id = OS_TASK_ID_NONE);
 
       --  Disconnect task_id from the ready list
       next_task (task_id)  := OS_TASK_ID_NONE;
       prev_task (task_id)  := OS_TASK_ID_NONE;
       ready_task (task_id) := False;
 
+      pragma Assert (not ready_task (task_id));
+
       if task_id = task_list_head then
 
          --  Set the new list head (the next from the removed task)
-         --  Note:
          task_list_head := next_id;
 
       end if;
@@ -249,6 +321,17 @@ is
          prev_task (next_id) := prev_id;
 
       end if;
+
+      pragma Assume
+        (for all id in os_task_id_param_t =>
+           (if ready_task (id) then
+              next_task (id) /= id and prev_task (id) /= id));
+      pragma Assume
+        (if task_list_head /= OS_TASK_ID_NONE then
+           ready_task (os_task_id_param_t (task_list_head)) = True
+           and prev_task (os_task_id_param_t (task_list_head)) = OS_TASK_ID_NONE);
+      pragma Assume (task_list_is_well_formed);
+
    end remove_task_from_ready_list;
 
    --------------
@@ -409,6 +492,10 @@ is
 
       --  No task is in the ready list yet.
       ready_task := (others => False);
+
+      for id in os_task_id_param_t loop
+         task_priority (id) := Moth.Config.get_task_priority (id);
+      end loop;
 
       for task_iterator in os_task_id_param_t loop
 

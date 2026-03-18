@@ -27,7 +27,8 @@ with Moth.Config;
 
 separate (Moth)
 package body Mailbox with
-   SPARK_Mode => On
+   SPARK_Mode => On,
+   Refined_State => (Mailbox_State => mbx_fifo)
 is
 
    -----------------
