@@ -131,9 +131,9 @@ To run the SPARK proof, install GNATprove 13 or later from the
 and add to your `PATH`:
 
 ```bash
-$ wget https://github.com/alire-project/GNAT-FSF-builds/releases/download/gnatprove-15.0.0-1/gnatprove-x86_64-linux-15.0.0-1.tar.gz
-$ tar xzf gnatprove-x86_64-linux-15.0.0-1.tar.gz -C ~/opt/
-$ export PATH=$HOME/opt/gnatprove-x86_64-linux-15.0.0-1/bin:$PATH
+$ wget https://github.com/alire-project/GNAT-FSF-builds/releases/download/gnatprove-15.1.0-1/gnatprove-x86_64-linux-15.1.0-1.tar.gz
+$ tar xzf gnatprove-x86_64-linux-15.1.0-1.tar.gz -C ~/opt/
+$ export PATH=$HOME/opt/gnatprove-x86_64-linux-15.1.0-1/bin:$PATH
 ```
 
 > **Note:** GNATprove does not need to match the GNAT compiler version used for
