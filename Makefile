@@ -131,7 +131,8 @@ cppflags+=-I$(build_dir)
 cppflags+=$(cpu-cppflags)
 cppflags+=$(board-cppflags)
 cppflags+=$(libs-cppflags-y)
-adacppflags=-I$(OPENCONF_TMPDIR)
+adacppflags=-I$(core_dir)/ada_rts
+adacppflags+=-I$(OPENCONF_TMPDIR)
 adacppflags+=-I$(core_dir)/include
 cc=$(CROSS_COMPILE)gcc
 cflags=-g -Wall -Wextra -nostdlib -fno-builtin -nostdinc
@@ -144,7 +145,8 @@ cflags+=$(cppflags)
 ifdef CONFIG_PROFILE
 cflags+=-finstrument-functions
 endif
-ada=$(CROSS_COMPILE)gnatgcc
+GNAT_VERSION := $(shell $(CROSS_COMPILE)gcc -dumpversion | cut -d. -f1)
+ada=$(CROSS_COMPILE)gcc-$(GNAT_VERSION)
 adaflags=-g -Wall -Wextra
 adaflags+=-Os
 adaflags+=-fdata-sections -ffunction-sections

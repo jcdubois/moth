@@ -484,14 +484,14 @@ is
       task_list_head := OS_TASK_ID_NONE;
 
       --  Init the task entry for one task
-      next_task := (others => OS_TASK_ID_NONE);
-      prev_task := (others => OS_TASK_ID_NONE);
+      next_task := [others => OS_TASK_ID_NONE];
+      prev_task := [others => OS_TASK_ID_NONE];
 
       --  All Mbx mask for tasks are 0
-      mbx_mask := (others => 0);
+      mbx_mask := [others => 0];
 
       --  No task is in the ready list yet.
-      ready_task := (others => False);
+      ready_task := [others => False];
 
       for id in os_task_id_param_t loop
          task_priority (id) := Moth.Config.get_task_priority (id);

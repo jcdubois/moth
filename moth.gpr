@@ -1,6 +1,6 @@
 project Moth is
 
-   for Source_Dirs use ("kernel/core/**", "build/openconf");
+   for Source_Dirs use ("kernel/core/**", "kernel/core/ada_rts", "build/openconf");
    for Object_Dir use "obj";
    for Languages use ("Ada", "C");
 

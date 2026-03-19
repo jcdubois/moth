@@ -520,12 +520,12 @@ is
    procedure init is
    begin
       mbx_fifo :=
-        (others =>
+        [others =>
            (head      => os_mbx_index_t'First,
             count     => os_mbx_count_t'First,
-            mbx_array => (others =>
+            mbx_array => [others =>
                             (sender_id => OS_TASK_ID_NONE,
-                             msg       => 0))));
+                             msg       => 0)])];
    end init;
 
 end Mailbox;
